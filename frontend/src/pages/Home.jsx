@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import ProductCard from "../components/ProductCard";
-import BundleBuilder from "../components/BundleBuilder";
+import BundleBuilder from "../components/BundleBuilder.jsx";
 import ReviewsSection from "../components/ReviewsSection";
 import PackOffersSection from "../components/PackOffersSection";
 
