@@ -1,540 +1,569 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
 
 /* ─── Inject CSS once ──────────────────────────────── */
 const PACK_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 
   :root {
-    --pk-ink:      #0E0E0C;
-    --pk-cream:    #FAF8F5;
-    --pk-sand:     #EDE9E1;
-    --pk-white:    #FFFFFF;
-    --pk-coral:    #EF776A;
-    --pk-coral-dk: #C9503F;
-    --pk-gold:     #C9A96E;
-    --pk-gold-lt:  #F5E9D0;
-    --pk-muted:    #7A7770;
-    --pk-border:   rgba(14,14,12,0.09);
-    --pk-sans:     'Poppins', sans-serif;
-    --pk-serif:    'Cormorant Garamond', Georgia, serif;
-    --pk-ease:     cubic-bezier(0.25,0.46,0.45,0.94);
-    --pk-spring:   cubic-bezier(0.34,1.56,0.64,1);
+    --pk-ink:        #1C1A16;
+    --pk-ink-2:      #3D3A33;
+    --pk-cream:      #FBF8F3;
+    --pk-cream-2:    #F5EFE4;
+    --pk-cream-3:    #EDE5D8;
+    --pk-white:      #FFFFFF;
+    --pk-rose:       #D4857A;
+    --pk-rose-d:     #B86B60;
+    --pk-rose-l:     #F4E8E6;
+    --pk-gold:       #C8A96A;
+    --pk-gold-d:     #A8883E;
+    --pk-gold-l:     #E9D6A9;
+    --pk-gold-xl:    #FAF3E3;
+    --pk-sage:       #7A9B7A;
+    --pk-sage-l:     #E8F0E8;
+    --pk-muted:      #8C8478;
+    --pk-border:     rgba(28,26,22,0.09);
+    --pk-border-2:   rgba(28,26,22,0.05);
+    --pk-sans:       'DM Sans', sans-serif;
+    --pk-serif:      'Cormorant Garamond', Georgia, serif;
+    --pk-ease:       cubic-bezier(0.25,0.46,0.45,0.94);
+    --pk-spring:     cubic-bezier(0.34,1.56,0.64,1);
+    --pk-expo:       cubic-bezier(0.16,1,0.3,1);
   }
 
   /* ── Animations ── */
-  @keyframes pkFadeUp   { from{opacity:0;transform:translateY(32px);}  to{opacity:1;transform:translateY(0);} }
-  @keyframes pkScaleIn  { from{opacity:0;transform:scale(0.88);}       to{opacity:1;transform:scale(1);} }
-  @keyframes pkShimmer  { from{background-position:200% 0;} to{background-position:-200% 0;} }
-  @keyframes pkGlow     { 0%,100%{box-shadow:0 0 30px rgba(239,119,106,0.2);}  50%{box-shadow:0 0 60px rgba(239,119,106,0.35);} }
-  @keyframes pkGoldGlow { 0%,100%{box-shadow:0 0 30px rgba(201,169,110,0.2);}  50%{box-shadow:0 0 60px rgba(201,169,110,0.35);} }
-  @keyframes pkFloat    { 0%,100%{transform:translateY(0);}   50%{transform:translateY(-6px);} }
-  @keyframes pkPulse    { 0%,100%{opacity:1;transform:scale(1);}  50%{opacity:0.7;transform:scale(0.95);} }
-  @keyframes pkStar     { 0%,100%{transform:rotate(0deg) scale(1);}  50%{transform:rotate(15deg) scale(1.15);} }
-  @keyframes pkMarquee  { from{transform:translateX(0);} to{transform:translateX(-50%);} }
-  @keyframes pkOrb      { 0%,100%{transform:translate(0,0);}  50%{transform:translate(20px,-20px);} }
-  @keyframes pkReveal   { from{clip-path:inset(0 100% 0 0);} to{clip-path:inset(0 0% 0 0);} }
+  @keyframes pkFadeUp   { from{opacity:0;transform:translateY(36px)} to{opacity:1;transform:none} }
+  @keyframes pkScaleIn  { from{opacity:0;transform:scale(0.9)} to{opacity:1;transform:none} }
+  @keyframes pkFloat    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  @keyframes pkPulse    { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.65;transform:scale(0.9)} }
+  @keyframes pkOrb      { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(24px,-18px) scale(1.04)} }
+  @keyframes pkShimmer  { from{background-position:200% 0} to{background-position:-200% 0} }
+  @keyframes pkGoldGlow { 0%,100%{box-shadow:0 0 0 0 rgba(200,169,106,0)} 50%{box-shadow:0 0 32px 0 rgba(200,169,106,0.25)} }
+  @keyframes pkRoseGlow { 0%,100%{box-shadow:0 0 0 0 rgba(212,133,122,0)} 50%{box-shadow:0 0 32px 0 rgba(212,133,122,0.25)} }
+  @keyframes pkLineGrow { from{width:0} to{width:100%} }
+  @keyframes pkCardSheen { from{transform:translateX(-100%) skewX(-18deg)} to{transform:translateX(200%) skewX(-18deg)} }
 
-  .pk-aos { opacity:0;transform:translateY(28px);transition:opacity 0.8s var(--pk-ease),transform 0.8s var(--pk-ease); }
-  .pk-aos.pk-vis { opacity:1;transform:translateY(0); }
-  .pk-d1{transition-delay:.06s}.pk-d2{transition-delay:.13s}.pk-d3{transition-delay:.20s}.pk-d4{transition-delay:.27s}
+  .pk-aos {
+    opacity:0; transform:translateY(32px);
+    transition:opacity 0.85s var(--pk-expo), transform 0.85s var(--pk-expo);
+  }
+  .pk-aos.pk-vis { opacity:1; transform:none; }
+  .pk-d1{transition-delay:.08s} .pk-d2{transition-delay:.16s}
+  .pk-d3{transition-delay:.26s} .pk-d4{transition-delay:.36s}
 
-  /* ─────────────────────────────────────────
-     SECTION WRAPPER
-  ───────────────────────────────────────── */
+  /* ─────────────────────────────────────
+     SECTION
+  ───────────────────────────────────── */
   .pk-section {
     padding: clamp(80px,10vw,140px) 0 clamp(100px,12vw,160px);
-    background: var(--pk-ink);
+    background: var(--pk-cream-2);
     position: relative;
     overflow: hidden;
     font-family: var(--pk-sans);
   }
   .pk-section * { box-sizing:border-box; }
 
-  /* Background decorative orbs */
+  /* Decorative orbs — warm, cream-based */
   .pk-bg-orb {
-    position:absolute;border-radius:50%;pointer-events:none;
+    position:absolute; border-radius:50%; pointer-events:none;
   }
   .pk-bg-orb-1 {
-    width:700px;height:700px;top:-250px;left:-250px;
-    background:radial-gradient(circle,rgba(239,119,106,0.09),transparent 70%);
-    animation:pkOrb 20s ease-in-out infinite;
+    width:800px; height:800px; top:-300px; left:-300px;
+    background:radial-gradient(circle, rgba(200,169,106,0.12), transparent 68%);
+    animation:pkOrb 22s ease-in-out infinite;
   }
   .pk-bg-orb-2 {
-    width:500px;height:500px;bottom:-150px;right:-150px;
-    background:radial-gradient(circle,rgba(201,169,110,0.08),transparent 70%);
-    animation:pkOrb 16s ease-in-out infinite reverse;
+    width:600px; height:600px; bottom:-200px; right:-200px;
+    background:radial-gradient(circle, rgba(212,133,122,0.1), transparent 68%);
+    animation:pkOrb 18s ease-in-out infinite reverse;
   }
   .pk-bg-orb-3 {
-    width:300px;height:300px;top:40%;left:50%;
-    background:radial-gradient(circle,rgba(239,119,106,0.04),transparent 70%);
-    animation:pkOrb 24s ease-in-out infinite 3s;
+    width:350px; height:350px; top:40%; left:48%;
+    background:radial-gradient(circle, rgba(200,169,106,0.07), transparent 68%);
+    animation:pkOrb 28s ease-in-out infinite 4s;
   }
 
-  /* Subtle grid lines */
-  .pk-grid-bg {
-    position:absolute;inset:0;pointer-events:none;
+  /* Top wave divider */
+  .pk-section::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0;
+    height:90px;
+    background:var(--pk-cream);
+    clip-path:ellipse(55% 100% at 50% 0%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  /* Subtle linen texture */
+  .pk-texture {
+    position:absolute; inset:0; pointer-events:none; opacity:0.4;
     background-image:
-      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-    background-size:80px 80px;
-    opacity:0.5;
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 28px,
+        rgba(200,169,106,0.05) 28px,
+        rgba(200,169,106,0.05) 29px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 28px,
+        rgba(200,169,106,0.03) 28px,
+        rgba(200,169,106,0.03) 29px
+      );
   }
 
   /* ── Header ── */
   .pk-header {
     text-align:center;
-    margin-bottom:clamp(48px,7vw,88px);
-    position:relative;z-index:1;
+    margin-bottom:clamp(52px,7vw,92px);
+    position:relative; z-index:1;
   }
   .pk-eyebrow {
-    display:inline-flex;align-items:center;gap:12px;
-    font-size:0.6rem;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;
-    color:var(--pk-gold);margin-bottom:20px;
+    display:inline-flex; align-items:center; gap:12px;
+    font-size:0.6rem; font-weight:700; letter-spacing:0.32em; text-transform:uppercase;
+    color:var(--pk-rose); margin-bottom:20px;
   }
   .pk-eyebrow::before,.pk-eyebrow::after {
-    content:'';width:32px;height:1px;background:linear-gradient(to right,transparent,var(--pk-gold));
+    content:''; width:28px; height:1px;
+    background:var(--pk-rose); opacity:0.6;
   }
-  .pk-eyebrow::after { background:linear-gradient(to left,transparent,var(--pk-gold)); }
-
   .pk-title {
-    font-family:var(--pk-sans);
-    font-size:clamp(2.4rem,7vw,5.2rem);
-    font-weight:900;color:white;
-    letter-spacing:-0.04em;line-height:0.95;
+    font-family:var(--pk-serif);
+    font-size:clamp(2.6rem,6vw,4.8rem);
+    font-weight:600; color:var(--pk-ink);
+    letter-spacing:-0.02em; line-height:1.02;
     margin-bottom:20px;
   }
   .pk-title em {
-    font-style:italic;font-weight:300;font-family:var(--pk-serif);
-    color:var(--pk-coral);font-size:1.08em;display:block;
+    font-style:italic; font-weight:300;
+    color:var(--pk-rose); display:block;
   }
   .pk-subtitle {
-    font-size:clamp(0.82rem,1.2vw,0.95rem);
-    color:rgba(255,255,255,0.4);max-width:440px;margin:0 auto;line-height:1.8;
+    font-size:clamp(0.82rem,1.2vw,0.96rem);
+    color:var(--pk-muted); max-width:460px; margin:0 auto; line-height:1.82;
   }
-
-  /* Savings ribbon */
   .pk-savings-ribbon {
-    display:inline-flex;align-items:center;gap:8px;
-    margin-top:28px;
-    padding:10px 24px;border-radius:999px;
-    background:rgba(74,222,128,0.1);
-    border:1px solid rgba(74,222,128,0.2);
-    font-size:0.7rem;font-weight:800;
-    color:rgba(74,222,128,0.9);letter-spacing:0.1em;text-transform:uppercase;
+    display:inline-flex; align-items:center; gap:8px;
+    margin-top:28px; padding:10px 26px; border-radius:999px;
+    background:rgba(122,155,122,0.1);
+    border:1px solid rgba(122,155,122,0.25);
+    font-size:0.7rem; font-weight:700;
+    color:#4A7A4A; letter-spacing:0.08em; text-transform:uppercase;
   }
-  .pk-savings-dot { width:6px;height:6px;border-radius:50%;background:#4ADE80;animation:pkPulse 1.8s ease infinite; }
+  .pk-savings-dot {
+    width:6px; height:6px; border-radius:50%;
+    background:#5A9A5A;
+    animation:pkPulse 2s ease infinite;
+  }
 
   /* ── Cards Grid ── */
   .pk-grid {
     display:grid;
     grid-template-columns:repeat(4,1fr);
-    gap:16px;
-    position:relative;z-index:1;
+    gap:18px;
+    position:relative; z-index:1;
     align-items:stretch;
   }
 
-  /* ── Single Card ── */
+  /* ── Card Base ── */
   .pk-card {
     border-radius:28px;
-    padding:clamp(28px,3vw,40px) clamp(22px,2.5vw,32px) clamp(32px,4vw,44px);
-    position:relative;overflow:hidden;
+    padding:clamp(28px,3vw,42px) clamp(22px,2.5vw,32px) clamp(32px,4vw,44px);
+    position:relative; overflow:hidden;
     cursor:pointer;
-    border:1.5px solid rgba(255,255,255,0.07);
-    background:rgba(255,255,255,0.03);
-    display:flex;flex-direction:column;
-    transition:transform 0.45s var(--pk-spring), box-shadow 0.45s, border-color 0.3s, background 0.3s;
+    display:flex; flex-direction:column;
+    transition:transform 0.5s var(--pk-spring), box-shadow 0.5s;
+    background:var(--pk-white);
+    border:1.5px solid var(--pk-border);
+    box-shadow:0 4px 24px rgba(28,26,22,0.06);
   }
   .pk-card:hover {
-    transform:translateY(-10px) scale(1.015);
-    border-color:rgba(255,255,255,0.14);
-    background:rgba(255,255,255,0.06);
-    box-shadow:0 32px 80px rgba(0,0,0,0.4);
+    transform:translateY(-12px) scale(1.015);
+    box-shadow:0 40px 80px rgba(28,26,22,0.14);
   }
 
-  /* Highlighted card (Pack 3 / Best Value) */
+  /* Sheen on hover */
+  .pk-card-sheen {
+    position:absolute; inset:0; z-index:10; pointer-events:none;
+    background:linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.6) 50%, transparent 65%);
+    transform:translateX(-100%) skewX(-15deg);
+  }
+  .pk-card:hover .pk-card-sheen { animation:pkCardSheen 0.7s var(--pk-ease) forwards; }
+
+  /* featured — rose accent */
   .pk-card.pk-featured {
-    background:rgba(239,119,106,0.08);
-    border-color:var(--pk-coral);
-    box-shadow:0 0 40px rgba(239,119,106,0.15), 0 8px 40px rgba(0,0,0,0.3);
-    animation:pkGlow 4s ease-in-out infinite;
+    background:linear-gradient(145deg, #FFF8F7 0%, var(--pk-white) 100%);
+    border-color:var(--pk-rose);
+    box-shadow:
+      0 4px 28px rgba(212,133,122,0.18),
+      0 0 0 1px rgba(212,133,122,0.15);
+    animation:pkRoseGlow 4s ease-in-out infinite;
     transform:scale(1.03);
   }
   .pk-card.pk-featured:hover {
-    transform:translateY(-12px) scale(1.045);
-    box-shadow:0 40px 100px rgba(239,119,106,0.25), 0 0 60px rgba(239,119,106,0.2);
+    transform:translateY(-14px) scale(1.045);
+    box-shadow:
+      0 48px 96px rgba(212,133,122,0.22),
+      0 0 0 1.5px var(--pk-rose);
   }
 
-  /* Golden card */
+  /* golden */
   .pk-card.pk-golden {
-    background:rgba(201,169,110,0.07);
-    border-color:rgba(201,169,110,0.4);
-    box-shadow:0 0 30px rgba(201,169,110,0.1), 0 8px 32px rgba(0,0,0,0.25);
+    background:linear-gradient(145deg, var(--pk-gold-xl) 0%, var(--pk-white) 100%);
+    border-color:var(--pk-gold-l);
+    box-shadow:
+      0 4px 28px rgba(200,169,106,0.15),
+      0 0 0 1px rgba(200,169,106,0.15);
     animation:pkGoldGlow 4s ease-in-out infinite;
   }
   .pk-card.pk-golden:hover {
     border-color:var(--pk-gold);
-    box-shadow:0 40px 100px rgba(201,169,110,0.2), 0 0 60px rgba(201,169,110,0.15);
+    box-shadow:
+      0 48px 96px rgba(200,169,106,0.2),
+      0 0 0 1.5px var(--pk-gold);
   }
 
-  /* Inner shimmer on featured */
-  .pk-card.pk-featured::before {
-    content:'';position:absolute;inset:0;border-radius:26px;pointer-events:none;
-    background:linear-gradient(135deg,rgba(239,119,106,0.08) 0%,transparent 60%);
+  /* Inner gradient overlay */
+  .pk-card.pk-featured::after {
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(160deg, rgba(212,133,122,0.04) 0%, transparent 50%);
+    border-radius:26px;
   }
-  .pk-card.pk-golden::before {
-    content:'';position:absolute;inset:0;border-radius:26px;pointer-events:none;
-    background:linear-gradient(135deg,rgba(201,169,110,0.08) 0%,transparent 60%);
+  .pk-card.pk-golden::after {
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(160deg, rgba(200,169,106,0.07) 0%, transparent 50%);
+    border-radius:26px;
   }
 
   /* Top badge */
   .pk-top-badge {
-    position:absolute;top:-1px;left:50%;transform:translateX(-50%);
-    padding:6px 18px;border-radius:0 0 14px 14px;
-    font-family:var(--pk-sans);font-size:0.58rem;font-weight:800;
-    letter-spacing:0.14em;text-transform:uppercase;
-    display:inline-flex;align-items:center;gap:6px;
-    white-space:nowrap;
-    z-index:2;
+    position:absolute; top:-1px; left:50%; transform:translateX(-50%);
+    padding:7px 20px; border-radius:0 0 16px 16px;
+    font-family:var(--pk-sans); font-size:0.58rem; font-weight:800;
+    letter-spacing:0.14em; text-transform:uppercase;
+    display:inline-flex; align-items:center; gap:6px;
+    white-space:nowrap; z-index:5;
   }
-  .pk-top-badge.coral { background:var(--pk-coral);color:white;box-shadow:0 4px 16px rgba(239,119,106,0.4); }
-  .pk-top-badge.gold  { background:linear-gradient(135deg,var(--pk-gold),#B8922A);color:white;box-shadow:0 4px 16px rgba(201,169,110,0.4); }
-  .pk-top-badge.green { background:#1B5E20;color:white; }
+  .pk-top-badge.rose {
+    background:linear-gradient(135deg, var(--pk-rose), var(--pk-rose-d));
+    color:white;
+    box-shadow:0 4px 16px rgba(212,133,122,0.4);
+  }
+  .pk-top-badge.gold {
+    background:linear-gradient(135deg, var(--pk-gold), var(--pk-gold-d));
+    color:white;
+    box-shadow:0 4px 16px rgba(200,169,106,0.4);
+  }
+  .pk-top-badge.sage {
+    background:linear-gradient(135deg, #5A9A5A, #3D7A3D);
+    color:white;
+  }
 
-  /* Card tag (top-left) */
+  /* Card label */
   .pk-card-tag {
-    font-size:0.58rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;
-    color:rgba(255,255,255,0.3);margin-bottom:20px;
-    display:flex;align-items:center;gap:8px;
-    position:relative;z-index:1;
+    font-size:0.58rem; font-weight:800; letter-spacing:0.22em; text-transform:uppercase;
+    color:var(--pk-muted); margin-bottom:22px;
+    display:flex; align-items:center; gap:8px;
+    position:relative; z-index:1;
   }
-  .pk-card.pk-featured .pk-card-tag { color:rgba(239,119,106,0.7); }
-  .pk-card.pk-golden .pk-card-tag   { color:rgba(201,169,110,0.7); }
+  .pk-card.pk-featured .pk-card-tag { color:var(--pk-rose-d); }
+  .pk-card.pk-golden .pk-card-tag   { color:var(--pk-gold-d); }
+  .pk-card-tag-line {
+    height:1px; width:18px;
+    background:var(--pk-border);
+    display:inline-block;
+  }
+  .pk-card.pk-featured .pk-card-tag-line { background:rgba(212,133,122,0.35); }
+  .pk-card.pk-golden .pk-card-tag-line   { background:rgba(200,169,106,0.4); }
 
-  /* Quantity display */
+  /* Quantity */
   .pk-qty-display {
-    display:flex;align-items:baseline;gap:6px;
-    margin-bottom:6px;
-    position:relative;z-index:1;
+    display:flex; align-items:baseline; gap:7px;
+    margin-bottom:6px; position:relative; z-index:1;
   }
   .pk-qty-num {
-    font-family:var(--pk-sans);
-    font-size:clamp(3.5rem,7vw,5.5rem);
-    font-weight:900;color:white;
-    letter-spacing:-0.05em;line-height:1;
+    font-family:var(--pk-serif);
+    font-size:clamp(3.8rem,7vw,5.8rem);
+    font-weight:700; color:var(--pk-ink);
+    letter-spacing:-0.04em; line-height:1;
   }
+  .pk-card.pk-featured .pk-qty-num { color:var(--pk-rose-d); }
+  .pk-card.pk-golden .pk-qty-num   { color:var(--pk-gold-d); }
   .pk-qty-label {
-    font-size:clamp(0.75rem,1.2vw,0.9rem);font-weight:600;
-    color:rgba(255,255,255,0.35);
+    font-size:0.85rem; font-weight:500; color:var(--pk-muted);
     padding-bottom:8px;
   }
 
   .pk-volume-tag {
-    display:inline-flex;align-items:center;gap:5px;
-    background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.1);
-    border-radius:999px;padding:5px 12px;
-    font-size:0.62rem;font-weight:700;letter-spacing:0.1em;
-    color:rgba(255,255,255,0.45);margin-bottom:24px;
-    position:relative;z-index:1;
-    width:fit-content;
+    display:inline-flex; align-items:center; gap:5px;
+    background:var(--pk-cream-2); border:1px solid var(--pk-border);
+    border-radius:999px; padding:5px 14px;
+    font-size:0.62rem; font-weight:700; letter-spacing:0.1em;
+    color:var(--pk-muted); margin-bottom:24px;
+    position:relative; z-index:1; width:fit-content;
   }
+  .pk-card.pk-featured .pk-volume-tag { background:var(--pk-rose-l); border-color:rgba(212,133,122,0.2); }
+  .pk-card.pk-golden .pk-volume-tag   { background:var(--pk-gold-xl); border-color:rgba(200,169,106,0.25); }
 
   /* Price */
-  .pk-price-block { margin-bottom:24px;position:relative;z-index:1; }
+  .pk-price-block { margin-bottom:24px; position:relative; z-index:1; }
   .pk-price-original {
-    font-size:0.78rem;color:rgba(255,255,255,0.25);text-decoration:line-through;
-    margin-bottom:3px;
+    font-size:0.78rem; color:var(--pk-muted); text-decoration:line-through;
+    margin-bottom:4px; opacity:0.6;
   }
   .pk-price {
     font-family:var(--pk-serif);
-    font-size:clamp(2.2rem,4vw,3rem);font-weight:600;
-    color:white;letter-spacing:-0.02em;line-height:1;
+    font-size:clamp(2.4rem,4vw,3.2rem); font-weight:600;
+    color:var(--pk-ink); letter-spacing:-0.02em; line-height:1;
   }
+  .pk-card.pk-featured .pk-price { color:var(--pk-rose-d); }
+  .pk-card.pk-golden .pk-price   { color:var(--pk-gold-d); }
   .pk-price sub {
-    font-family:var(--pk-sans);font-size:0.5em;font-weight:700;
-    color:rgba(255,255,255,0.45);letter-spacing:0;vertical-align:baseline;
-    margin-left:4px;
+    font-family:var(--pk-sans); font-size:0.42em; font-weight:700;
+    color:var(--pk-muted); letter-spacing:0; vertical-align:baseline; margin-left:5px;
   }
   .pk-price-per {
-    font-size:0.65rem;font-weight:600;color:rgba(255,255,255,0.3);
-    margin-top:5px;letter-spacing:0.04em;
+    font-size:0.66rem; font-weight:500; color:var(--pk-muted);
+    margin-top:6px; letter-spacing:0.03em;
   }
-
-  /* Perks list */
-  .pk-perks {
-    display:flex;flex-direction:column;gap:9px;
-    margin-bottom:28px;flex:1;
-    position:relative;z-index:1;
-  }
-  .pk-perk {
-    display:flex;align-items:center;gap:9px;
-    font-size:0.73rem;font-weight:500;color:rgba(255,255,255,0.5);
-    line-height:1.3;
-  }
-  .pk-perk-icon {
-    width:18px;height:18px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    flex-shrink:0;font-size:0.6rem;
-  }
-  .pk-perk-icon.green { background:rgba(74,222,128,0.15);color:#4ADE80; }
-  .pk-perk-icon.coral { background:rgba(239,119,106,0.15);color:var(--pk-coral); }
-  .pk-perk-icon.gold  { background:rgba(201,169,110,0.15);color:var(--pk-gold); }
-  .pk-perk.featured { color:rgba(255,255,255,0.75); }
 
   /* Savings badge */
   .pk-savings-badge {
-    display:inline-flex;align-items:center;gap:5px;
-    padding:5px 12px;border-radius:999px;
-    font-size:0.6rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;
-    margin-bottom:18px;width:fit-content;
-    position:relative;z-index:1;
+    display:inline-flex; align-items:center; gap:5px;
+    padding:5px 14px; border-radius:999px;
+    font-size:0.6rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase;
+    margin-bottom:18px; width:fit-content; position:relative; z-index:1;
   }
-  .pk-savings-badge.green {
-    background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);
-    color:rgba(74,222,128,0.9);
+  .pk-savings-badge.sage  { background:var(--pk-sage-l); color:#3D7A3D; border:1px solid rgba(90,154,90,0.2); }
+  .pk-savings-badge.rose  { background:var(--pk-rose-l); color:var(--pk-rose-d); border:1px solid rgba(212,133,122,0.25); }
+  .pk-savings-badge.gold  { background:var(--pk-gold-xl); color:var(--pk-gold-d); border:1px solid rgba(200,169,106,0.3); }
+
+  /* Perks */
+  .pk-perks {
+    display:flex; flex-direction:column; gap:9px;
+    margin-bottom:28px; flex:1; position:relative; z-index:1;
   }
-  .pk-savings-badge.coral {
-    background:rgba(239,119,106,0.12);border:1px solid rgba(239,119,106,0.25);
-    color:rgba(239,119,106,0.9);
+  .pk-perk {
+    display:flex; align-items:center; gap:9px;
+    font-size:0.74rem; font-weight:500; color:var(--pk-muted);
+    line-height:1.3;
   }
-  .pk-savings-badge.gold {
-    background:rgba(201,169,110,0.12);border:1px solid rgba(201,169,110,0.25);
-    color:rgba(201,169,110,0.9);
+  .pk-perk-icon {
+    width:18px; height:18px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; font-size:0.6rem;
   }
+  .pk-perk-icon.sage { background:var(--pk-sage-l); color:#3D7A3D; }
+  .pk-perk-icon.rose { background:var(--pk-rose-l); color:var(--pk-rose-d); }
+  .pk-perk-icon.gold { background:var(--pk-gold-xl); color:var(--pk-gold-d); }
+  .pk-perk.featured  { color:var(--pk-ink-2); font-weight:500; }
+
+  /* Divider */
+  .pk-card-divider {
+    height:1px; background:var(--pk-border); margin-bottom:22px;
+    position:relative; z-index:1;
+  }
+  .pk-card.pk-featured .pk-card-divider { background:rgba(212,133,122,0.2); }
+  .pk-card.pk-golden .pk-card-divider   { background:rgba(200,169,106,0.2); }
 
   /* CTA Button */
   .pk-btn {
-    width:100%;padding:15px 20px;
-    border-radius:999px;border:none;cursor:pointer;
-    font-family:var(--pk-sans);font-size:0.72rem;font-weight:800;
-    letter-spacing:0.1em;text-transform:uppercase;
-    display:flex;align-items:center;justify-content:center;gap:8px;
-    transition:transform 0.25s var(--pk-spring), box-shadow 0.25s, background 0.2s;
-    position:relative;z-index:1;
-    text-decoration:none;
+    width:100%; padding:15px 20px;
+    border-radius:999px; border:none; cursor:pointer;
+    font-family:var(--pk-sans); font-size:0.72rem; font-weight:700;
+    letter-spacing:0.1em; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:transform 0.3s var(--pk-spring), box-shadow 0.3s, background 0.2s;
+    position:relative; z-index:1; text-decoration:none;
   }
   .pk-btn.default {
-    background:rgba(255,255,255,0.07);
-    border:1.5px solid rgba(255,255,255,0.12);
-    color:rgba(255,255,255,0.7);
+    background:var(--pk-cream-2); border:1.5px solid var(--pk-border);
+    color:var(--pk-ink-2);
   }
   .pk-btn.default:hover {
-    background:rgba(255,255,255,0.13);
-    color:white;
-    transform:translateY(-2px);
+    background:var(--pk-cream-3); transform:translateY(-3px);
   }
-  .pk-btn.coral {
-    background:linear-gradient(135deg,var(--pk-coral),var(--pk-coral-dk));
-    color:white;
-    box-shadow:0 8px 28px rgba(239,119,106,0.4);
+  .pk-btn.rose {
+    background:linear-gradient(135deg, var(--pk-rose), var(--pk-rose-d));
+    color:white; box-shadow:0 6px 24px rgba(212,133,122,0.45);
   }
-  .pk-btn.coral:hover {
-    transform:translateY(-3px) scale(1.02);
-    box-shadow:0 16px 44px rgba(239,119,106,0.55);
+  .pk-btn.rose:hover {
+    transform:translateY(-4px) scale(1.02);
+    box-shadow:0 14px 40px rgba(212,133,122,0.55);
   }
   .pk-btn.gold {
-    background:linear-gradient(135deg,var(--pk-gold),#B8922A);
-    color:white;
-    box-shadow:0 8px 28px rgba(201,169,110,0.35);
+    background:linear-gradient(135deg, var(--pk-gold), var(--pk-gold-d));
+    color:white; box-shadow:0 6px 24px rgba(200,169,106,0.4);
   }
   .pk-btn.gold:hover {
-    transform:translateY(-3px) scale(1.02);
-    box-shadow:0 16px 44px rgba(201,169,110,0.45);
+    transform:translateY(-4px) scale(1.02);
+    box-shadow:0 14px 40px rgba(200,169,106,0.5);
   }
 
-  /* ── Comparison Strip ── */
+  /* ── Compare table ── */
   .pk-compare {
-    margin-top:clamp(48px,6vw,80px);
-    background:rgba(255,255,255,0.03);
-    border:1px solid rgba(255,255,255,0.06);
-    border-radius:24px;
-    padding:clamp(28px,4vw,48px);
-    position:relative;z-index:1;
+    margin-top:clamp(52px,7vw,88px);
+    background:var(--pk-white);
+    border:1px solid var(--pk-border);
+    border-radius:28px;
+    padding:clamp(28px,4vw,52px);
+    position:relative; z-index:1;
+    box-shadow:0 4px 24px rgba(28,26,22,0.06);
+    overflow:hidden;
+  }
+  .pk-compare::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(to right, var(--pk-rose), var(--pk-gold));
   }
   .pk-compare-title {
-    font-family:var(--pk-sans);font-size:0.68rem;font-weight:800;
-    letter-spacing:0.2em;text-transform:uppercase;
-    color:rgba(255,255,255,0.25);text-align:center;margin-bottom:28px;
+    font-size:0.68rem; font-weight:800;
+    letter-spacing:0.22em; text-transform:uppercase;
+    color:var(--pk-muted); text-align:center; margin-bottom:32px;
   }
-  .pk-compare-row {
-    display:grid;grid-template-columns:1.5fr repeat(4,1fr);gap:0;
-    border-radius:16px;overflow:hidden;
+  .pk-compare-grid {
+    display:grid; grid-template-columns:1.6fr repeat(4,1fr);
+    border-radius:18px; overflow:hidden;
+    border:1px solid var(--pk-border);
   }
-  .pk-compare-head {
-    display:contents;
+  .pk-cmp-cell {
+    padding:14px 16px; font-size:0.7rem; font-weight:500;
+    color:var(--pk-muted); text-align:center;
+    border-bottom:1px solid var(--pk-border);
+    border-right:1px solid var(--pk-border);
   }
-  .pk-compare-cell {
-    padding:14px 16px;
-    font-size:0.7rem;font-weight:600;color:rgba(255,255,255,0.4);
-    border-bottom:1px solid rgba(255,255,255,0.05);
-    border-right:1px solid rgba(255,255,255,0.04);
-    text-align:center;
+  .pk-cmp-cell:last-child { border-right:none; }
+  .pk-cmp-cell:first-child { text-align:left; }
+  .pk-cmp-cell.head {
+    font-size:0.6rem; font-weight:800; letter-spacing:0.12em; text-transform:uppercase;
+    background:var(--pk-cream-2); color:var(--pk-ink-2);
   }
-  .pk-compare-cell:first-child { text-align:left; }
-  .pk-compare-cell:last-child { border-right:none; }
-  .pk-compare-cell.header {
-    font-size:0.62rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;
-    color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.02);
-  }
-  .pk-compare-cell.featured-col { color:var(--pk-coral);font-weight:700; }
-  .pk-compare-cell.gold-col { color:var(--pk-gold);font-weight:700; }
-  .pk-compare-cell.yes { color:#4ADE80; }
-  .pk-compare-cell.no  { color:rgba(255,255,255,0.15); }
-  .pk-compare-row-data:last-child .pk-compare-cell { border-bottom:none; }
+  .pk-cmp-cell.feat { color:var(--pk-rose-d); font-weight:700; background:rgba(212,133,122,0.04); }
+  .pk-cmp-cell.gld  { color:var(--pk-gold-d); font-weight:700; background:rgba(200,169,106,0.04); }
+  .pk-cmp-cell.yes  { color:#3D7A3D; font-weight:700; }
+  .pk-cmp-cell.no   { color:var(--pk-border); }
+  .pk-cmp-last .pk-cmp-cell { border-bottom:none; }
 
-  /* ── Trust Footer ── */
+  /* ── Trust footer ── */
   .pk-trust {
-    display:flex;gap:0;flex-wrap:wrap;
-    justify-content:center;
-    margin-top:clamp(40px,5vw,64px);
-    padding-top:clamp(32px,4vw,52px);
-    border-top:1px solid rgba(255,255,255,0.06);
-    position:relative;z-index:1;
+    display:flex; flex-wrap:wrap; justify-content:center;
+    margin-top:clamp(44px,6vw,72px);
+    padding-top:clamp(36px,5vw,56px);
+    border-top:1px solid var(--pk-border);
+    position:relative; z-index:1;
+    gap:0;
   }
   .pk-trust-item {
-    display:flex;align-items:center;gap:10px;
-    padding:0 clamp(20px,3vw,40px);
-    border-right:1px solid rgba(255,255,255,0.06);
-    font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.3);
+    display:flex; align-items:center; gap:10px;
+    padding:0 clamp(18px,2.5vw,36px);
+    border-right:1px solid var(--pk-border);
+    font-size:0.72rem; font-weight:600; color:var(--pk-muted);
     letter-spacing:0.02em;
+    transition:color 0.2s;
   }
   .pk-trust-item:last-child { border-right:none; }
-  .pk-trust-item:hover { color:rgba(255,255,255,0.6); }
+  .pk-trust-item:hover { color:var(--pk-ink); }
   .pk-trust-icon { font-size:1rem; }
 
   /* ── Responsive ── */
-  @media (max-width:1200px) { .pk-grid { grid-template-columns:repeat(2,1fr);gap:14px; } .pk-card.pk-featured { transform:none; } }
+  @media (max-width:1200px) {
+    .pk-grid { grid-template-columns:repeat(2,1fr); gap:16px; }
+    .pk-card.pk-featured { transform:none; }
+    .pk-card.pk-featured:hover { transform:translateY(-12px) scale(1.02); }
+  }
   @media (max-width:768px) {
-    .pk-grid { grid-template-columns:1fr;gap:14px; }
+    .pk-grid { grid-template-columns:1fr; gap:14px; }
     .pk-compare { display:none; }
-    .pk-trust { flex-direction:column;align-items:center;gap:14px; }
-    .pk-trust-item { border-right:none; }
-    .pk-qty-num { font-size:3.5rem; }
-    .pk-price { font-size:2.2rem; }
+    .pk-trust { flex-direction:column; align-items:center; gap:16px; }
+    .pk-trust-item { border-right:none; border-bottom:1px solid var(--pk-border); padding:0 0 16px; }
+    .pk-trust-item:last-child { border-bottom:none; padding-bottom:0; }
+    .pk-qty-num { font-size:3.8rem; }
+    .pk-price { font-size:2.4rem; }
   }
   @media (max-width:480px) {
-    .pk-grid { grid-template-columns:1fr; }
-    .pk-card { padding:28px 22px 32px; }
+    .pk-card { padding:28px 22px 32px; border-radius:22px; }
     .pk-trust { gap:12px; }
   }
 `;
 
 function injectPackStyles() {
   if (typeof document === "undefined") return;
-  if (!document.getElementById("nahid-pack-css")) {
+  if (!document.getElementById("nahid-pack-css-v2")) {
     const tag = document.createElement("style");
-    tag.id = "nahid-pack-css";
+    tag.id = "nahid-pack-css-v2";
     tag.textContent = PACK_CSS;
     document.head.appendChild(tag);
   }
 }
 
-/* ─── Pack data ──────────────────────────────────── */
+/* ─── Pack data ─────────────────────────────────── */
 const PACKS = [
   {
-    id: "p1",
-    name: "Pack 1",
-    qty: 4,
-    volume: "35ML × 4",
-    price: 160,
-    origPrice: null,
-    savings: null,
-    perUnit: "40 dh / flacon",
-    badge: null,
-    topBadge: null,
-    variant: "default",
-    btnVariant: "default",
+    id: "p1", name: "Pack 1", qty: 4, volume: "35ML × 4",
+    price: 160, origPrice: null, savings: null, perUnit: "40 dh / flacon",
+    topBadge: null, variant: "default", btnVariant: "default",
     perks: [
-      { icon: "✓", cls: "green", text: "Livraison gratuite 🚚" },
-      { icon: "✓", cls: "green", text: "Idéal pour débuter" },
-      { icon: "✓", cls: "green", text: "Paiement à la livraison" },
+      { icon: "✓", cls: "sage", text: "Livraison gratuite 🚚" },
+      { icon: "✓", cls: "sage", text: "Idéal pour débuter" },
+      { icon: "✓", cls: "sage", text: "Paiement à la livraison" },
     ],
   },
   {
-    id: "p2",
-    name: "Pack 2",
-    qty: 8,
-    volume: "35ML × 8",
-    price: 290,
-    origPrice: 320,
-    savings: "Économie 30 dh",
-    perUnit: "36 dh / flacon",
-    badge: { text: "Best Seller", cls: "coral" },
-    topBadge: { text: "🔥 Le plus populaire", cls: "coral" },
-    variant: "default",
-    btnVariant: "coral",
+    id: "p2", name: "Pack 2", qty: 8, volume: "35ML × 8",
+    price: 290, origPrice: 320, savings: "Économie 30 dh", perUnit: "36 dh / flacon",
+    topBadge: { text: "🔥 Le plus populaire", cls: "rose" }, variant: "default", btnVariant: "rose",
     perks: [
-      { icon: "✓", cls: "green", text: "Livraison gratuite 🚚" },
-      { icon: "✓", cls: "coral", text: "🔥 Best Seller" },
-      { icon: "✓", cls: "green", text: "Économie 30 dh" },
-      { icon: "✓", cls: "green", text: "Paiement à la livraison" },
+      { icon: "✓", cls: "sage", text: "Livraison gratuite 🚚" },
+      { icon: "✓", cls: "rose", text: "🔥 Best Seller" },
+      { icon: "✓", cls: "sage", text: "Économie 30 dh" },
+      { icon: "✓", cls: "sage", text: "Paiement à la livraison" },
     ],
   },
   {
-    id: "p3",
-    name: "Pack 3",
-    qty: 12,
-    volume: "35ML × 12",
-    price: 410,
-    origPrice: 480,
-    savings: "Économie 70 dh",
-    perUnit: "34 dh / flacon",
-    badge: { text: "Meilleur rapport", cls: "green" },
-    topBadge: { text: "⚡ Meilleur rapport", cls: "green" },
-    variant: "featured",
-    btnVariant: "coral",
+    id: "p3", name: "Pack 3", qty: 12, volume: "35ML × 12",
+    price: 410, origPrice: 480, savings: "Économie 70 dh", perUnit: "34 dh / flacon",
+    topBadge: { text: "⚡ Meilleur rapport", cls: "sage" }, variant: "featured", btnVariant: "rose",
     isFeatured: true,
     perks: [
-      { icon: "✓", cls: "green", text: "Livraison gratuite 🚚" },
-      { icon: "✓", cls: "coral", text: "⚡ Stock limité" },
-      { icon: "✓", cls: "green", text: "Économie 70 dh" },
-      { icon: "✓", cls: "green", text: "Prix par flacon le plus bas" },
-      { icon: "✓", cls: "green", text: "Paiement à la livraison" },
+      { icon: "✓", cls: "sage", text: "Livraison gratuite 🚚" },
+      { icon: "✓", cls: "rose", text: "⚡ Stock limité" },
+      { icon: "✓", cls: "sage", text: "Économie 70 dh" },
+      { icon: "✓", cls: "sage", text: "Prix / flacon le plus bas" },
+      { icon: "✓", cls: "sage", text: "Paiement à la livraison" },
     ],
   },
   {
-    id: "golden",
-    name: "Golden Offer",
-    qty: 6,
-    volume: "35ML × 6",
-    price: 210,
-    origPrice: 240,
-    savings: "Économie 30 dh",
-    perUnit: "35 dh / flacon",
-    badge: { text: "✦ Édition limitée", cls: "gold" },
-    topBadge: { text: "✦ Offre dorée", cls: "gold" },
-    variant: "golden",
-    btnVariant: "gold",
+    id: "golden", name: "Golden Offer", qty: 6, volume: "35ML × 6",
+    price: 210, origPrice: 240, savings: "Économie 30 dh", perUnit: "35 dh / flacon",
+    topBadge: { text: "✦ Offre dorée", cls: "gold" }, variant: "golden", btnVariant: "gold",
     perks: [
-      { icon: "✓", cls: "green", text: "Livraison gratuite 🚚" },
+      { icon: "✓", cls: "sage", text: "Livraison gratuite 🚚" },
       { icon: "✓", cls: "gold", text: "✦ Édition limitée" },
-      { icon: "✓", cls: "green", text: "Économie 30 dh" },
-      { icon: "✓", cls: "green", text: "Paiement à la livraison" },
+      { icon: "✓", cls: "sage", text: "Économie 30 dh" },
+      { icon: "✓", cls: "sage", text: "Paiement à la livraison" },
     ],
   },
 ];
 
 const COMPARE_ROWS = [
-  { label: "Nombre de flacons", p1: "4 ×", p2: "8 ×", p3: "12 ×", golden: "6 ×" },
+  { label: "Flacons", p1: "4 ×", p2: "8 ×", p3: "12 ×", golden: "6 ×" },
   { label: "Volume", p1: "35ML", p2: "35ML", p3: "35ML", golden: "35ML" },
-  { label: "Prix total", p1: "160 dh", p2: "290 dh", p3: "410 dh", golden: "210 dh", pFeat: "p3", pGold: "golden" },
-  { label: "Prix / flacon", p1: "40 dh", p2: "36 dh", p3: "34 dh", golden: "35 dh", featClass: true },
-  { label: "Livraison gratuite", p1: "yes", p2: "yes", p3: "yes", golden: "yes", isBool: true },
+  { label: "Prix total", p1: "160 dh", p2: "290 dh", p3: "410 dh", golden: "210 dh" },
+  { label: "Prix / flacon", p1: "40 dh", p2: "36 dh", p3: "34 dh", golden: "35 dh" },
+  { label: "Livraison", p1: "yes", p2: "yes", p3: "yes", golden: "yes", isBool: true },
   { label: "Économies", p1: "no", p2: "30 dh", p3: "70 dh", golden: "30 dh" },
 ];
 
-/* ─── PackOffersSection Component ───────────────── */
+/* ─── Component ─────────────────────────────────── */
 const PackOffersSection = ({ onSelectPack }) => {
   injectPackStyles();
   const [hoveredId, setHoveredId] = useState(null);
   const sectionRef = useRef(null);
 
-  /* AOS observer */
   useEffect(() => {
     const obs = new IntersectionObserver(
       entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add("pk-vis"); }),
-      { threshold: 0.08 }
+      { threshold: 0.07 }
     );
     if (sectionRef.current) {
       sectionRef.current.querySelectorAll(".pk-aos").forEach(el => obs.observe(el));
@@ -546,15 +575,14 @@ const PackOffersSection = ({ onSelectPack }) => {
 
   return (
     <section className="pk-section" ref={sectionRef}>
-      {/* Background */}
       <div className="pk-bg-orb pk-bg-orb-1" />
       <div className="pk-bg-orb pk-bg-orb-2" />
       <div className="pk-bg-orb pk-bg-orb-3" />
-      <div className="pk-grid-bg" />
+      <div className="pk-texture" />
 
       <div className="container">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <div className="pk-header">
           <div className="pk-eyebrow pk-aos">Nos offres exclusives</div>
           <h2 className="pk-title pk-aos">
@@ -570,7 +598,7 @@ const PackOffersSection = ({ onSelectPack }) => {
           </div>
         </div>
 
-        {/* ── Pack Cards ── */}
+        {/* Cards */}
         <div className="pk-grid">
           {PACKS.map((pack, i) => (
             <div
@@ -579,40 +607,32 @@ const PackOffersSection = ({ onSelectPack }) => {
               onMouseEnter={() => setHoveredId(pack.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
-              {/* Top badge */}
+              <div className="pk-card-sheen" />
+
               {pack.topBadge && (
                 <div className={`pk-top-badge ${pack.topBadge.cls}`}>
                   {pack.topBadge.text}
                 </div>
               )}
 
-              {/* Card tag */}
               <div className="pk-card-tag">
-                <span style={{
-                  width:"16px",height:"1px",display:"block",
-                  background: pack.variant === "golden" ? "rgba(201,169,110,0.4)" : pack.variant === "featured" ? "rgba(239,119,106,0.4)" : "rgba(255,255,255,0.12)"
-                }} />
+                <span className="pk-card-tag-line" />
                 {pack.name}
               </div>
 
-              {/* Quantity */}
               <div className="pk-qty-display">
                 <div className="pk-qty-num">{pack.qty}</div>
                 <div className="pk-qty-label">flacons</div>
               </div>
 
-              <div className="pk-volume-tag">
-                {pack.volume}
-              </div>
+              <div className="pk-volume-tag">{pack.volume}</div>
 
-              {/* Savings badge */}
               {pack.savings && (
-                <div className={`pk-savings-badge ${pack.variant === "golden" ? "gold" : pack.isFeatured ? "coral" : "green"}`}>
+                <div className={`pk-savings-badge ${pack.variant === "golden" ? "gold" : pack.isFeatured ? "rose" : "sage"}`}>
                   🎉 {pack.savings}
                 </div>
               )}
 
-              {/* Price */}
               <div className="pk-price-block">
                 {pack.origPrice && (
                   <div className="pk-price-original">{fmt(pack.origPrice)} dh</div>
@@ -623,7 +643,8 @@ const PackOffersSection = ({ onSelectPack }) => {
                 <div className="pk-price-per">≈ {pack.perUnit}</div>
               </div>
 
-              {/* Perks */}
+              <div className="pk-card-divider" />
+
               <div className="pk-perks">
                 {pack.perks.map((perk, pi) => (
                   <div key={pi} className={`pk-perk${pack.isFeatured ? " featured" : ""}`}>
@@ -637,60 +658,58 @@ const PackOffersSection = ({ onSelectPack }) => {
                 ))}
               </div>
 
-              {/* CTA */}
-              <a
-                href="#collection"
+              <button
                 className={`pk-btn ${pack.btnVariant}`}
-                onClick={() => onSelectPack?.(pack.id)}
+                onClick={() => onSelectPack?.(pack)}
               >
                 Choisir cette offre
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
-              </a>
+              </button>
             </div>
           ))}
         </div>
 
-        {/* ── Comparison Table (desktop) ── */}
+        {/* Compare table — desktop only */}
         <div className="pk-compare pk-aos">
           <div className="pk-compare-title">Comparatif des offres</div>
-          <div className="pk-compare-row pk-compare-head">
-            <div className="pk-compare-cell header">Offre</div>
-            <div className="pk-compare-cell header">Pack 1</div>
-            <div className="pk-compare-cell header">Pack 2</div>
-            <div className="pk-compare-cell header featured-col">Pack 3 ⚡</div>
-            <div className="pk-compare-cell header gold-col">Golden ✦</div>
+          <div className="pk-compare-grid">
+            {/* Header row */}
+            {["Offre","Pack 1","Pack 2","Pack 3 ⚡","Golden ✦"].map((h,i) => (
+              <div key={h} className={`pk-cmp-cell head${i===3?" feat":i===4?" gld":""}`}>{h}</div>
+            ))}
+            {/* Data rows */}
+            {COMPARE_ROWS.map((row, ri) => (
+              <div key={ri} style={{display:"contents"}} className={ri===COMPARE_ROWS.length-1?"pk-cmp-last":""}>
+                <div className="pk-cmp-cell" style={{textAlign:"left",color:"var(--pk-ink-2)",borderBottom:ri===COMPARE_ROWS.length-1?"none":"1px solid var(--pk-border)"}}>{row.label}</div>
+                {[
+                  {val:row.p1,extra:""},
+                  {val:row.p2,extra:""},
+                  {val:row.p3,extra:" feat"},
+                  {val:row.golden,extra:" gld"},
+                ].map(({val,extra},ci) => (
+                  <div
+                    key={ci}
+                    className={`pk-cmp-cell${extra}${row.isBool?(val==="yes"?" yes":" no"):""}`}
+                    style={{borderBottom:ri===COMPARE_ROWS.length-1?"none":"1px solid var(--pk-border)"}}
+                  >
+                    {row.isBool ? (val==="yes"?"✓":"—") : val==="no"?"—":val}
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
-          {COMPARE_ROWS.map((row, ri) => (
-            <div key={ri} className="pk-compare-row pk-compare-row-data">
-              <div className="pk-compare-cell" style={{textAlign:"left",color:"rgba(255,255,255,0.4)"}}>{row.label}</div>
-              {[
-                { val: row.p1, isPFeat: false, isGold: false },
-                { val: row.p2, isPFeat: false, isGold: false },
-                { val: row.p3, isPFeat: true,  isGold: false },
-                { val: row.golden, isPFeat: false, isGold: true  },
-              ].map(({ val, isPFeat, isGold }, ci) => (
-                <div
-                  key={ci}
-                  className={`pk-compare-cell${isPFeat ? " featured-col" : isGold ? " gold-col" : ""} ${row.isBool ? (val === "yes" ? "yes" : "no") : ""}`}
-                >
-                  {row.isBool ? (val === "yes" ? "✓" : "—") : val === "no" ? "—" : val}
-                </div>
-              ))}
-            </div>
-          ))}
         </div>
 
-        {/* ── Trust Footer ── */}
+        {/* Trust */}
         <div className="pk-trust pk-aos">
           {[
-            { icon: "🚚", text: "Livraison gratuite sur toutes les offres" },
-            { icon: "💳", text: "Paiement à la livraison" },
-            { icon: "↩️", text: "Retours gratuits 30 jours" },
-            { icon: "🇲🇦", text: "Livraison partout au Maroc" },
-            { icon: "⭐", text: "4.9/5 · 2 400 clients satisfaits" },
-          ].map(({ icon, text }) => (
+            {icon:"🚚",text:"Livraison gratuite incluse"},
+            {icon:"💳",text:"Paiement à la livraison"},
+            {icon:"🇲🇦",text:"Partout au Maroc"},
+            {icon:"⭐",text:"4.9/5 · 2 400 clients"},
+          ].map(({icon,text}) => (
             <div key={text} className="pk-trust-item">
               <span className="pk-trust-icon">{icon}</span>
               {text}

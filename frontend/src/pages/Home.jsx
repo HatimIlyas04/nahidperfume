@@ -1027,11 +1027,10 @@ export default function Home({ addToCart }) {
         <div className="container">
           <div className="trust-inner">
             {[
-              { icon: "🚚", title: "Livraison offerte", sub: "Dès 500 MAD" },
+              { icon: "🚚", title: "Livraison offerte", sub: "-" },
               { icon: "🧪", title: "Échantillon offert", sub: "Avec chaque commande" },
               { icon: "⭐", title: "4.9 / 5 · 2 400 avis", sub: "Clients satisfaits" },
               { icon: "🌿", title: "100% naturels", sub: "Sélectionnés à la source" },
-              { icon: "↩️", title: "Retours gratuits", sub: "30 jours sans questions" },
             ].map(({ icon, title, sub }) => (
               <div className="trust-item" key={title}>
                 <span className="trust-icon">{icon}</span>
@@ -1331,7 +1330,7 @@ export default function Home({ addToCart }) {
             </div>
             <div>
               <h4 className="footer-heading">Aide</h4>
-              {["Contact", "FAQ", "Livraison & Retours", "Suivi commande", "Mentions légales"].map(l => (
+              {["Contact", "FAQ", "Livraison", "Suivi commande", "Mentions légales"].map(l => (
                 <a key={l} href="#" className="footer-link">{l}</a>
               ))}
             </div>

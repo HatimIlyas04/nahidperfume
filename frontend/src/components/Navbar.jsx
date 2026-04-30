@@ -12,7 +12,6 @@ const ANN_ITEMS = [
   "✦ Livraison offerte dès 500 MAD",
   "✦ Échantillon gratuit avec chaque commande",
   "✦ Nouveauté — Collection Oud de Camboge",
-  "✦ Retours 100% gratuits sous 30 jours",
   "✦ Paiement sécurisé — CB · PayPal · Virement",
 ];
 
@@ -1074,7 +1073,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
           <div className="nb-m-section-label">Aide & Infos</div>
 
           {[
-            { label: "Livraison & Retours", to: "/livraison" },
+            { label: "Livraison ", to: "/livraison" },
             { label: "FAQ", to: "/faq" },
             { label: "Contact", to: "/contact" },
           ].map(({ label, to }) => (
