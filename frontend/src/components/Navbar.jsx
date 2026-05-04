@@ -1,1139 +1,883 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useWishlist } from "../context/WishlistContext";
 import {
   FiShoppingCart, FiUser, FiLogOut, FiSearch,
   FiMenu, FiX, FiGrid, FiBookOpen, FiHome, FiHeart,
-  FiChevronRight, FiInstagram, FiFacebook
+  FiChevronRight, FiInstagram, FiFacebook, FiChevronDown
 } from "react-icons/fi";
 import { FaCrown } from "react-icons/fa";
 import { RiTiktokLine } from "react-icons/ri";
 
+/* ─── Constants ─────────────────────────────────────────── */
 const ANN_ITEMS = [
-  "✦ Livraison offerte dès 500 MAD",
-  "✦ Échantillon gratuit avec chaque commande",
-  "✦ Nouveauté — Collection Oud de Camboge",
-  "✦ Paiement sécurisé — CB · PayPal · Virement",
+  "Livraison offerte dès 300 MAD",
+  "Échantillon gratuit avec chaque commande",
+  "Nouveauté — Collection Oud de Camboge",
+  "Paiement à la livraison — 100% sécurisé",
+  "4.9 / 5 · 2 400 clients satisfaits",
 ];
 
+const SHOP_ALL = [
+  { img:"https://images.unsplash.com/photo-1541643600914-78b084683601?w=80&q=80", title:"Tous les Parfums",  sub:"Toute notre collection · 78 fragrances", path:"/" },
+  { img:"https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=80&q=80", title:"Nahid Originals",  sub:"Créations exclusives de la maison",       path:"/originals" },
+  { img:"https://images.unsplash.com/photo-1588405748880-8d2be9e5c6c0?w=80&q=80", title:"Best-Sellers",     sub:"Les fragrances préférées de nos clients",  path:"/?category=Best-Sellers" },
+];
+const SHOP_GENDER = [
+  { img:"https://images.unsplash.com/photo-1594035910387-fea47794261f?w=80&q=80", title:"Femme",  sub:"32 fragrances florales & boisées", path:"/collection/femme" },
+  { img:"https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?w=80&q=80",   title:"Homme",  sub:"28 fragrances viriles & intenses", path:"/collection/homme" },
+  { img:"https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=80&q=80", title:"Unisex", sub:"18 fragrances sans frontières",    path:"/collection/unisex" },
+];
+const QUICK_SEARCHES = ["Oud", "Rose de Taif", "Ambre Gris", "Musc Blanc", "Iris", "Santal"];
+
+/* ─── CSS ────────────────────────────────────────────────── */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --c:   #EF776A;
+  --cd:  #d45f52;
+  --cl:  #fde8e6;
+  --cll: #fff4f3;
+  --w:   #ffffff;
+  --ink: #1a1a1a;
+  --g:   #6b6b6b;
+  --b:   rgba(0,0,0,0.08);
+  --sans:'DM Sans',sans-serif;
+  --ser: 'Cormorant Garamond',Georgia,serif;
+  --sp:  cubic-bezier(.34,1.56,.64,1);
+  --ex:  cubic-bezier(.16,1,.3,1);
+  --ea:  cubic-bezier(.25,.46,.45,.94);
+  --h:   70px;
+}
+
+/* ── Reset ── */
+.nb * { box-sizing: border-box; }
+
+/* ── Announcement ── */
+.nb-ann {
+  background: var(--c);
+  height: 34px; overflow: hidden; position: relative;
+  display: flex; align-items: center; flex-shrink: 0;
+}
+.nb-ann::before, .nb-ann::after {
+  content:''; position:absolute; top:0; bottom:0; width:70px;
+  z-index:2; pointer-events:none;
+}
+.nb-ann::before { left:0;  background:linear-gradient(90deg,var(--c),transparent); }
+.nb-ann::after  { right:0; background:linear-gradient(-90deg,var(--c),transparent); }
+.nb-ann-track {
+  display:flex; white-space:nowrap; align-items:center;
+  animation:annScroll 44s linear infinite;
+}
+.nb-ann-track:hover { animation-play-state:paused; }
+@keyframes annScroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+.nb-ann-item {
+  font-family:var(--sans); font-size:.59rem; font-weight:600;
+  letter-spacing:.18em; text-transform:uppercase; color:rgba(255,255,255,.88);
+  display:inline-flex; align-items:center; gap:7px; padding:0 32px; flex-shrink:0;
+}
+.nb-ann-star { color:rgba(255,255,255,.6); font-size:.4rem; }
+.nb-ann-sep  { width:1px; height:8px; background:rgba(255,255,255,.25); flex-shrink:0; }
+
+/* ── Root ── */
+.nb-root {
+  position:sticky; top:0; z-index:999;
+  background:var(--w);
+  border-bottom:1px solid var(--b);
+  font-family:var(--sans);
+  transition:box-shadow .3s var(--ea), background .3s;
+  width:100%;
+}
+.nb-root.scrolled {
+  background:rgba(255,255,255,.97);
+  backdrop-filter:blur(20px) saturate(1.5);
+  box-shadow:0 1px 0 var(--b), 0 4px 24px rgba(0,0,0,.06);
+}
+
+/* Progress */
+.nb-prog {
+  position:absolute; bottom:0; left:0; height:2px;
+  background:var(--c); transition:width .1s linear; z-index:10;
+}
+
+/* ── Bar ── */
+.nb-bar {
+  height:var(--h); width:100%; max-width:1400px; margin:0 auto;
+  padding:0 clamp(16px,4vw,64px);
+  display:flex; align-items:center; gap:8px;
+}
+
+/* ── Logo — image only ── */
+.nb-logo {
+  display:flex; align-items:center; text-decoration:none;
+  flex-shrink:0; margin-right:12px;
+}
+.nb-logo-img {
+  height:40px; width:auto; max-width:140px; object-fit:contain;
+  display:block; transition:opacity .2s, transform .3s var(--sp);
+}
+.nb-logo:hover .nb-logo-img { opacity:.85; transform:scale(1.02); }
+
+/* ── Pill nav ── */
+.nb-pills { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+
+.nb-pill {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:7px 16px; border-radius:999px;
+  border:1.5px solid var(--b);
+  background:transparent;
+  font-family:var(--sans); font-size:.74rem; font-weight:600;
+  letter-spacing:.03em; color:var(--ink);
+  cursor:pointer; text-decoration:none; white-space:nowrap;
+  transition:border-color .18s, color .18s, background .18s, transform .2s var(--sp);
+  line-height:1;
+}
+.nb-pill:hover {
+  border-color:var(--c); color:var(--c);
+  transform:translateY(-1px);
+}
+.nb-pill.pill-active {
+  background:var(--cll); border-color:var(--c); color:var(--c);
+}
+.nb-pill-chev {
+  opacity:.45; transition:transform .22s var(--sp), opacity .18s;
+}
+.nb-pill.pill-open .nb-pill-chev,
+.nb-pill:hover .nb-pill-chev { transform:rotate(180deg); opacity:.9; }
+
+/* accent pill */
+.nb-pill-accent {
+  background:var(--c); border-color:var(--c); color:var(--w);
+  box-shadow:0 3px 12px rgba(239,119,106,.3);
+}
+.nb-pill-accent:hover {
+  background:var(--cd); border-color:var(--cd); color:var(--w);
+  box-shadow:0 5px 18px rgba(239,119,106,.42);
+  transform:translateY(-2px);
+}
+.nb-accent-pulse {
+  width:6px; height:6px; border-radius:50%;
+  background:rgba(255,255,255,.7); flex-shrink:0;
+  animation:aPulse 2s ease infinite;
+}
+@keyframes aPulse {
+  0%,100%{transform:scale(1);opacity:.7}
+  50%{transform:scale(1.4);opacity:1}
+}
+
+/* spacer */
+.nb-sp { flex:1; }
+
+/* ── Search bar inline ── */
+.nb-s-wrap { position:relative; flex-shrink:0; }
+.nb-s-form {
+  display:flex; align-items:center; gap:8px;
+  height:40px; padding:0 6px 0 14px;
+  width:clamp(160px,20vw,240px);
+  border:1.5px solid var(--b); border-radius:999px;
+  background:#f9f9f9;
+  transition:border-color .22s, box-shadow .22s, width .35s var(--ex), background .22s;
+}
+.nb-s-form:focus-within {
+  border-color:var(--c); background:var(--w);
+  box-shadow:0 0 0 3px rgba(239,119,106,.12);
+  width:clamp(200px,24vw,300px);
+}
+.nb-s-form input {
+  flex:1; border:none; background:none; outline:none;
+  font-family:var(--sans); font-size:.83rem; color:var(--ink); min-width:0;
+}
+.nb-s-form input::placeholder { color:var(--g); }
+.nb-s-btn {
+  width:28px; height:28px; border-radius:50%; flex-shrink:0;
+  background:var(--c); border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; color:var(--w);
+  transition:background .18s, transform .2s var(--sp);
+}
+.nb-s-btn:hover { background:var(--cd); transform:scale(1.1); }
+.nb-s-icon { color:var(--g); opacity:.5; flex-shrink:0; }
+
+/* search dropdown */
+.nb-s-drop {
+  position:absolute; top:calc(100% + 10px); left:0; right:0; min-width:290px;
+  background:var(--w); border-radius:16px;
+  border:1px solid var(--b);
+  box-shadow:0 16px 56px rgba(0,0,0,.1);
+  padding:8px 0; z-index:400;
+  animation:dIn .2s var(--ex) both;
+}
+@keyframes dIn { from{opacity:0;transform:translateY(-6px) scale(.97)} to{opacity:1;transform:none} }
+.nb-s-drop-lbl {
+  font-size:.54rem; font-weight:800; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--g); padding:6px 14px 8px;
+}
+.nb-s-drop-item {
+  display:flex; align-items:center; gap:9px; padding:9px 14px;
+  border:none; background:none; width:100%; text-align:left;
+  font-family:var(--sans); font-size:.81rem; font-weight:500; color:var(--ink);
+  cursor:pointer; transition:background .13s, color .13s;
+}
+.nb-s-drop-item:hover { background:var(--cll); color:var(--c); }
+.nb-s-drop-icon { color:var(--g); opacity:.45; font-size:.68rem; }
+.nb-s-drop-div  { height:1px; background:var(--b); margin:4px 0; }
+.nb-s-res {
+  display:flex; align-items:center; gap:11px; padding:8px 14px;
+  border:none; background:none; width:100%; text-align:left;
+  font-family:var(--sans); cursor:pointer; transition:background .13s;
+}
+.nb-s-res:hover { background:var(--cll); }
+.nb-s-res-img {
+  width:36px; height:36px; border-radius:8px; object-fit:cover;
+  background:#f2f2f2; flex-shrink:0;
+}
+.nb-s-res-name { font-size:.79rem; font-weight:700; color:var(--ink); }
+.nb-s-res-cat  { font-size:.63rem; color:var(--g); margin-top:1px; }
+
+/* ── Right icons ── */
+.nb-right { display:flex; align-items:center; gap:1px; flex-shrink:0; margin-left:2px; }
+.nb-ic {
+  width:38px; height:38px; border-radius:50%; border:none; background:none;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--ink); cursor:pointer; text-decoration:none; position:relative; flex-shrink:0;
+  transition:background .18s, color .18s, transform .2s var(--sp);
+}
+.nb-ic:hover { background:var(--cll); color:var(--c); transform:translateY(-1px); }
+.nb-badge {
+  position:absolute; top:1px; right:1px; min-width:16px; height:16px;
+  border-radius:999px; background:var(--c); color:var(--w);
+  font-size:.52rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center; padding:0 3px;
+  border:2px solid var(--w); box-shadow:0 1px 5px rgba(239,119,106,.4);
+  animation:bPop .3s var(--sp) both;
+}
+@keyframes bPop { from{transform:scale(0)} to{transform:scale(1)} }
+.nb-div { width:1px; height:18px; background:var(--b); margin:0 4px; flex-shrink:0; }
+
+/* action pills */
+.nb-ap {
+  display:inline-flex; align-items:center; gap:5px; padding:7px 14px;
+  border-radius:999px; font-family:var(--sans); font-size:.67rem; font-weight:700;
+  letter-spacing:.06em; text-transform:uppercase; cursor:pointer; text-decoration:none;
+  white-space:nowrap; flex-shrink:0; transition:all .2s var(--ea); border:none; line-height:1;
+}
+.nb-ap-ghost {
+  background:none; border:1.5px solid var(--b); color:var(--ink);
+}
+.nb-ap-ghost:hover { border-color:var(--c); color:var(--c); transform:translateY(-1px); }
+.nb-ap-fill {
+  background:var(--c); color:var(--w);
+  box-shadow:0 2px 10px rgba(239,119,106,.3);
+}
+.nb-ap-fill:hover { background:var(--cd); transform:translateY(-1px); box-shadow:0 4px 16px rgba(239,119,106,.4); }
+
+/* ── Shop dropdown ── */
+.nb-shop-w { position:relative; }
+.nb-shop-d {
+  position:absolute; top:calc(100% + 14px); left:0;
+  width:340px; background:var(--w);
+  border-radius:18px; border:1px solid var(--b);
+  box-shadow:0 20px 60px rgba(0,0,0,.1);
+  overflow:hidden; z-index:300;
+  animation:dIn .25s var(--ex) both;
+}
+.nb-shop-d::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--c);
+}
+.nb-shop-lbl {
+  font-size:.54rem; font-weight:800; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--g); padding:14px 18px 7px;
+}
+.nb-shop-row {
+  display:flex; align-items:center; gap:12px; padding:9px 18px;
+  border:none; background:none; width:100%; text-align:left;
+  font-family:var(--sans); text-decoration:none; cursor:pointer;
+  transition:background .16s;
+}
+.nb-shop-row:hover { background:var(--cll); }
+.nb-shop-row:hover .nb-shop-arr { opacity:1; transform:translateX(3px); }
+.nb-shop-row:hover .nb-shop-img { transform:scale(1.06); }
+.nb-shop-img {
+  width:48px; height:48px; border-radius:10px; object-fit:cover;
+  background:#f2f2f2; flex-shrink:0; transition:transform .25s var(--sp);
+}
+.nb-shop-info { flex:1; min-width:0; }
+.nb-shop-ttl { font-size:.86rem; font-weight:700; color:var(--ink); display:block; letter-spacing:-.01em; }
+.nb-shop-sub { font-size:.62rem; color:var(--g); margin-top:1px; display:block; }
+.nb-shop-arr { color:var(--g); opacity:0; flex-shrink:0; transition:opacity .16s, transform .2s var(--sp); }
+.nb-shop-div { height:1px; background:#f0f0f0; margin:5px 0; }
+.nb-shop-foot {
+  padding:10px 18px 14px; display:flex; gap:7px;
+}
+.nb-shop-foot-btn {
+  flex:1; padding:10px; border-radius:999px;
+  font-family:var(--sans); font-size:.68rem; font-weight:700;
+  letter-spacing:.06em; text-transform:uppercase;
+  cursor:pointer; text-decoration:none; text-align:center;
+  border:none; transition:all .2s var(--ea);
+}
+.nb-sfoot-p { background:var(--c); color:var(--w); box-shadow:0 3px 12px rgba(239,119,106,.35); }
+.nb-sfoot-p:hover { background:var(--cd); transform:translateY(-1px); }
+.nb-sfoot-o { background:none; border:1.5px solid var(--b); color:var(--ink); }
+.nb-sfoot-o:hover { border-color:var(--c); color:var(--c); }
+
+/* ── Mobile ── */
+.nb-mob { display:none; align-items:center; gap:3px; }
+.nb-bk {
+  position:fixed; inset:0; background:rgba(0,0,0,.45);
+  backdrop-filter:blur(8px); z-index:1000; animation:fIn .22s ease;
+}
+@keyframes fIn { from{opacity:0} to{opacity:1} }
+.nb-dr {
+  position:fixed; top:0; right:0; width:340px; max-width:94vw;
+  height:100dvh; background:var(--w); z-index:1001;
+  display:flex; flex-direction:column;
+  transition:transform .4s cubic-bezier(.32,.72,0,1);
+  box-shadow:-20px 0 60px rgba(0,0,0,.12);
+}
+.nb-dr::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--c);
+}
+.nb-dr.open  { transform:translateX(0); }
+.nb-dr.close { transform:translateX(110%); }
+.nb-dr-head {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:18px 20px; border-bottom:1px solid var(--b); flex-shrink:0;
+  background:#fafafa;
+}
+.nb-dr-logo { display:flex; align-items:center; text-decoration:none; }
+.nb-dr-logo-img { height:34px; width:auto; object-fit:contain; }
+.nb-xbtn {
+  width:32px; height:32px; border-radius:50%;
+  border:1.5px solid var(--b); background:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; color:var(--g);
+  transition:background .18s, color .18s, transform .22s var(--sp), border-color .18s;
+}
+.nb-xbtn:hover { background:var(--c); color:var(--w); border-color:var(--c); transform:rotate(90deg); }
+.nb-dr-s {
+  margin:12px 16px; border-radius:10px; display:flex; align-items:center;
+  background:#f4f4f4; padding:0 12px; gap:9px; flex-shrink:0;
+  border:1.5px solid transparent; transition:border-color .2s, background .2s, box-shadow .2s;
+}
+.nb-dr-s:focus-within {
+  background:var(--w); border-color:var(--c);
+  box-shadow:0 0 0 3px rgba(239,119,106,.1);
+}
+.nb-dr-s input {
+  flex:1; border:none; background:none; font-family:var(--sans);
+  font-size:.83rem; color:var(--ink); padding:11px 0; outline:none;
+}
+.nb-dr-s input::placeholder { color:var(--g); }
+.nb-dr-body { flex:1; overflow-y:auto; padding:4px 0 12px; overscroll-behavior:contain; }
+.nb-dr-body::-webkit-scrollbar { width:3px; }
+.nb-dr-body::-webkit-scrollbar-thumb { background:#e0e0e0; border-radius:2px; }
+.nb-m-lbl {
+  font-size:.54rem; font-weight:800; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--g); padding:13px 20px 6px;
+  display:flex; align-items:center; gap:8px;
+}
+.nb-m-lbl::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--b),transparent); }
+.nb-m-lnk {
+  display:flex; align-items:center; gap:12px; padding:10px 20px;
+  font-size:.84rem; font-weight:600; text-decoration:none; color:var(--ink);
+  transition:background .14s, padding-left .18s var(--ea);
+  cursor:pointer; border:none; background:none; width:100%; text-align:left;
+  font-family:var(--sans);
+}
+.nb-m-lnk:hover { background:var(--cll); padding-left:28px; }
+.nb-m-lnk.act   { color:var(--c); }
+.nb-m-ico {
+  width:28px; height:28px; border-radius:8px; background:#f4f4f4;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--g); flex-shrink:0; transition:background .18s, color .18s;
+}
+.nb-m-lnk:hover .nb-m-ico { background:var(--cll); color:var(--c); }
+.nb-m-lnk.act   .nb-m-ico { color:var(--c); }
+.nb-m-txt  { flex:1; }
+.nb-m-chev { color:var(--g); opacity:.28; transition:opacity .14s, transform .14s; }
+.nb-m-lnk:hover .nb-m-chev { opacity:.65; transform:translateX(2px); }
+.nb-m-tag {
+  border-radius:999px; padding:2px 7px; font-size:.52rem; font-weight:800;
+  letter-spacing:.06em; line-height:1.5; flex-shrink:0;
+  background:var(--c); color:var(--w);
+}
+.nb-m-sub { padding:2px 20px 4px 52px; }
+.nb-m-sub-item {
+  display:flex; align-items:center; gap:8px; padding:8px 10px;
+  border-radius:8px; cursor:pointer; font-family:var(--sans);
+  font-size:.76rem; font-weight:500; color:var(--g);
+  transition:background .12s, color .12s; border:none; background:none; width:100%; text-align:left;
+}
+.nb-m-sub-item:hover { background:var(--cll); color:var(--c); }
+.nb-m-sub-dot { width:4px; height:4px; border-radius:50%; background:currentColor; opacity:.3; flex-shrink:0; }
+.nb-dr-foot {
+  border-top:1px solid var(--b); padding:14px 16px 18px;
+  flex-shrink:0; background:#fafafa;
+}
+.nb-dr-ftns { display:flex; gap:7px; margin-bottom:12px; }
+.nb-soc-row { display:flex; gap:6px; justify-content:center; }
+.nb-soc {
+  width:32px; height:32px; border-radius:50%;
+  border:1.5px solid var(--b); background:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; color:var(--g);
+  text-decoration:none; transition:background .18s, color .18s, border-color .18s, transform .2s var(--sp);
+}
+.nb-soc:hover { background:var(--c); color:var(--w); border-color:var(--c); transform:translateY(-2px); }
+.nb-soc-div { height:1px; background:var(--b); margin:10px 0; }
+.nb-legal { display:flex; gap:11px; justify-content:center; flex-wrap:wrap; }
+.nb-legal a { font-size:.6rem; color:var(--g); text-decoration:none; transition:color .18s; }
+.nb-legal a:hover { color:var(--c); }
+
+/* ── Responsive ── */
+@media(max-width:1060px){
+  .nb-pills  { display:none!important; }
+  .nb-s-wrap { display:none!important; }
+  .nb-right  { display:none!important; }
+  .nb-mob    { display:flex!important; }
+}
+@media(max-width:600px){
+  :root { --h:58px; }
+  .nb-logo-img { height:32px; }
+  .nb-ann { height:28px; }
+  .nb-ann-item { font-size:.56rem; padding:0 20px; }
+}
+@media(max-width:480px){ .nb-dr{ max-width:100vw; width:100%; } }
+`;
+
+function injectCSS() {
+  if (typeof document === "undefined") return;
+  if (!document.getElementById("nahid-nb-v5")) {
+    const s = document.createElement("style");
+    s.id = "nahid-nb-v5"; s.textContent = CSS;
+    document.head.appendChild(s);
+  }
+}
+
+/* ─── Component ─────────────────────────────────────────── */
 export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLoggedIn }) {
+  injectCSS();
   const navigate = useNavigate();
   const location = useLocation();
+  const { wishlist } = useWishlist();
+  const wishCount = wishlist.length;
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [progress, setProgress] = useState(0);
+  const [menuOpen,      setMenuOpen]      = useState(false);
+  const [scrolled,      setScrolled]      = useState(false);
+  const [shopOpen,      setShopOpen]      = useState(false);
+  const [mobileShop,    setMobileShop]    = useState(false);
+  const [query,         setQuery]         = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+  const [progress,      setProgress]      = useState(0);
+  const [liveResults,   setLiveResults]   = useState([]);
+  const [searching,     setSearching]     = useState(false);
+
+  const shopRef   = useRef(null);
   const searchRef = useRef(null);
-  const inputRef = useRef(null);
+  const token     = localStorage.getItem("adminToken");
+  const isAdmin   = !!token || isAdminLoggedIn;
 
-  const token = localStorage.getItem("adminToken");
-  const isAdmin = !!token || isAdminLoggedIn;
-  const isHome = location.pathname === "/";
-  
-  const heroMode = false;
-
+  /* Scroll progress */
   useEffect(() => {
-    const onScroll = () => {
-      setScrolled(window.scrollY > 30);
+    const fn = () => {
+      setScrolled(window.scrollY > 20);
       const el = document.documentElement;
       const max = el.scrollHeight - el.clientHeight;
       setProgress(max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0);
     };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    fn();
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  useEffect(() => {
-    setMenuOpen(false);
-    setSearchOpen(false);
-  }, [location]);
+  /* Close on route */
+  useEffect(() => { setMenuOpen(false); setShopOpen(false); setSearchFocused(false); }, [location]);
 
+  /* Click outside */
   useEffect(() => {
-    const fn = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
-        setSearchOpen(false);
-      }
+    const fn = e => {
+      if (shopRef.current && !shopRef.current.contains(e.target)) setShopOpen(false);
+      if (searchRef.current && !searchRef.current.contains(e.target)) setSearchFocused(false);
     };
     document.addEventListener("mousedown", fn);
     return () => document.removeEventListener("mousedown", fn);
   }, []);
 
+  /* Body lock */
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
+  /* Live search */
   useEffect(() => {
-    if (searchOpen && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
-  }, [searchOpen]);
+    if (!query || query.length < 2) { setLiveResults([]); return; }
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(query)}&limit=5`);
+        const data = await res.json();
+        setLiveResults(Array.isArray(data) ? data : (data.products || []));
+      } catch { setLiveResults([]); }
+      finally { setSearching(false); }
+    }, 280);
+    return () => clearTimeout(t);
+  }, [query]);
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     if (setIsAdminLoggedIn) setIsAdminLoggedIn(false);
-    navigate("/");
-    window.location.reload();
+    navigate("/"); window.location.reload();
   };
 
-  const scrollToCollection = (e) => {
+  const goCol = useCallback((e, cat, path) => {
     e?.preventDefault();
-    const el = document.getElementById("collection") || document.getElementById("products");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    } else {
-      navigate("/");
-      setTimeout(() => {
-        document.getElementById("collection")?.scrollIntoView({ behavior: "smooth" });
-      }, 120);
+    if (path) navigate(path);
+    else if (cat) navigate(`/?category=${encodeURIComponent(cat)}`);
+    else {
+      const el = document.getElementById("collection") || document.getElementById("products");
+      if (el && location.pathname === "/") el.scrollIntoView({ behavior: "smooth" });
+      else { navigate("/"); setTimeout(() => document.getElementById("collection")?.scrollIntoView({ behavior: "smooth" }), 120); }
     }
-    setMenuOpen(false);
+    setMenuOpen(false); setShopOpen(false);
+  }, [navigate, location]);
+
+  const handleSearch = (e, q) => {
+    e?.preventDefault();
+    const term = q || query;
+    if (!term.trim()) return;
+    navigate(`/?search=${encodeURIComponent(term.trim())}`);
+    setSearchFocused(false); setMenuOpen(false); setQuery(""); setLiveResults([]);
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (query.trim()) {
-      navigate(`/?search=${encodeURIComponent(query.trim())}`);
-      setSearchOpen(false);
-      setQuery("");
-    }
-  };
+  const isActive = link => link.exact
+    ? location.pathname === link.to
+    : location.pathname.startsWith(link.to) && link.to !== "/";
 
   const navLinks = [
-    { to: "/", label: "Accueil", icon: <FiHome size={13} />, exact: true },
-    { to: "/notre-histoire", label: "Notre Histoire", icon: <FiBookOpen size={13} />, exact: false },
-    { isAction: true, label: "Collection", icon: <FiGrid size={13} /> },
+    { to: "/",              label: "Accueil",       icon: <FiHome size={12} />,     exact: true  },
+    { to: "/notre-histoire", label: "Notre Histoire", icon: <FiBookOpen size={12} />, exact: false },
   ];
-
-  const isActive = (link) => {
-    if (link.isAction) return false;
-    if (link.exact) return location.pathname === link.to;
-    return location.pathname.startsWith(link.to) && link.to !== "/";
-  };
 
   const doubled = [...ANN_ITEMS, ...ANN_ITEMS];
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap');
-
-        :root {
-          --nb-ink: #0E0E0C;
-          --nb-cream: #FAF8F5;
-          --nb-sand: #EDE9E1;
-          --nb-coral: #C8956C;
-          --nb-coral-d: #B07A55;
-          --nb-gold: #C9A96E;
-          --nb-gold-l: #E8D5B0;
-          --nb-muted: #8A8680;
-          --nb-border: rgba(14,14,12,0.09);
-          --nb-serif: 'Cormorant Garamond', Georgia, serif;
-          --nb-sans: 'Jost', sans-serif;
-          --nb-ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-          --nb-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-          --nb-h: 72px;
-        }
-
-        .nb-ann {
-          background: linear-gradient(90deg, #0E0E0C 0%, #1a1814 50%, #0E0E0C 100%);
-          height: 36px;
-          display: flex;
-          align-items: center;
-          overflow: hidden;
-          position: relative;
-          flex-shrink: 0;
-        }
-        .nb-ann::before, .nb-ann::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          width: 80px;
-          z-index: 2;
-          pointer-events: none;
-        }
-        .nb-ann::before {
-          left: 0;
-          background: linear-gradient(90deg, #0E0E0C, transparent);
-        }
-        .nb-ann::after {
-          right: 0;
-          background: linear-gradient(-90deg, #0E0E0C, transparent);
-        }
-        .nb-ann-track {
-          display: flex;
-          white-space: nowrap;
-          animation: annScroll 36s linear infinite;
-          will-change: transform;
-          align-items: center;
-        }
-        .nb-ann-track:hover { animation-play-state: paused; }
-        @keyframes annScroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .nb-ann-item {
-          font-family: var(--nb-sans);
-          font-size: 0.64rem;
-          font-weight: 500;
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-          color: rgba(255,255,255,0.55);
-          display: inline-flex;
-          align-items: center;
-          padding: 0 36px;
-          flex-shrink: 0;
-          gap: 8px;
-        }
-        .nb-ann-item span.star {
-          color: var(--nb-gold);
-          font-size: 0.5rem;
-        }
-        .nb-ann-sep {
-          width: 1px;
-          height: 10px;
-          background: rgba(201,169,110,0.3);
-          flex-shrink: 0;
-        }
-
-        .nb-root {
-          position: sticky;
-          top: 0;
-          z-index: 999;
-          font-family: var(--nb-sans);
-          background: var(--nb-cream);
-          transition: box-shadow 0.4s var(--nb-ease), background 0.5s var(--nb-ease), border-color 0.4s var(--nb-ease);
-        }
-        .nb-root::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, var(--nb-gold-l), transparent);
-          opacity: 0.6;
-          transition: opacity 0.4s;
-        }
-        .nb-root.scrolled {
-          background: rgba(250,248,245,0.96);
-          backdrop-filter: blur(24px) saturate(1.4);
-          box-shadow: 0 1px 0 rgba(201,169,110,0.15), 0 8px 32px rgba(14,14,12,0.07), 0 2px 8px rgba(14,14,12,0.04);
-        }
-        .nb-root.scrolled::after { opacity: 0.9; }
-        
-        .nb-root.hero-mode { background: var(--nb-cream) !important; }
-        .nb-root.hero-mode::after { opacity: 0.6 !important; }
-        
-        .nb-logo-name { color: var(--nb-ink) !important; }
-        .nb-logo-sub { color: var(--nb-muted) !important; }
-        .nb-link { color: var(--nb-muted) !important; }
-        .nb-link:hover { color: var(--nb-ink) !important; background: var(--nb-sand) !important; }
-        .nb-link.active { color: var(--nb-ink) !important; }
-        .nb-icon-btn { color: var(--nb-ink) !important; }
-        .nb-icon-btn:hover { color: var(--nb-coral) !important; background: var(--nb-sand) !important; }
-        .nb-pill-ghost { color: var(--nb-ink) !important; border-color: var(--nb-border) !important; }
-        .nb-pill-ghost:hover { color: var(--nb-gold) !important; border-color: var(--nb-gold) !important; }
-
-        .nb-progress {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          height: 2px;
-          background: linear-gradient(90deg, var(--nb-gold), var(--nb-coral), var(--nb-gold));
-          background-size: 200% 100%;
-          animation: progressShimmer 3s linear infinite;
-          transition: width 0.1s linear;
-          z-index: 10;
-        }
-        @keyframes progressShimmer {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
-
-        .nb-bar {
-          height: var(--nb-h);
-          max-width: 1480px;
-          margin: 0 auto;
-          padding: 0 clamp(18px, 4vw, 72px);
-          display: grid;
-          grid-template-columns: auto 1fr auto;
-          align-items: center;
-          gap: 24px;
-        }
-
-        /* ===== NOUVEAU STYLE LOGO AVEC IMAGE ===== */
-        .nb-logo {
-          display: flex;
-          align-items: center;
-          gap: 13px;
-          text-decoration: none;
-          flex-shrink: 0;
-        }
-        .nb-logo-img {
-          height: 42px;
-          width: auto;
-          max-width: 140px;
-          object-fit: contain;
-          transition: transform 0.3s var(--nb-spring);
-        }
-        .nb-logo:hover .nb-logo-img {
-          transform: scale(1.02);
-        }
-        .nb-logo-text {
-          display: flex;
-          flex-direction: column;
-          line-height: 1.15;
-        }
-        .nb-logo-name {
-          font-family: var(--nb-serif);
-          font-size: 1.12rem;
-          font-weight: 600;
-          color: var(--nb-ink);
-          letter-spacing: 0.01em;
-        }
-        .nb-logo-sub {
-          font-size: 0.57rem;
-          font-weight: 500;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          color: var(--nb-muted);
-          margin-top: 3px;
-        }
-        @media (max-width: 640px) {
-          .nb-logo-img {
-            height: 32px;
-          }
-          .nb-logo-sub {
-            display: none;
-          }
-        }
-
-        .nb-links {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 2px;
-        }
-        .nb-link {
-          position: relative;
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          padding: 9px 18px;
-          font-size: 0.72rem;
-          font-weight: 500;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          text-decoration: none;
-          color: var(--nb-muted);
-          border-radius: 999px;
-          transition: color 0.25s var(--nb-ease), background 0.25s var(--nb-ease);
-          white-space: nowrap;
-        }
-        .nb-link svg { transition: transform 0.25s var(--nb-spring), opacity 0.2s; opacity: 0.5; flex-shrink: 0; }
-        .nb-link:hover { color: var(--nb-ink); background: var(--nb-sand); }
-        .nb-link:hover svg { opacity: 1; transform: translateY(-1px); }
-        .nb-link.active { color: var(--nb-ink); font-weight: 600; }
-        .nb-link.active::after {
-          content: '';
-          position: absolute;
-          bottom: 5px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 20px;
-          height: 1.5px;
-          background: linear-gradient(90deg, var(--nb-gold), var(--nb-coral));
-          border-radius: 999px;
-        }
-        .nb-link.active svg { opacity: 1; color: var(--nb-gold); }
-
-        .nb-actions {
-          display: flex;
-          align-items: center;
-          gap: 3px;
-          flex-shrink: 0;
-        }
-        .nb-icon-btn {
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          border: none;
-          background: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--nb-ink);
-          cursor: pointer;
-          transition: background 0.22s, color 0.22s, transform 0.25s var(--nb-spring);
-          position: relative;
-          flex-shrink: 0;
-          text-decoration: none;
-        }
-        .nb-icon-btn:hover {
-          background: var(--nb-sand);
-          color: var(--nb-coral);
-          transform: translateY(-2px);
-        }
-        .nb-icon-btn:active { transform: scale(0.94); }
-
-        .nb-badge {
-          position: absolute;
-          top: 2px;
-          right: 2px;
-          min-width: 17px;
-          height: 17px;
-          background: linear-gradient(135deg, var(--nb-coral), #b07a55);
-          color: white;
-          font-size: 0.55rem;
-          font-weight: 700;
-          border-radius: 999px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0 4px;
-          line-height: 1;
-          border: 2px solid var(--nb-cream);
-          box-shadow: 0 2px 8px rgba(200,149,108,0.4);
-        }
-
-        .nb-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          padding: 9px 20px;
-          border-radius: 999px;
-          font-size: 0.7rem;
-          font-weight: 600;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          text-decoration: none;
-          cursor: pointer;
-          transition: all 0.25s var(--nb-ease);
-          white-space: nowrap;
-          flex-shrink: 0;
-          font-family: var(--nb-sans);
-          line-height: 1;
-          border: none;
-        }
-        .nb-pill-gold {
-          background: linear-gradient(135deg, var(--nb-gold), var(--nb-coral));
-          color: white;
-          box-shadow: 0 4px 16px rgba(201,169,110,0.25);
-        }
-        .nb-pill-gold:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 28px rgba(201,169,110,0.38);
-          filter: brightness(1.05);
-        }
-        .nb-pill-ghost {
-          background: transparent;
-          color: var(--nb-ink);
-          border: 1.5px solid var(--nb-border);
-        }
-        .nb-pill-ghost:hover {
-          border-color: var(--nb-gold);
-          color: var(--nb-gold);
-          transform: translateY(-2px);
-          background: rgba(201,169,110,0.05);
-        }
-
-        .nb-vline {
-          width: 1px;
-          height: 22px;
-          background: var(--nb-border);
-          margin: 0 6px;
-          flex-shrink: 0;
-          transition: background 0.3s;
-        }
-
-        .nb-search-wrap { position: relative; }
-        .nb-search-box {
-          position: absolute;
-          top: calc(100% + 14px);
-          right: -14px;
-          width: 320px;
-          background: white;
-          border-radius: 20px;
-          box-shadow: 0 24px 64px rgba(14,14,12,0.12), 0 0 0 1px rgba(201,169,110,0.1), inset 0 1px 0 rgba(255,255,255,0.8);
-          padding: 10px;
-          z-index: 300;
-          transform-origin: top right;
-          animation: searchIn 0.25s var(--nb-spring);
-        }
-        @keyframes searchIn {
-          0% { opacity: 0; transform: scale(0.88) translateY(-12px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .nb-search-inner {
-          display: flex;
-          align-items: center;
-          background: var(--nb-sand);
-          border-radius: 12px;
-          padding: 0 14px;
-          gap: 10px;
-          transition: box-shadow 0.22s, background 0.22s;
-        }
-        .nb-search-inner.focused {
-          background: white;
-          box-shadow: 0 0 0 2px var(--nb-gold), 0 4px 16px rgba(201,169,110,0.15);
-        }
-        .nb-search-inner input {
-          flex: 1;
-          border: none;
-          background: none;
-          font-family: var(--nb-sans);
-          font-size: 0.86rem;
-          color: var(--nb-ink);
-          padding: 13px 0;
-          outline: none;
-        }
-        .nb-search-inner input::placeholder { color: var(--nb-muted); }
-        .nb-search-submit {
-          background: none;
-          border: none;
-          color: var(--nb-muted);
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          padding: 4px;
-          transition: color 0.2s, transform 0.2s var(--nb-spring);
-          border-radius: 8px;
-        }
-        .nb-search-submit:hover { color: var(--nb-coral); transform: scale(1.15); }
-        .nb-search-hint {
-          font-family: var(--nb-sans);
-          font-size: 0.62rem;
-          letter-spacing: 0.1em;
-          color: var(--nb-muted);
-          padding: 8px 14px 2px;
-          text-transform: uppercase;
-        }
-
-        .nb-mobile-actions { display: none; align-items: center; gap: 2px; }
-
-        .nb-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(14,14,12,0.55);
-          backdrop-filter: blur(10px) saturate(0.8);
-          z-index: 1000;
-          animation: bkIn 0.3s ease;
-        }
-        @keyframes bkIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .nb-drawer {
-          position: fixed;
-          top: 0;
-          right: 0;
-          width: 360px;
-          max-width: 95vw;
-          height: 100dvh;
-          background: #FDFBF8;
-          z-index: 1001;
-          display: flex;
-          flex-direction: column;
-          transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
-          box-shadow: -32px 0 80px rgba(14,14,12,0.16), -1px 0 0 rgba(201,169,110,0.1);
-        }
-        .nb-drawer.open { transform: translateX(0); }
-        .nb-drawer.close { transform: translateX(110%); }
-
-        .nb-drawer::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: linear-gradient(90deg, transparent, var(--nb-gold), var(--nb-coral), var(--nb-gold), transparent);
-        }
-
-        .nb-drawer-head {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 22px 24px 20px;
-          border-bottom: 1px solid var(--nb-border);
-          flex-shrink: 0;
-          background: white;
-        }
-        .nb-drawer-logo { display: flex; align-items: center; gap: 11px; text-decoration: none; }
-        .nb-drawer-gem {
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          background: var(--nb-ink);
-          border: 1px solid rgba(201,169,110,0.2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: var(--nb-serif);
-          font-size: 1.1rem;
-          font-weight: 600;
-          color: white;
-          flex-shrink: 0;
-        }
-        .nb-drawer-logo-text { display: flex; flex-direction: column; line-height: 1.1; }
-        .nb-drawer-logo-name {
-          font-family: var(--nb-serif);
-          font-size: 1.02rem;
-          font-weight: 600;
-          color: var(--nb-ink);
-        }
-        .nb-drawer-logo-sub {
-          font-size: 0.54rem;
-          font-weight: 500;
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-          color: var(--nb-muted);
-          margin-top: 3px;
-        }
-        .nb-close-btn {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 1.5px solid var(--nb-border);
-          background: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--nb-muted);
-          transition: background 0.2s, color 0.2s, transform 0.25s var(--nb-spring), border-color 0.2s;
-          flex-shrink: 0;
-        }
-        .nb-close-btn:hover {
-          background: var(--nb-ink);
-          color: white;
-          border-color: var(--nb-ink);
-          transform: rotate(90deg);
-        }
-
-        .nb-drawer-search {
-          margin: 16px 20px;
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          background: var(--nb-sand);
-          padding: 0 16px;
-          gap: 10px;
-          flex-shrink: 0;
-          transition: box-shadow 0.22s, background 0.22s;
-        }
-        .nb-drawer-search:focus-within {
-          background: white;
-          box-shadow: 0 0 0 2px var(--nb-gold), 0 4px 16px rgba(201,169,110,0.12);
-        }
-        .nb-drawer-search input {
-          flex: 1;
-          border: none;
-          background: none;
-          font-family: var(--nb-sans);
-          font-size: 0.85rem;
-          color: var(--nb-ink);
-          padding: 13px 0;
-          outline: none;
-        }
-        .nb-drawer-search input::placeholder { color: var(--nb-muted); }
-
-        .nb-drawer-body {
-          flex: 1;
-          overflow-y: auto;
-          padding: 6px 0 16px;
-          overscroll-behavior: contain;
-        }
-        .nb-drawer-body::-webkit-scrollbar { width: 4px; }
-        .nb-drawer-body::-webkit-scrollbar-track { background: transparent; }
-        .nb-drawer-body::-webkit-scrollbar-thumb { background: var(--nb-sand); border-radius: 2px; }
-
-        .nb-m-section-label {
-          font-size: 0.58rem;
-          font-weight: 700;
-          letter-spacing: 0.28em;
-          text-transform: uppercase;
-          color: var(--nb-muted);
-          padding: 16px 24px 6px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .nb-m-section-label::after {
-          content: '';
-          flex: 1;
-          height: 1px;
-          background: linear-gradient(90deg, var(--nb-border), transparent);
-        }
-
-        .nb-m-link {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          padding: 13px 24px;
-          font-size: 0.875rem;
-          font-weight: 500;
-          text-decoration: none;
-          color: var(--nb-ink);
-          letter-spacing: 0.025em;
-          transition: background 0.18s, padding-left 0.22s var(--nb-ease);
-          cursor: pointer;
-          border: none;
-          background: none;
-          width: 100%;
-          text-align: left;
-          font-family: var(--nb-sans);
-        }
-        .nb-m-link:hover { background: var(--nb-sand); padding-left: 32px; }
-        .nb-m-link.active { color: var(--nb-coral); }
-        .nb-m-link.active .nb-m-icon { color: var(--nb-coral); }
-        .nb-m-icon {
-          width: 32px;
-          height: 32px;
-          border-radius: 9px;
-          background: var(--nb-sand);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--nb-muted);
-          flex-shrink: 0;
-          transition: background 0.2s, color 0.2s;
-        }
-        .nb-m-link:hover .nb-m-icon { background: white; color: var(--nb-coral); }
-        .nb-m-link-text { flex: 1; }
-        .nb-m-chevron { color: var(--nb-muted); opacity: 0.4; transition: opacity 0.18s, transform 0.18s; }
-        .nb-m-link:hover .nb-m-chevron { opacity: 0.7; transform: translateX(3px); }
-        .nb-m-tag {
-          background: linear-gradient(135deg, var(--nb-gold), var(--nb-coral));
-          color: white;
-          font-size: 0.58rem;
-          font-weight: 700;
-          letter-spacing: 0.06em;
-          border-radius: 999px;
-          padding: 2px 8px;
-          line-height: 1.5;
-          flex-shrink: 0;
-        }
-
-        .nb-drawer-foot {
-          border-top: 1px solid var(--nb-border);
-          padding: 18px 20px 22px;
-          flex-shrink: 0;
-          background: white;
-        }
-        .nb-drawer-foot-cta { display: flex; gap: 10px; margin-bottom: 16px; }
-        .nb-social-row {
-          display: flex;
-          gap: 8px;
-          justify-content: center;
-        }
-        .nb-social-btn {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 1.5px solid var(--nb-border);
-          background: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--nb-muted);
-          text-decoration: none;
-          transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.25s var(--nb-spring);
-        }
-        .nb-social-btn:hover {
-          background: var(--nb-ink);
-          color: white;
-          border-color: var(--nb-ink);
-          transform: translateY(-3px);
-        }
-        .nb-social-divider {
-          height: 1px;
-          background: var(--nb-border);
-          margin: 14px 0;
-        }
-        .nb-foot-legal {
-          display: flex;
-          gap: 14px;
-          justify-content: center;
-          flex-wrap: wrap;
-        }
-        .nb-foot-legal a {
-          font-size: 0.65rem;
-          color: var(--nb-muted);
-          text-decoration: none;
-          letter-spacing: 0.05em;
-          transition: color 0.2s;
-        }
-        .nb-foot-legal a:hover { color: var(--nb-coral); }
-
-        @media (max-width: 960px) {
-          .nb-links { display: none !important; }
-          .nb-actions { display: none !important; }
-          .nb-mobile-actions { display: flex !important; }
-          .nb-bar {
-            grid-template-columns: auto auto;
-            justify-content: space-between;
-            gap: 0;
-          }
-        }
-        @media (max-width: 640px) {
-          :root { --nb-h: 64px; }
-          .nb-logo-sub { display: none; }
-          .nb-ann { height: 32px; }
-          .nb-ann-item { font-size: 0.6rem; padding: 0 24px; }
-        }
-        @media (max-width: 480px) {
-          .nb-drawer { max-width: 100vw; width: 100%; }
-        }
-        @media (max-width: 360px) {
-          .nb-logo-text { display: none; }
-        }
-      `}</style>
-
-      <div className="nb-ann" aria-label="Informations promotionnelles">
+      {/* Announcement */}
+      <div className="nb-ann">
         <div className="nb-ann-track" aria-hidden="true">
           {doubled.map((text, i) => (
             <span className="nb-ann-item" key={i}>
               {i > 0 && <span className="nb-ann-sep" />}
-              <span className="star">✦</span>
-              {text.replace("✦ ", "")}
+              <span className="nb-ann-star">✦</span>
+              {text}
             </span>
           ))}
         </div>
       </div>
 
-      <nav
-        className={["nb-root", scrolled ? "scrolled" : "", heroMode ? "hero-mode" : ""].filter(Boolean).join(" ")}
-        role="navigation"
-        aria-label="Navigation principale"
-      >
-        <div className="nb-progress" style={{ width: `${progress}%` }} aria-hidden="true" />
+      {/* Nav */}
+      <nav className={`nb-root${scrolled ? " scrolled" : ""}`} role="navigation">
+        <div className="nb-prog" style={{ width: `${progress}%` }} />
 
         <div className="nb-bar">
-          {/* ===== NOUVEAU LOGO AVEC IMAGE ===== */}
-          <Link to="/" className="nb-logo" aria-label="Nahid Perfume — Retour à l'accueil">
-            <img 
-              src="/nahid.png" 
-              alt="Nahid Perfume" 
+
+          {/* Logo — image only */}
+          <Link to="/" className="nb-logo" aria-label="Nahid Perfume">
+            <img
+              src="/nahid.png"
+              alt="Nahid Perfume"
               className="nb-logo-img"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = "https://placehold.co/120x40/EF776A/white?text=Nahid";
-              }}
+              onError={e => { e.currentTarget.style.display = "none"; }}
             />
           </Link>
 
-          <div className="nb-links" role="menubar">
-            {navLinks.map((link, i) =>
-              link.isAction ? (
-                <a
-                  key={i}
-                  href="#collection"
-                  onClick={scrollToCollection}
-                  className="nb-link"
-                  role="menuitem"
-                >
-                  {link.icon} {link.label}
-                </a>
-              ) : (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`nb-link${isActive(link) ? " active" : ""}`}
-                  role="menuitem"
-                  aria-current={isActive(link) ? "page" : undefined}
-                >
-                  {link.icon} {link.label}
-                </Link>
-              )
-            )}
-          </div>
+          {/* Pills */}
+          <div className="nb-pills">
+            {navLinks.map(link => (
+              <Link key={link.to} to={link.to}
+                className={`nb-pill${isActive(link) ? " pill-active" : ""}`}
+                aria-current={isActive(link) ? "page" : undefined}>
+                {link.label}
+              </Link>
+            ))}
 
-          <div className="nb-actions">
-            <div className="nb-search-wrap" ref={searchRef}>
+            {/* Shop dropdown */}
+            <div className="nb-shop-w" ref={shopRef}>
               <button
-                className="nb-icon-btn"
-                onClick={() => setSearchOpen((v) => !v)}
-                aria-label="Rechercher"
-                aria-expanded={searchOpen}
+                className={`nb-pill${shopOpen ? " pill-open" : ""}`}
+                onClick={() => setShopOpen(v => !v)}
+                aria-expanded={shopOpen}
               >
-                <FiSearch size={16} />
+                Parfums
+                <FiChevronDown size={12} className="nb-pill-chev" />
               </button>
-              {searchOpen && (
-                <div className="nb-search-box" role="dialog" aria-label="Recherche">
-                  <p className="nb-search-hint">Rechercher</p>
-                  <form
-                    onSubmit={handleSearch}
-                    className={`nb-search-inner${searchFocused ? " focused" : ""}`}
-                  >
-                    <FiSearch size={14} style={{ color: "var(--nb-muted)", flexShrink: 0 }} />
-                    <input
-                      ref={inputRef}
-                      type="search"
-                      placeholder="Rechercher un parfum…"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      onFocus={() => setSearchFocused(true)}
-                      onBlur={() => setSearchFocused(false)}
-                      aria-label="Terme de recherche"
-                    />
-                    <button type="submit" className="nb-search-submit" aria-label="Lancer la recherche">
-                      <FiChevronRight size={16} />
+
+              {shopOpen && (
+                <div className="nb-shop-d">
+                  <div className="nb-shop-lbl">Shop</div>
+                  {SHOP_ALL.map((item, i) => (
+                    <button key={i} className="nb-shop-row" onClick={e => goCol(e, null, item.path)}>
+                      <img className="nb-shop-img" src={item.img} alt={item.title} loading="lazy" />
+                      <div className="nb-shop-info">
+                        <span className="nb-shop-ttl">{item.title}</span>
+                        <span className="nb-shop-sub">{item.sub}</span>
+                      </div>
+                      <FiChevronRight size={13} className="nb-shop-arr" />
                     </button>
-                  </form>
+                  ))}
+
+                  <div className="nb-shop-div" />
+                  <div className="nb-shop-lbl">Shop par genre</div>
+                  {SHOP_GENDER.map((item, i) => (
+                    <button key={i} className="nb-shop-row" onClick={e => goCol(e, null, item.path)}>
+                      <img className="nb-shop-img" src={item.img} alt={item.title} loading="lazy" />
+                      <div className="nb-shop-info">
+                        <span className="nb-shop-ttl">{item.title}</span>
+                        <span className="nb-shop-sub">{item.sub}</span>
+                      </div>
+                      <FiChevronRight size={13} className="nb-shop-arr" />
+                    </button>
+                  ))}
+
+                  <div className="nb-shop-foot">
+                    <button className="nb-shop-foot-btn nb-sfoot-p" onClick={e => goCol(e, null, null)}>
+                      Voir tout
+                    </button>
+                    <Link to="/notre-histoire" className="nb-shop-foot-btn nb-sfoot-o"
+                      onClick={() => setShopOpen(false)}>
+                      Notre histoire
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
 
-            <Link to="/wishlist" className="nb-icon-btn" aria-label="Liste de souhaits">
-              <FiHeart size={16} />
-            </Link>
+            {/* Coffrets → redirige vers /originals?category=Coffrets */}
+            <button className="nb-pill nb-pill-accent" onClick={e => goCol(e, "Coffrets", "/originals?category=Coffrets")}>
+              <span className="nb-accent-pulse" />
+              Originals
+            </button>
+          </div>
 
-            <div className="nb-vline" aria-hidden="true" />
+          <div className="nb-sp" />
 
+          {/* Inline search */}
+          <div className="nb-s-wrap" ref={searchRef}>
+            <form className="nb-s-form" onSubmit={handleSearch}>
+              <FiSearch size={13} className="nb-s-icon" />
+              <input
+                type="search" placeholder="Rechercher…" value={query}
+                onChange={e => setQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                autoComplete="off" aria-label="Recherche"
+              />
+              <button type="submit" className="nb-s-btn"><FiSearch size={12} /></button>
+            </form>
+
+            {searchFocused && (
+              <div className="nb-s-drop">
+                {query.length === 0 && (
+                  <>
+                    <div className="nb-s-drop-lbl">Suggestions</div>
+                    {QUICK_SEARCHES.map(s => (
+                      <button key={s} className="nb-s-drop-item" onClick={e => handleSearch(e, s)}>
+                        <span className="nb-s-drop-icon">🔍</span>{s}
+                      </button>
+                    ))}
+                  </>
+                )}
+                {query.length > 0 && searching && (
+                  <div style={{ padding: "13px 14px", fontSize: ".77rem", color: "var(--g)", textAlign: "center" }}>
+                    Recherche en cours…
+                  </div>
+                )}
+                {query.length > 0 && !searching && liveResults.length > 0 && (
+                  <>
+                    <div className="nb-s-drop-lbl">Résultats</div>
+                    {liveResults.map(p => (
+                      <button key={p.id} className="nb-s-res"
+                        onClick={() => { navigate(`/product/${p.id}`); setSearchFocused(false); setQuery(""); }}>
+                        <img className="nb-s-res-img" src={p.image_url} alt={p.name} loading="lazy" />
+                        <div>
+                          <div className="nb-s-res-name">{p.name}</div>
+                          <div className="nb-s-res-cat">{p.category} · {p.price} MAD</div>
+                        </div>
+                      </button>
+                    ))}
+                    <div className="nb-s-drop-div" />
+                    <button className="nb-s-drop-item" onClick={e => handleSearch(e, query)}>
+                      <span className="nb-s-drop-icon">→</span>
+                      Tous les résultats pour « {query} »
+                    </button>
+                  </>
+                )}
+                {query.length > 0 && !searching && liveResults.length === 0 && (
+                  <div style={{ padding: "13px 14px", fontSize: ".77rem", color: "var(--g)", textAlign: "center" }}>
+                    Aucun résultat pour « {query} »
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right icons */}
+          <div className="nb-right">
             {isAdmin ? (
               <>
-                <Link
-                  to="/admin"
-                  className="nb-pill nb-pill-gold"
-                  style={{ padding: "8px 16px", fontSize: "0.67rem" }}
-                >
-                  <FaCrown size={10} /> Dashboard
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="nb-pill nb-pill-ghost"
-                  style={{ padding: "8px 15px", fontSize: "0.67rem" }}
-                >
-                  <FiLogOut size={11} /> Déconnexion
-                </button>
+                <Link to="/admin" className="nb-ap nb-ap-fill"><FaCrown size={10} /> Dashboard</Link>
+                <button onClick={handleLogout} className="nb-ap nb-ap-ghost"><FiLogOut size={11} /> Déco</button>
               </>
             ) : (
-              <Link
-                to="/admin"
-                className="nb-pill nb-pill-ghost"
-                style={{ padding: "8px 16px", fontSize: "0.7rem" }}
-              >
-                <FiUser size={12} /> Espace Pro
-              </Link>
+              <Link to="/admin" className="nb-ap nb-ap-ghost"><FiUser size={11} /> Espace Pro</Link>
             )}
-
-            <div className="nb-vline" aria-hidden="true" />
-
-            <Link
-              to="/cart"
-              className="nb-icon-btn"
-              aria-label={`Panier — ${cartCount} article${cartCount !== 1 ? "s" : ""}`}
-            >
+            <div className="nb-div" />
+            <Link to="/wishlist" className="nb-ic" aria-label="Favoris">
+              <FiHeart size={17} />
+              {wishCount > 0 && <span className="nb-badge">{wishCount > 99 ? "99+" : wishCount}</span>}
+            </Link>
+            <Link to="/cart" className="nb-ic" aria-label="Panier">
               <FiShoppingCart size={17} />
-              {cartCount > 0 && (
-                <span className="nb-badge" aria-hidden="true">
-                  {cartCount > 99 ? "99+" : cartCount}
-                </span>
-              )}
+              {cartCount > 0 && <span className="nb-badge">{cartCount > 99 ? "99+" : cartCount}</span>}
             </Link>
           </div>
 
-          <div className="nb-mobile-actions">
-            <Link to="/cart" className="nb-icon-btn" aria-label="Panier">
-              <FiShoppingCart size={19} />
-              {cartCount > 0 && (
-                <span className="nb-badge" aria-hidden="true">
-                  {cartCount > 99 ? "99+" : cartCount}
-                </span>
-              )}
+          {/* Mobile */}
+          <div className="nb-mob">
+            <Link to="/cart" className="nb-ic">
+              <FiShoppingCart size={20} />
+              {cartCount > 0 && <span className="nb-badge">{cartCount > 99 ? "99+" : cartCount}</span>}
             </Link>
-            <button
-              className="nb-icon-btn"
-              onClick={() => setMenuOpen(true)}
-              aria-label="Ouvrir le menu"
-              aria-expanded={menuOpen}
-            >
+            <button className="nb-ic" onClick={() => setMenuOpen(true)} aria-label="Menu">
               <FiMenu size={21} />
             </button>
           </div>
         </div>
       </nav>
 
-      {menuOpen && (
-        <div className="nb-backdrop" onClick={() => setMenuOpen(false)} aria-hidden="true" />
-      )}
+      {/* Backdrop */}
+      {menuOpen && <div className="nb-bk" onClick={() => setMenuOpen(false)} />}
 
-      <aside
-        className={`nb-drawer ${menuOpen ? "open" : "close"}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Menu de navigation mobile"
-      >
-        <div className="nb-drawer-head">
-          <Link to="/" className="nb-drawer-logo" onClick={() => setMenuOpen(false)}>
-            <div className="nb-drawer-gem">N</div>
-            <div className="nb-drawer-logo-text">
-              <span className="nb-drawer-logo-name">Nahid Perfume</span>
-              <span className="nb-drawer-logo-sub">Maison de Parfums · Casablanca</span>
-            </div>
+      {/* Drawer */}
+      <aside className={`nb-dr ${menuOpen ? "open" : "close"}`} role="dialog" aria-modal="true">
+        <div className="nb-dr-head">
+          <Link to="/" className="nb-dr-logo" onClick={() => setMenuOpen(false)}>
+            <img src="/nahid.png" alt="Nahid Perfume" className="nb-dr-logo-img"
+              onError={e => { e.currentTarget.style.display = "none"; }} />
           </Link>
-          <button className="nb-close-btn" onClick={() => setMenuOpen(false)} aria-label="Fermer">
-            <FiX size={16} />
-          </button>
+          <button className="nb-xbtn" onClick={() => setMenuOpen(false)}><FiX size={14} /></button>
         </div>
 
-        <form onSubmit={handleSearch} className="nb-drawer-search">
-          <FiSearch size={15} style={{ color: "var(--nb-muted)", flexShrink: 0 }} />
-          <input
-            type="search"
-            placeholder="Rechercher un parfum…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Recherche"
-          />
+        <form className="nb-dr-s" onSubmit={e => handleSearch(e)}>
+          <FiSearch size={13} style={{ color: "var(--g)", flexShrink: 0 }} />
+          <input type="search" placeholder="Rechercher un parfum…" value={query}
+            onChange={e => setQuery(e.target.value)} />
+          {query && (
+            <button type="submit" style={{ background: "none", border: "none", color: "var(--c)", cursor: "pointer" }}>
+              <FiChevronRight size={14} />
+            </button>
+          )}
         </form>
 
-        <nav className="nb-drawer-body">
-          <div className="nb-m-section-label">Navigation</div>
+        <nav className="nb-dr-body">
+          <div className="nb-m-lbl">Navigation</div>
+          {navLinks.map(link => (
+            <Link key={link.to} to={link.to}
+              className={`nb-m-lnk${isActive(link) ? " act" : ""}`}
+              onClick={() => setMenuOpen(false)}>
+              <div className="nb-m-ico">{link.icon}</div>
+              <span className="nb-m-txt">{link.label}</span>
+              <FiChevronRight size={12} className="nb-m-chev" />
+            </Link>
+          ))}
 
-          {navLinks.map((link, i) =>
-            link.isAction ? (
-              <a
-                key={i}
-                href="#collection"
-                onClick={scrollToCollection}
-                className="nb-m-link"
-              >
-                <div className="nb-m-icon">{link.icon}</div>
-                <span className="nb-m-link-text">{link.label}</span>
-                <FiChevronRight size={14} className="nb-m-chevron" />
-              </a>
-            ) : (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`nb-m-link${isActive(link) ? " active" : ""}`}
-                onClick={() => setMenuOpen(false)}
-                aria-current={isActive(link) ? "page" : undefined}
-              >
-                <div className="nb-m-icon">{link.icon}</div>
-                <span className="nb-m-link-text">{link.label}</span>
-                <FiChevronRight size={14} className="nb-m-chevron" />
-              </Link>
-            )
+          <button className="nb-m-lnk" onClick={() => setMobileShop(v => !v)}>
+            <div className="nb-m-ico"><FiGrid size={12} /></div>
+            <span className="nb-m-txt">Parfums</span>
+            <span style={{ fontSize: ".58rem", color: "var(--g)", opacity: .5, marginRight: "3px" }}>
+              {mobileShop ? "▲" : "▼"}
+            </span>
+          </button>
+          {mobileShop && (
+            <div className="nb-m-sub">
+              {[...SHOP_ALL, ...SHOP_GENDER].map((item, i) => (
+                <button key={i} className="nb-m-sub-item"
+                  onClick={e => { if (item.path) navigate(item.path); else goCol(e, item.cat, null); setMenuOpen(false); }}>
+                  <span className="nb-m-sub-dot" />{item.title}
+                </button>
+              ))}
+            </div>
           )}
 
-          <Link to="/wishlist" className="nb-m-link" onClick={() => setMenuOpen(false)}>
-            <div className="nb-m-icon">
-              <FiHeart size={14} />
-            </div>
-            <span className="nb-m-link-text">Liste de souhaits</span>
-            <FiChevronRight size={14} className="nb-m-chevron" />
+          <Link to="/originals" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
+            <div className="nb-m-ico"><FaCrown size={11} /></div>
+            <span className="nb-m-txt">Originals</span>
+            <span className="nb-m-tag">Exclusif</span>
           </Link>
 
-          <div className="nb-m-section-label">Mon compte</div>
+          <Link to="/wishlist" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
+            <div className="nb-m-ico"><FiHeart size={12} /></div>
+            <span className="nb-m-txt">Favoris</span>
+            {wishCount > 0
+              ? <span className="nb-m-tag">{wishCount}</span>
+              : <FiChevronRight size={12} className="nb-m-chev" />
+            }
+          </Link>
 
+          <div className="nb-m-lbl">Compte</div>
           {isAdmin ? (
             <>
-              <Link to="/admin" className="nb-m-link" onClick={() => setMenuOpen(false)}>
-                <div className="nb-m-icon">
-                  <FaCrown size={13} />
-                </div>
-                <span className="nb-m-link-text">Dashboard</span>
+              <Link to="/admin" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
+                <div className="nb-m-ico"><FaCrown size={11} /></div>
+                <span className="nb-m-txt">Dashboard</span>
                 <span className="nb-m-tag">Admin</span>
               </Link>
-              <button
-                className="nb-m-link"
-                onClick={handleLogout}
-                style={{ color: "var(--nb-muted)" }}
-              >
-                <div className="nb-m-icon">
-                  <FiLogOut size={14} />
-                </div>
-                <span className="nb-m-link-text">Déconnexion</span>
+              <button className="nb-m-lnk" onClick={handleLogout} style={{ color: "var(--g)" }}>
+                <div className="nb-m-ico"><FiLogOut size={12} /></div>
+                <span className="nb-m-txt">Déconnexion</span>
               </button>
             </>
           ) : (
-            <Link
-              to="/admin"
-              className="nb-m-link"
-              onClick={() => setMenuOpen(false)}
-              style={{ color: "var(--nb-coral)" }}
-            >
-              <div className="nb-m-icon">
-                <FiUser size={14} />
-              </div>
-              <span className="nb-m-link-text">Espace Pro</span>
-              <FiChevronRight size={14} className="nb-m-chevron" />
+            <Link to="/admin" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
+              <div className="nb-m-ico"><FiUser size={12} /></div>
+              <span className="nb-m-txt">Espace Pro</span>
+              <FiChevronRight size={12} className="nb-m-chev" />
             </Link>
           )}
 
-          <div className="nb-m-section-label">Aide & Infos</div>
-
-          {[
-            { label: "Livraison ", to: "/livraison" },
-            { label: "FAQ", to: "/faq" },
-            { label: "Contact", to: "/contact" },
-          ].map(({ label, to }) => (
-            <Link
-              key={to}
-              to={to}
-              className="nb-m-link"
-              onClick={() => setMenuOpen(false)}
-            >
-              <div className="nb-m-icon" style={{ background: "transparent" }} />
-              <span className="nb-m-link-text" style={{ color: "var(--nb-muted)", fontSize: "0.84rem" }}>
-                {label}
-              </span>
-              <FiChevronRight size={14} className="nb-m-chevron" />
-            </Link>
-          ))}
+          <div className="nb-m-lbl">Aide</div>
+          {[{ label: "Livraison", to: "/livraison" }, { label: "FAQ", to: "/faq" }, { label: "Contact", to: "/contact" }]
+            .map(({ label, to }) => (
+              <Link key={to} to={to} className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
+                <div className="nb-m-ico" style={{ background: "transparent" }} />
+                <span className="nb-m-txt" style={{ color: "var(--g)", fontSize: ".81rem" }}>{label}</span>
+                <FiChevronRight size={12} className="nb-m-chev" />
+              </Link>
+            ))}
         </nav>
 
-        <div className="nb-drawer-foot">
-          <div className="nb-drawer-foot-cta">
-            <a
-              href="#collection"
-              onClick={(e) => {
-                scrollToCollection(e);
-                setMenuOpen(false);
-              }}
-              className="nb-pill nb-pill-gold"
-              style={{ flex: 1, justifyContent: "center", padding: "12px 16px" }}
-            >
+        <div className="nb-dr-foot">
+          <div className="nb-dr-ftns">
+            <button className="nb-shop-foot-btn nb-sfoot-p" style={{ flex: 1 }}
+              onClick={e => { goCol(e, null, null); setMenuOpen(false); }}>
               Explorer la collection
-            </a>
-            <Link
-              to="/cart"
-              className="nb-pill nb-pill-ghost"
-              style={{ padding: "12px 16px" }}
-              onClick={() => setMenuOpen(false)}
-              aria-label="Panier"
-            >
-              <FiShoppingCart size={16} />
+            </button>
+            <Link to="/cart" className="nb-shop-foot-btn nb-sfoot-o"
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}
+              onClick={() => setMenuOpen(false)}>
+              <FiShoppingCart size={14} />
               {cartCount > 0 && <span className="nb-m-tag">{cartCount}</span>}
             </Link>
           </div>
-
-          <div className="nb-social-divider" />
-
-          <div className="nb-social-row">
-            <a href="#" className="nb-social-btn" aria-label="Instagram">
-              <FiInstagram size={15} />
-            </a>
-            <a href="#" className="nb-social-btn" aria-label="TikTok">
-              <RiTiktokLine size={15} />
-            </a>
-            <a href="#" className="nb-social-btn" aria-label="Facebook">
-              <FiFacebook size={15} />
-            </a>
+          <div className="nb-soc-div" />
+          <div className="nb-soc-row">
+            <a href="#" className="nb-soc" aria-label="Instagram"><FiInstagram size={13} /></a>
+            <a href="#" className="nb-soc" aria-label="TikTok"><RiTiktokLine size={13} /></a>
+            <a href="#" className="nb-soc" aria-label="Facebook"><FiFacebook size={13} /></a>
           </div>
-
-          <div className="nb-social-divider" />
-
-          <div className="nb-foot-legal">
+          <div className="nb-soc-div" />
+          <div className="nb-legal">
             <a href="#">Mentions légales</a>
             <a href="#">Confidentialité</a>
             <a href="#">CGV</a>

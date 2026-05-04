@@ -6,7 +6,7 @@ import { useCollectionStyles } from "./collectionStyles";
 /* ── Config ──────────────────────────────────────────── */
 const CONFIG = {
   category:    "Femme",
-  apiFilter:   (p) => p.category === "Femme",
+  apiFilter:   (p) => p.gender === "Femme",
   heroImage:   "https://i.postimg.cc/dQTtHTgz/femme-Nahid.png",
   heroFallback:"https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?w=1400&q=80",
   accentColor: "#EF776A",

@@ -3,57 +3,67 @@ import axios from "axios";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
-/* ═══════════════════════════════════════════════
-   STATIC CONFIG
-═══════════════════════════════════════════════ */
+/* ═══════════════════════ CONFIG ══════════════════════════ */
 const STATUS_CFG = {
-  pending:    { label: "En attente",  bg: "#FFF7ED", color: "#C2410C", dot: "#FB923C" },
-  processing: { label: "En cours",    bg: "#EFF6FF", color: "#1D4ED8", dot: "#60A5FA" },
-  shipped:    { label: "Expédiée",    bg: "#F5F3FF", color: "#6D28D9", dot: "#A78BFA" },
-  delivered:  { label: "Livrée",     bg: "#F0FDF4", color: "#166534", dot: "#4ADE80" },
-  cancelled:  { label: "Annulée",    bg: "#FEF2F2", color: "#991B1B", dot: "#F87171" },
+  pending:    { label:"En attente",  bg:"#FFF7ED", color:"#C2410C", dot:"#FB923C" },
+  processing: { label:"En cours",    bg:"#EFF6FF", color:"#1D4ED8", dot:"#60A5FA" },
+  shipped:    { label:"Expédiée",    bg:"#F5F3FF", color:"#6D28D9", dot:"#A78BFA" },
+  delivered:  { label:"Livrée",      bg:"#F0FDF4", color:"#166534", dot:"#4ADE80" },
+  cancelled:  { label:"Annulée",     bg:"#FEF2F2", color:"#991B1B", dot:"#F87171" },
 };
 
+const CATEGORIES    = ["Oud","Floral","Amber","Fraîcheur","Boisé","Gourmand","Herbal","Originals","Autre"];
+const SCENT_FAMILIES= ["flowery","fresh","gourmand","herbal","earthy","warm"];
+const SCENT_LABELS  = { flowery:"🌸 Fleuri", fresh:"🍃 Frais", gourmand:"🍫 Gourmand", herbal:"🌿 Herbal", earthy:"🌍 Terreux", warm:"🔥 Chaud" };
+const GENDERS       = ["Femme","Homme","Unisex"];
+const PRODUCT_TYPES = ["Original","Inspired By"];
+
 const NAV = [
-  { id: "dashboard", label: "Vue d'ensemble", icon: "◈" },
-  { id: "products",  label: "Produits",        icon: "✦" },
-  { id: "orders",    label: "Commandes",        icon: "◫" },
-  { id: "customers", label: "Clients",          icon: "◉" },
-  { id: "delivery",  label: "Livraison",        icon: "◎" },
-  { id: "settings",  label: "Paramètres",       icon: "◬" },
+  { id:"dashboard", label:"Vue d'ensemble", icon:"⬡" },
+  { id:"products",  label:"Produits",        icon:"✦" },
+  { id:"orders",    label:"Commandes",        icon:"◫" },
+  { id:"customers", label:"Clients",          icon:"◉" },
+  { id:"delivery",  label:"Livraison",        icon:"◎" },
+  { id:"settings",  label:"Paramètres",       icon:"◬" },
 ];
 
-/* ═══════════════════════════════════════════════
-   COMPONENT
-═══════════════════════════════════════════════ */
+const EMPTY_FORM = {
+  name:"", description:"", scent_notes:"", scent_family:"warm",
+  price:"", image_url:"", category:"", gender:"Unisex",
+  product_type:"Original", inspired_by:"", stock:"10",
+  is_new:"0", is_bestseller:"0",
+};
+
+/* ═══════════════════════ COMPONENT ═══════════════════════ */
 const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
-  const [activePage,      setActivePage]      = useState("dashboard");
-  const [sidebarOpen,     setSidebarOpen]     = useState(true);
-  const [mobileOpen,      setMobileOpen]      = useState(false);
-  const [username,        setUsername]        = useState("");
-  const [password,        setPassword]        = useState("");
-  const [error,           setError]           = useState("");
-  const [loading,         setLoading]         = useState(false);
-  const [products,        setProducts]        = useState([]);
-  const [orders,          setOrders]          = useState([]);
-  const [customers,       setCustomers]       = useState([]);
-  const [stats,           setStats]           = useState({ totalProducts: 0, totalOrders: 0, revenue: 0 });
-  const [editingProduct,  setEditingProduct]  = useState(null);
-  const [formData,        setFormData]        = useState({ name:"", description:"", price:"", image_url:"", category:"", stock:"" });
-  const [notification,    setNotification]    = useState({ text:"", type:"" });
-  const [searchTerm,      setSearchTerm]      = useState("");
-  const [orderSearch,     setOrderSearch]     = useState("");
-  const [currentPage,     setCurrentPage]     = useState(1);
-  const [imagePreview,    setImagePreview]    = useState("");
-  const [showForm,        setShowForm]        = useState(false);
+  const [activePage,     setActivePage]     = useState("dashboard");
+  const [sidebarOpen,    setSidebarOpen]    = useState(true);
+  const [mobileOpen,     setMobileOpen]     = useState(false);
+  const [username,       setUsername]       = useState("");
+  const [password,       setPassword]       = useState("");
+  const [error,          setError]          = useState("");
+  const [loading,        setLoading]        = useState(false);
+  const [products,       setProducts]       = useState([]);
+  const [orders,         setOrders]         = useState([]);
+  const [customers,      setCustomers]      = useState([]);
+  const [stats,          setStats]          = useState({ totalProducts:0, totalOrders:0, revenue:0 });
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [formData,       setFormData]       = useState(EMPTY_FORM);
+  const [notification,   setNotification]   = useState({ text:"", type:"" });
+  const [searchTerm,     setSearchTerm]     = useState("");
+  const [orderSearch,    setOrderSearch]    = useState("");
+  const [currentPage,    setCurrentPage]    = useState(1);
+  const [imagePreview,   setImagePreview]   = useState("");
+  const [showForm,       setShowForm]       = useState(false);
+  const [filterCat,      setFilterCat]      = useState("Tous");
   const itemsPerPage = 8;
 
-  const token     = localStorage.getItem("adminToken");
+  const token      = localStorage.getItem("adminToken");
   const isLoggedIn = !!token || isAdminLoggedIn;
-  const authHdr   = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("adminToken")}` } });
-  const fmt       = (n) => Math.round(Number(n)).toLocaleString("fr-MA");
+  const authHdr    = () => ({ headers:{ Authorization:`Bearer ${localStorage.getItem("adminToken")}` } });
+  const fmt        = n => Math.round(Number(n)).toLocaleString("fr-MA");
 
-  const notify = (text, type = "success") => {
+  const notify = (text, type="success") => {
     setNotification({ text, type });
     setTimeout(() => setNotification({ text:"", type:"" }), 3500);
   };
@@ -62,7 +72,7 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
     const t = localStorage.getItem("adminToken");
     if (!t) return;
     try {
-      const h = { headers: { Authorization: `Bearer ${t}` } };
+      const h = { headers:{ Authorization:`Bearer ${t}` } };
       const [p, o, s] = await Promise.all([
         axios.get("/api/products"),
         axios.get("/api/orders", h),
@@ -79,15 +89,13 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
 
   useEffect(() => { if (isLoggedIn && token) fetchData(); }, [isLoggedIn]);
   useEffect(() => {
-    const onResize = () => setSidebarOpen(window.innerWidth >= 1024);
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const fn = () => setSidebarOpen(window.innerWidth >= 1024);
+    fn(); window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
   }, []);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true); setError("");
+  const handleLogin = async e => {
+    e.preventDefault(); setLoading(true); setError("");
     try {
       const res = await axios.post("/api/admin/login", { username, password });
       if (res.data.token) {
@@ -105,17 +113,25 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
     setProducts([]); setOrders([]);
   };
 
-  const handleSaveProduct = async (e) => {
+  const handleSaveProduct = async e => {
     e.preventDefault();
-    if (!formData.name || !formData.price) { notify("Nom et prix sont requis", "error"); return; }
+    if (!formData.name || !formData.price) { notify("Nom et prix sont requis","error"); return; }
     setLoading(true);
     try {
       const data = {
-        name: formData.name, description: formData.description || "",
-        price: parseFloat(formData.price),
-        image_url: formData.image_url || "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400",
-        category: formData.category || "Autre",
-        stock: parseInt(formData.stock) || 10,
+        name:         formData.name,
+        description:  formData.description || "",
+        scent_notes:  formData.scent_notes || "",
+        scent_family: formData.scent_family || "warm",
+        price:        parseFloat(formData.price),
+        image_url:    formData.image_url || "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400",
+        category:     formData.category || "Autre",
+        gender:       formData.gender || "Unisex",
+        product_type: formData.product_type || "Original",
+        inspired_by:  formData.product_type === "Inspired By" ? (formData.inspired_by || "") : null,
+        stock:        parseInt(formData.stock) || 10,
+        is_new:       formData.is_new === "1" || formData.is_new === true ? 1 : 0,
+        is_bestseller:formData.is_bestseller === "1" || formData.is_bestseller === true ? 1 : 0,
       };
       if (editingProduct) {
         await axios.put(`/api/products/${editingProduct.id}`, data, authHdr());
@@ -124,13 +140,12 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
         await axios.post("/api/products", data, authHdr());
         notify(`"${formData.name}" ajouté avec succès`);
       }
-      setEditingProduct(null);
-      setFormData({ name:"", description:"", price:"", image_url:"", category:"", stock:"" });
+      setEditingProduct(null); setFormData(EMPTY_FORM);
       setImagePreview(""); setShowForm(false);
       await fetchData();
     } catch (err) {
-      if (err.response?.status === 401) { notify("Session expirée", "error"); handleLogout(); }
-      else notify(err.response?.data?.error || "Erreur serveur", "error");
+      if (err.response?.status === 401) { notify("Session expirée","error"); handleLogout(); }
+      else notify(err.response?.data?.error || "Erreur serveur","error");
     } finally { setLoading(false); }
   };
 
@@ -138,515 +153,587 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
     if (!window.confirm(`Supprimer "${name}" ?`)) return;
     try {
       await axios.delete(`/api/products/${id}`, authHdr());
-      notify(`"${name}" supprimé`);
-      fetchData();
-    } catch (err) { notify(err.response?.data?.error || "Impossible de supprimer", "error"); }
+      notify(`"${name}" supprimé`); fetchData();
+    } catch (err) { notify(err.response?.data?.error || "Impossible de supprimer","error"); }
   };
 
-  const handleEditProduct = (p) => {
+  const handleEditProduct = p => {
     setEditingProduct(p);
-    setFormData({ name:p.name, description:p.description||"", price:p.price, image_url:p.image_url||"", category:p.category||"", stock:p.stock });
+    setFormData({
+      name:         p.name,
+      description:  p.description || "",
+      scent_notes:  p.scent_notes || "",
+      scent_family: p.scent_family || "warm",
+      price:        p.price,
+      image_url:    p.image_url || "",
+      category:     p.category || "",
+      gender:       p.gender || "Unisex",
+      product_type: p.product_type || "Original",
+      inspired_by:  p.inspired_by || "",
+      stock:        p.stock,
+      is_new:       p.is_new ? "1" : "0",
+      is_bestseller:p.is_bestseller ? "1" : "0",
+    });
     setImagePreview(p.image_url);
     setShowForm(true); setActivePage("products");
   };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      await axios.put(`/api/orders/${orderId}/status`, { status: newStatus }, authHdr());
-      notify("Statut mis à jour");
-      fetchData();
-    } catch { notify("Erreur lors de la mise à jour", "error"); }
+      await axios.put(`/api/orders/${orderId}/status`, { status:newStatus }, authHdr());
+      notify("Statut mis à jour"); fetchData();
+    } catch { notify("Erreur lors de la mise à jour","error"); }
   };
 
-  const exportOrdersToExcel = () => {
+  const exportExcel = () => {
     const data = orders.map(o => ({
-      ID: o.id, Client: o.customer_name, Email: o.customer_email,
-      Téléphone: o.customer_phone || "-", Adresse: o.customer_address || "-",
-      "Total (MAD)": o.total_amount, Statut: o.status,
-      Date: new Date(o.created_at).toLocaleDateString("fr-FR"),
-      Articles: o.items?.map(i => `${i.product_name} (x${i.quantity})`).join(", ") || "-",
+      ID:o.id, Client:o.customer_name, Email:o.customer_email,
+      Téléphone:o.customer_phone||"-", Adresse:o.customer_address||"-",
+      "Total (MAD)":o.total_amount, Statut:o.status,
+      Date:new Date(o.created_at).toLocaleDateString("fr-FR"),
+      Articles:o.items?.map(i=>`${i.product_name} (x${i.quantity})`).join(", ")||"-",
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Commandes");
-    saveAs(new Blob([XLSX.write(wb, { bookType:"xlsx", type:"array" })], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `commandes_${new Date().toISOString().split("T")[0]}.xlsx`);
+    saveAs(new Blob([XLSX.write(wb,{bookType:"xlsx",type:"array"})],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),`commandes_${new Date().toISOString().split("T")[0]}.xlsx`);
     notify("Export Excel réussi !");
   };
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.category||"").toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const totalPages      = Math.ceil(filteredProducts.length / itemsPerPage);
-  const pagedProducts   = filteredProducts.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage);
-  const filteredOrders  = orders.filter(o =>
+  const cats = ["Tous", ...new Set(products.map(p => p.category).filter(Boolean))];
+  const filteredProducts = products.filter(p => {
+    const matchCat  = filterCat === "Tous" || p.category === filterCat;
+    const matchSrch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || (p.category||"").toLowerCase().includes(searchTerm.toLowerCase());
+    return matchCat && matchSrch;
+  });
+  const totalPages    = Math.ceil(filteredProducts.length / itemsPerPage);
+  const pagedProducts = filteredProducts.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage);
+  const filteredOrders= orders.filter(o =>
     o.customer_name?.toLowerCase().includes(orderSearch.toLowerCase()) ||
     o.customer_email?.toLowerCase().includes(orderSearch.toLowerCase()) ||
     String(o.id).includes(orderSearch)
   );
 
-  /* ── Login ── */
+  const set = k => e => setFormData(f => ({ ...f, [k]: e.target.value }));
+
+  /* ─── Login ─── */
   if (!isLoggedIn) return (
     <>
       <style>{CSS}</style>
-      <div className="a-login">
-        {/* Decorative petals */}
-        <div className="a-petal a-petal-1" />
-        <div className="a-petal a-petal-2" />
-        <div className="a-petal a-petal-3" />
-        <div className="a-login-card">
-          <div className="a-login-mark">N</div>
-          <h1 className="a-login-title">Espace Admin</h1>
-          <p className="a-login-sub">Nahid Perfume · Tableau de bord</p>
-          <form onSubmit={handleLogin} className="a-login-form">
-            <div className="a-field">
-              <label className="a-field-label">Identifiant</label>
-              <input className="a-field-input" type="text" placeholder="admin" value={username} onChange={e => setUsername(e.target.value)} required />
+      <div className="al-wrap">
+        <div className="al-bg-blob al-blob-1" />
+        <div className="al-bg-blob al-blob-2" />
+        <div className="al-card">
+          <div className="al-logo">
+            <div className="al-logo-mark">N</div>
+            <div>
+              <div className="al-logo-name">Nahid Perfume</div>
+              <div className="al-logo-sub">Administration</div>
             </div>
-            <div className="a-field">
-              <label className="a-field-label">Mot de passe</label>
-              <input className="a-field-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
-            </div>
-            {error && <div className="a-login-err">{error}</div>}
-            <button className="a-btn-coral a-btn-full" type="submit" disabled={loading}>
-              {loading ? <span className="a-spin" /> : "Se connecter →"}
+          </div>
+          <h1 className="al-title">Bienvenue 👋</h1>
+          <p  className="al-desc">Connectez-vous à votre tableau de bord</p>
+          <form onSubmit={handleLogin} className="al-form">
+            <AField label="Identifiant" icon="👤">
+              <input className="af-input" type="text" placeholder="admin" value={username} onChange={e=>setUsername(e.target.value)} required />
+            </AField>
+            <AField label="Mot de passe" icon="🔒">
+              <input className="af-input" type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)} required />
+            </AField>
+            {error && <div className="al-err"><span>⚠</span>{error}</div>}
+            <button className="a-btn-primary a-btn-full" type="submit" disabled={loading}>
+              {loading ? <span className="a-spin"/> : <>Se connecter <span>→</span></>}
             </button>
           </form>
+          <div className="al-hint">Nahid Perfume · Casablanca 🇲🇦</div>
         </div>
       </div>
     </>
   );
 
-  /* ── Dashboard ── */
+  /* ─── Dashboard ─── */
   return (
     <>
       <style>{CSS}</style>
       <div className="a-root">
-
-        {/* Mobile overlay */}
-        {mobileOpen && <div className="a-overlay" onClick={() => setMobileOpen(false)} />}
+        {mobileOpen && <div className="a-overlay" onClick={()=>setMobileOpen(false)}/>}
 
         {/* ── SIDEBAR ── */}
-        <aside className={`a-sidebar ${sidebarOpen || mobileOpen ? "a-sidebar--open" : "a-sidebar--closed"}`}>
-          {/* Decorative accent line */}
-          <div className="a-sidebar-accent" />
-
-          <div className="a-sidebar-top">
-            <div className="a-sidebar-logo">
-              <div className="a-logo-mark">N</div>
+        <aside className={`a-sidebar ${sidebarOpen||mobileOpen ? "a-sidebar-open" : "a-sidebar-closed"}`}>
+          <div className="a-sb-top">
+            <div className="a-sb-logo">
+              <div className="a-sb-mark">N</div>
               <div>
-                <div className="a-logo-name">Nahid Perfume</div>
-                <div className="a-logo-sub">Administration</div>
+                <div className="a-sb-name">Nahid Perfume</div>
+                <div className="a-sb-role">Administration</div>
               </div>
             </div>
-            <button className="a-sidebar-close" onClick={() => { setSidebarOpen(false); setMobileOpen(false); }}>✕</button>
+            <button className="a-sb-close" onClick={()=>{setSidebarOpen(false);setMobileOpen(false);}}>✕</button>
           </div>
 
+          <div className="a-sb-divider"/>
+
           <nav className="a-nav">
-            <div className="a-nav-group-label">Navigation</div>
+            <div className="a-nav-label">Menu principal</div>
             {NAV.map(item => (
-              <button
-                key={item.id}
-                className={`a-nav-item ${activePage === item.id ? "a-nav-item--active" : ""}`}
-                onClick={() => { setActivePage(item.id); if (window.innerWidth < 1024) setMobileOpen(false); }}
-              >
+              <button key={item.id}
+                className={`a-nav-item${activePage===item.id?" a-nav-active":""}`}
+                onClick={()=>{setActivePage(item.id); if(window.innerWidth<1024)setMobileOpen(false);}}>
                 <span className="a-nav-icon">{item.icon}</span>
-                <span>{item.label}</span>
-                {item.id === "orders" && orders.filter(o => o.status === "pending").length > 0 && (
-                  <span className="a-nav-badge">{orders.filter(o => o.status === "pending").length}</span>
+                <span className="a-nav-txt">{item.label}</span>
+                {item.id==="orders" && orders.filter(o=>o.status==="pending").length>0 && (
+                  <span className="a-nav-badge">{orders.filter(o=>o.status==="pending").length}</span>
                 )}
               </button>
             ))}
           </nav>
 
-          <div className="a-sidebar-foot">
-            <button className="a-logout" onClick={handleLogout}>
-              <span>⎋</span> Déconnexion
-            </button>
+          <div style={{flex:1}}/>
+          <div className="a-sb-foot">
+            <div className="a-sb-user">
+              <div className="a-sb-avatar">A</div>
+              <div>
+                <div className="a-sb-uname">Admin</div>
+                <div className="a-sb-uemail">admin@nahid.ma</div>
+              </div>
+            </div>
+            <button className="a-logout-btn" onClick={handleLogout}>⎋ Déconnexion</button>
           </div>
         </aside>
 
         {/* ── MAIN ── */}
-        <main className={`a-main ${sidebarOpen && window.innerWidth >= 1024 ? "a-main--pushed" : ""}`}>
+        <main className={`a-main${sidebarOpen&&window.innerWidth>=1024?" a-main-pushed":""}`}>
 
           {/* Topbar */}
           <div className="a-topbar">
-            <button className="a-menu-btn" onClick={() => window.innerWidth < 1024 ? setMobileOpen(!mobileOpen) : setSidebarOpen(!sidebarOpen)}>
-              <span /><span /><span />
+            <button className="a-hamburger" onClick={()=>window.innerWidth<1024?setMobileOpen(!mobileOpen):setSidebarOpen(!sidebarOpen)}>
+              <span/><span/><span/>
             </button>
-            <h2 className="a-topbar-title">
-              {{ dashboard:"Vue d'ensemble", products:"Produits", orders:"Commandes", customers:"Clients", delivery:"Livraison", settings:"Paramètres" }[activePage]}
-            </h2>
-            <div className="a-topbar-right">
+            <div className="a-topbar-title">
+              {NAV.find(n=>n.id===activePage)?.label || "Dashboard"}
+            </div>
+            <div style={{flex:1}}/>
+            <div className="a-topbar-actions">
+              {activePage==="products" && (
+                <button className="a-btn-primary a-btn-sm" onClick={()=>{setShowForm(!showForm);if(!showForm){setEditingProduct(null);setFormData(EMPTY_FORM);setImagePreview("");}}}>
+                  {showForm?"✕ Fermer":"+ Produit"}
+                </button>
+              )}
               <div className="a-topbar-avatar">A</div>
             </div>
           </div>
 
           {/* Notification */}
           {notification.text && (
-            <div className={`a-notif ${notification.type === "error" ? "a-notif--err" : "a-notif--ok"}`}>
-              <span>{notification.type === "error" ? "⚠" : "✓"}</span>
+            <div className={`a-notif${notification.type==="error"?" a-notif-err":" a-notif-ok"}`}>
+              <span>{notification.type==="error"?"⚠":"✓"}</span>
               {notification.text}
             </div>
           )}
 
           <div className="a-content">
 
-            {/* ══════════════════ DASHBOARD ══════════════════ */}
-            {activePage === "dashboard" && (
-              <>
-                <div className="a-page-head">
-                  <div>
-                    <h1 className="a-page-title">Tableau de bord</h1>
-                    <p className="a-page-sub">Bienvenue dans votre espace Nahid Perfume</p>
-                  </div>
-                  <button className="a-btn-coral" onClick={() => { setActivePage("products"); setShowForm(true); setEditingProduct(null); setFormData({ name:"", description:"", price:"", image_url:"", category:"", stock:"" }); setImagePreview(""); }}>
-                    + Nouveau produit
-                  </button>
+            {/* ══ DASHBOARD ══ */}
+            {activePage==="dashboard" && (<>
+              <div className="a-page-head">
+                <div>
+                  <h1 className="a-page-title">Tableau de bord</h1>
+                  <p  className="a-page-sub">Bienvenue dans votre espace Nahid Perfume ✦</p>
                 </div>
+                <button className="a-btn-primary" onClick={()=>{setActivePage("products");setShowForm(true);setEditingProduct(null);setFormData(EMPTY_FORM);setImagePreview("");}}>
+                  + Nouveau produit
+                </button>
+              </div>
 
-                {/* KPI cards */}
-                <div className="a-kpi-grid">
-                  {[
-                    { icon:"📦", label:"Produits",            value: stats.totalProducts,     color:"#FFF4F2", border:"#FFD7D2" },
-                    { icon:"🛒", label:"Commandes",           value: stats.totalOrders,        color:"#F0F4FF", border:"#C7D5FF" },
-                    { icon:"💰", label:"Chiffre d'affaires",  value: fmt(stats.revenue)+" MAD",color:"#F2FDF6", border:"#B5EDCA" },
-                    { icon:"👥", label:"Clients",             value: customers.length,         color:"#FFF9F0", border:"#FFE4AC" },
-                  ].map((k, i) => (
-                    <div key={i} className="a-kpi" style={{ "--kpi-bg": k.color, "--kpi-border": k.border, animationDelay: `${i*0.07}s` }}>
+              {/* KPIs */}
+              <div className="a-kpi-row">
+                {[
+                  { icon:"📦", label:"Produits",           value:stats.totalProducts,      accent:"#EF776A" },
+                  { icon:"🛒", label:"Commandes",          value:stats.totalOrders,         accent:"#6366F1" },
+                  { icon:"💰", label:"Chiffre d'affaires", value:fmt(stats.revenue)+" MAD", accent:"#10B981" },
+                  { icon:"👥", label:"Clients",            value:customers.length,          accent:"#F59E0B" },
+                ].map((k,i) => (
+                  <div className="a-kpi" key={i} style={{"--ka":k.accent}}>
+                    <div className="a-kpi-top">
                       <div className="a-kpi-icon">{k.icon}</div>
-                      <div className="a-kpi-value">{k.value}</div>
-                      <div className="a-kpi-label">{k.label}</div>
+                      <div className="a-kpi-bar"/>
                     </div>
-                  ))}
-                </div>
+                    <div className="a-kpi-val">{k.value}</div>
+                    <div className="a-kpi-lbl">{k.label}</div>
+                  </div>
+                ))}
+              </div>
 
-                {/* Status summary strip */}
-                <div className="a-status-strip">
-                  {Object.entries(STATUS_CFG).map(([k, s]) => (
-                    <div key={k} className="a-status-pill" style={{ "--s-bg": s.bg, "--s-color": s.color }}>
-                      <span className="a-status-dot" style={{ background: s.dot }} />
-                      {s.label} · <strong>{orders.filter(o => o.status === k).length}</strong>
+              {/* Status strip */}
+              <div className="a-strip">
+                {Object.entries(STATUS_CFG).map(([k,s])=>(
+                  <div className="a-strip-pill" key={k} style={{"--sb":s.bg,"--sc":s.color}}>
+                    <span className="a-dot" style={{background:s.dot}}/>
+                    {s.label} · <b>{orders.filter(o=>o.status===k).length}</b>
+                  </div>
+                ))}
+              </div>
+
+              {/* Recent orders */}
+              <div className="a-card">
+                <div className="a-card-head">
+                  <div className="a-card-title">Dernières commandes</div>
+                  <button className="a-btn-ghost-sm" onClick={()=>setActivePage("orders")}>Voir tout →</button>
+                </div>
+                <ATable
+                  cols={["#","Client","Total","Statut","Date"]}
+                  empty={{icon:"📋",text:"Aucune commande"}}
+                  rows={orders.slice(0,5).map(o => {
+                    const sc=STATUS_CFG[o.status]||STATUS_CFG.pending;
+                    return [
+                      <span className="a-id">#{o.id}</span>,
+                      <span className="a-fw">{o.customer_name}</span>,
+                      <span className="a-coral">{fmt(o.total_amount)} MAD</span>,
+                      <ABadge cfg={sc}/>,
+                      <span className="a-muted-sm">{new Date(o.created_at).toLocaleDateString("fr-FR")}</span>,
+                    ];
+                  })}
+                />
+              </div>
+            </>)}
+
+            {/* ══ PRODUCTS ══ */}
+            {activePage==="products" && (<>
+              <div className="a-page-head">
+                <div>
+                  <h1 className="a-page-title">Produits</h1>
+                  <p  className="a-page-sub">{products.length} parfums au catalogue</p>
+                </div>
+                <button className="a-btn-primary" onClick={()=>{setShowForm(!showForm);if(showForm){setEditingProduct(null);setFormData(EMPTY_FORM);setImagePreview("");}}}>
+                  {showForm?"✕ Fermer le formulaire":"+ Nouveau produit"}
+                </button>
+              </div>
+
+              {/* ── PRODUCT FORM ── */}
+              {showForm && (
+                <div className="a-form-wrap">
+                  <div className="a-form-header">
+                    <div className="a-form-header-left">
+                      <div className="a-form-pulse"/>
+                      <div>
+                        <div className="a-form-title">{editingProduct?"Modifier le parfum":"Ajouter un nouveau parfum"}</div>
+                        <div className="a-form-sub">Remplissez tous les champs pour un affichage optimal sur la boutique</div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Recent orders */}
-                <div className="a-card">
-                  <div className="a-card-head">
-                    <div className="a-card-title">Dernières commandes</div>
-                    <button className="a-btn-ghost" onClick={() => setActivePage("orders")}>Voir tout →</button>
                   </div>
-                  <ATable
-                    cols={["#", "Client", "Total", "Statut", "Date"]}
-                    empty={{ icon:"📋", text:"Aucune commande" }}
-                    rows={orders.slice(0, 5).map(o => {
-                      const sc = STATUS_CFG[o.status] || STATUS_CFG.pending;
-                      return [
-                        <span className="a-id">#{o.id}</span>,
-                        <span className="a-fw5">{o.customer_name}</span>,
-                        <span className="a-coral-fw">{fmt(o.total_amount)} MAD</span>,
-                        <StatusBadge cfg={sc} />,
-                        <span className="a-date">{new Date(o.created_at).toLocaleDateString("fr-FR")}</span>,
-                      ];
-                    })}
-                  />
-                </div>
-              </>
-            )}
 
-            {/* ══════════════════ PRODUCTS ══════════════════ */}
-            {activePage === "products" && (
-              <>
-                <div className="a-page-head">
-                  <div>
-                    <h1 className="a-page-title">Produits</h1>
-                    <p className="a-page-sub">{products.length} produits au catalogue</p>
-                  </div>
-                  <button className="a-btn-coral" onClick={() => {
-                    setShowForm(!showForm);
-                    if (showForm) { setEditingProduct(null); setFormData({ name:"", description:"", price:"", image_url:"", category:"", stock:"" }); setImagePreview(""); }
-                  }}>
-                    {showForm ? "✕ Fermer" : "+ Nouveau produit"}
+                  <form onSubmit={handleSaveProduct}>
+
+                    {/* Row 1 — Identité */}
+                    <div className="a-form-section-title">✦ Identité du produit</div>
+                    <div className="a-form-grid-3">
+                      <div className="a-field a-col-2">
+                        <label className="a-lbl">Nom du parfum <span className="a-req">*</span></label>
+                        <input className="af-input" type="text" placeholder="Ex: Rose Mystique 100ml" value={formData.name} onChange={set("name")} required/>
+                      </div>
+                      <div className="a-field">
+                        <label className="a-lbl">Prix (MAD) <span className="a-req">*</span></label>
+                        <input className="af-input" type="number" step="1" min="0" placeholder="299" value={formData.price} onChange={set("price")} required/>
+                      </div>
+                      <div className="a-field">
+                        <label className="a-lbl">Stock</label>
+                        <input className="af-input" type="number" min="0" placeholder="10" value={formData.stock} onChange={set("stock")}/>
+                      </div>
+                      <div className="a-field">
+                        <label className="a-lbl">Catégorie</label>
+                        <select className="af-input" value={formData.category} onChange={set("category")}>
+                          <option value="">Sélectionner…</option>
+                          {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div className="a-field a-col-3">
+                        <label className="a-lbl">Description</label>
+                        <textarea className="af-input af-textarea" rows={3} placeholder="Description du parfum, histoire, occasion…" value={formData.description} onChange={set("description")}/>
+                      </div>
+                    </div>
+
+                    {/* Row 2 — Classification */}
+                    <div className="a-form-section-title">🌸 Classification olfactive</div>
+                    <div className="a-form-grid-3">
+                      <div className="a-field">
+                        <label className="a-lbl">Famille olfactive</label>
+                        <select className="af-input" value={formData.scent_family} onChange={set("scent_family")}>
+                          {SCENT_FAMILIES.map(f=><option key={f} value={f}>{SCENT_LABELS[f]}</option>)}
+                        </select>
+                      </div>
+                      <div className="a-field">
+                        <label className="a-lbl">Genre</label>
+                        <div className="a-radio-group">
+                          {GENDERS.map(g=>(
+                            <label key={g} className={`a-radio-pill${formData.gender===g?" a-radio-active":""}`}>
+                              <input type="radio" name="gender" value={g} checked={formData.gender===g} onChange={set("gender")} hidden/>
+                              {g==="Femme"?"👩":g==="Homme"?"👨":"✦"} {g}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="a-field">
+                        <label className="a-lbl">Type de produit</label>
+                        <div className="a-radio-group">
+                          {PRODUCT_TYPES.map(t=>(
+                            <label key={t} className={`a-radio-pill${formData.product_type===t?" a-radio-active":""}`}>
+                              <input type="radio" name="product_type" value={t} checked={formData.product_type===t} onChange={set("product_type")} hidden/>
+                              {t==="Original"?"⭐":"🔄"} {t}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      {formData.product_type==="Inspired By" && (
+                        <div className="a-field a-col-3">
+                          <label className="a-lbl">Inspiré par (marque / parfum de référence)</label>
+                          <input className="af-input" type="text" placeholder="Ex: Tom Ford Oud Wood / Creed Aventus" value={formData.inspired_by} onChange={set("inspired_by")}/>
+                        </div>
+                      )}
+                      <div className="a-field a-col-3">
+                        <label className="a-lbl">Notes olfactives</label>
+                        <textarea className="af-input af-textarea" rows={2} placeholder="🌹 Notes de tête: Rose, Bergamote | 🌿 Notes de cœur: Jasmin, Oud | 🌙 Notes de fond: Musc, Ambre" value={formData.scent_notes} onChange={set("scent_notes")}/>
+                        <span className="af-hint">Format: Notes de tête · Notes de cœur · Notes de fond</span>
+                      </div>
+                    </div>
+
+                    {/* Row 3 — Média + Flags */}
+                    <div className="a-form-section-title">🖼 Média & Visibilité</div>
+                    <div className="a-form-grid-3">
+                      <div className="a-field a-col-2">
+                        <label className="a-lbl">URL de l'image</label>
+                        <input className="af-input" type="text" placeholder="https://…" value={formData.image_url} onChange={e=>{set("image_url")(e);setImagePreview(e.target.value);}}/>
+                      </div>
+                      <div className="a-field">
+                        {imagePreview ? (
+                          <div className="af-preview-wrap">
+                            <img src={imagePreview} alt="Aperçu" className="af-preview" onError={e=>e.target.style.display="none"}/>
+                            <span className="af-preview-lbl">Aperçu</span>
+                          </div>
+                        ) : (
+                          <div className="af-preview-empty">🖼<span>Aperçu image</span></div>
+                        )}
+                      </div>
+                      <div className="a-field a-col-3">
+                        <label className="a-lbl">Tags spéciaux</label>
+                        <div className="a-toggle-group">
+                          <label className={`a-toggle-pill${formData.is_new==="1"?" a-toggle-on":""}`}>
+                            <input type="checkbox" checked={formData.is_new==="1"} onChange={e=>setFormData(f=>({...f,is_new:e.target.checked?"1":"0"}))} hidden/>
+                            🆕 Nouveau
+                          </label>
+                          <label className={`a-toggle-pill${formData.is_bestseller==="1"?" a-toggle-on-gold":""}`}>
+                            <input type="checkbox" checked={formData.is_bestseller==="1"} onChange={e=>setFormData(f=>({...f,is_bestseller:e.target.checked?"1":"0"}))} hidden/>
+                            🔥 Best-Seller
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="a-form-footer">
+                      <button type="submit" className="a-btn-primary" disabled={loading}>
+                        {loading?<span className="a-spin"/>:editingProduct?"💾 Enregistrer les modifications":"✦ Ajouter le parfum"}
+                      </button>
+                      <button type="button" className="a-btn-ghost" onClick={()=>{setShowForm(false);setEditingProduct(null);}}>Annuler</button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Category filter tabs */}
+              <div className="a-cat-tabs">
+                {cats.map(c=>(
+                  <button key={c} className={`a-cat-tab${filterCat===c?" a-cat-tab-active":""}`} onClick={()=>{setFilterCat(c);setCurrentPage(1);}}>
+                    {c}
                   </button>
-                </div>
+                ))}
+              </div>
 
-                {/* Form */}
-                {showForm && (
-                  <div className="a-form-card">
-                    <div className="a-form-title">
-                      <div className="a-form-title-dot" />
-                      {editingProduct ? "Modifier le produit" : "Ajouter un produit"}
+              {/* Products table */}
+              <div className="a-card">
+                <div className="a-card-head">
+                  <div className="a-card-title">Catalogue ({filteredProducts.length} produits)</div>
+                  <div className="a-searchbar">
+                    <span>⌕</span>
+                    <input type="text" placeholder="Rechercher…" value={searchTerm} onChange={e=>{setSearchTerm(e.target.value);setCurrentPage(1);}}/>
+                  </div>
+                </div>
+                <ATable
+                  cols={["Produit","Catégorie","Genre","Type","Prix","Stock","Actions"]}
+                  empty={{icon:"📦",text:"Aucun produit"}}
+                  rows={pagedProducts.map(p=>[
+                    <div className="a-prod-row">
+                      {p.image_url
+                        ? <img src={p.image_url} alt={p.name} className="a-thumb" onError={e=>e.target.style.display="none"}/>
+                        : <div className="a-thumb-ph">🌸</div>}
+                      <div>
+                        <div className="a-fw">{p.name}</div>
+                        {p.scent_family && <div className="a-muted-sm">{SCENT_LABELS[p.scent_family]}</div>}
+                        {p.inspired_by && <div className="a-inspired">≈ {p.inspired_by}</div>}
+                      </div>
+                    </div>,
+                    <span className="a-chip a-chip-coral">{p.category||"—"}</span>,
+                    <span className="a-chip a-chip-blue">{p.gender||"Unisex"}</span>,
+                    <span className={`a-chip${p.product_type==="Original"?" a-chip-gold":" a-chip-gray"}`}>{p.product_type||"Original"}</span>,
+                    <span className="a-coral a-fw">{fmt(p.price)} MAD</span>,
+                    <span className={`a-stock${p.stock<5?" a-stock-low":""}`}>
+                      <span className="a-dot" style={{background:p.stock<5?"#F87171":"#4ADE80"}}/>{p.stock}
+                    </span>,
+                    <div className="a-actions-row">
+                      <button className="a-ic-btn a-ic-edit" onClick={()=>handleEditProduct(p)} title="Modifier">✎</button>
+                      <button className="a-ic-btn a-ic-del"  onClick={()=>handleDeleteProduct(p.id,p.name)} title="Supprimer">🗑</button>
+                    </div>,
+                  ])}
+                />
+                {totalPages>1 && (
+                  <div className="a-pager">
+                    <span className="a-pager-info">Page {currentPage}/{totalPages} · {filteredProducts.length} produits</span>
+                    <div className="a-pager-btns">
+                      <button className="a-pg-btn" onClick={()=>setCurrentPage(p=>Math.max(1,p-1))} disabled={currentPage===1}>‹</button>
+                      {Array.from({length:Math.min(5,totalPages)},(_,i)=>{
+                        const pg=currentPage<=3?i+1:currentPage-2+i;
+                        if(pg<1||pg>totalPages)return null;
+                        return <button key={pg} className={`a-pg-btn${pg===currentPage?" a-pg-active":""}`} onClick={()=>setCurrentPage(pg)}>{pg}</button>;
+                      })}
+                      <button className="a-pg-btn" onClick={()=>setCurrentPage(p=>Math.min(totalPages,p+1))} disabled={currentPage===totalPages}>›</button>
                     </div>
-                    <form onSubmit={handleSaveProduct}>
-                      <div className="a-form-grid">
-                        <div className="a-field a-span2">
-                          <label className="a-field-label">Nom du produit *</label>
-                          <input className="a-field-input" type="text" placeholder="Ex: Parfum Oud Royal 100ml" value={formData.name} onChange={e => setFormData({...formData, name:e.target.value})} required />
-                        </div>
-                        <div className="a-field">
-                          <label className="a-field-label">Catégorie</label>
-                          <select className="a-field-input" value={formData.category} onChange={e => setFormData({...formData, category:e.target.value})}>
-                            <option value="">Sélectionner…</option>
-                            {["Homme","Femme","Unisex","Oud"].map(c => <option key={c}>{c}</option>)}
-                          </select>
-                        </div>
-                        <div className="a-field">
-                          <label className="a-field-label">Prix (MAD) *</label>
-                          <input className="a-field-input" type="number" step="1" min="0" placeholder="299" value={formData.price} onChange={e => setFormData({...formData, price:e.target.value})} required />
-                        </div>
-                        <div className="a-field">
-                          <label className="a-field-label">Stock</label>
-                          <input className="a-field-input" type="number" min="0" placeholder="50" value={formData.stock} onChange={e => setFormData({...formData, stock:e.target.value})} />
-                        </div>
-                        <div className="a-field a-span3">
-                          <label className="a-field-label">URL image</label>
-                          <input className="a-field-input" type="text" placeholder="https://…" value={formData.image_url} onChange={e => { setFormData({...formData, image_url:e.target.value}); setImagePreview(e.target.value); }} />
-                          {imagePreview && <img src={imagePreview} alt="" className="a-img-preview" onError={e => e.target.style.display="none"} />}
-                        </div>
-                        <div className="a-field a-span3">
-                          <label className="a-field-label">Description</label>
-                          <textarea className="a-field-input a-field-textarea" placeholder="Description du produit…" value={formData.description} onChange={e => setFormData({...formData, description:e.target.value})} />
-                        </div>
-                      </div>
-                      <div className="a-form-actions">
-                        <button type="submit" className="a-btn-coral" disabled={loading}>
-                          {loading ? <span className="a-spin" /> : editingProduct ? "💾 Enregistrer" : "+ Ajouter"}
-                        </button>
-                        <button type="button" className="a-btn-ghost" onClick={() => { setShowForm(false); setEditingProduct(null); }}>Annuler</button>
-                      </div>
-                    </form>
                   </div>
                 )}
+              </div>
+            </>)}
 
-                {/* Table */}
-                <div className="a-card">
-                  <div className="a-card-head">
-                    <div className="a-card-title">Catalogue ({filteredProducts.length})</div>
-                    <div className="a-search">
-                      <span className="a-search-icon">⌕</span>
-                      <input type="text" placeholder="Rechercher…" value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} />
-                    </div>
-                  </div>
-                  <ATable
-                    cols={["Produit", "Catégorie", "Prix", "Stock", "Actions"]}
-                    empty={{ icon:"📦", text:"Aucun produit" }}
-                    rows={pagedProducts.map(p => [
-                      <div className="a-prod-cell">
-                        {p.image_url
-                          ? <img src={p.image_url} alt={p.name} className="a-thumb" onError={e => e.target.style.display="none"} />
-                          : <div className="a-thumb-ph">🌸</div>}
-                        <div>
-                          <div className="a-fw5">{p.name}</div>
-                          {p.description && <div className="a-text-sm">{p.description.substring(0,42)}…</div>}
-                        </div>
-                      </div>,
-                      <span className="a-cat-badge">{p.category || "Parfum"}</span>,
-                      <span className="a-coral-fw">{fmt(p.price)} MAD</span>,
-                      <span className={`a-stock-badge ${p.stock < 5 ? "a-stock-low" : "a-stock-ok"}`}>
-                        <span className="a-status-dot" style={{ background: p.stock < 5 ? "#F87171" : "#4ADE80" }} />
-                        {p.stock} unités
-                      </span>,
-                      <div className="a-actions">
-                        <button className="a-icon-btn a-icon-edit" onClick={() => handleEditProduct(p)}>✎</button>
-                        <button className="a-icon-btn a-icon-del"  onClick={() => handleDeleteProduct(p.id, p.name)}>🗑</button>
-                      </div>,
-                    ])}
-                  />
-                  {totalPages > 1 && (
-                    <div className="a-pagination">
-                      <span className="a-pagination-info">Affichage {(currentPage-1)*itemsPerPage+1}–{Math.min(currentPage*itemsPerPage, filteredProducts.length)} / {filteredProducts.length}</span>
-                      <div className="a-pagination-btns">
-                        <button className="a-page-btn" onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1}>‹</button>
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          const pg = currentPage <= 3 ? i+1 : currentPage-2+i;
-                          if (pg < 1 || pg > totalPages) return null;
-                          return <button key={pg} className={`a-page-btn ${pg === currentPage ? "a-page-btn--active" : ""}`} onClick={() => setCurrentPage(pg)}>{pg}</button>;
-                        })}
-                        <button className="a-page-btn" onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages}>›</button>
-                      </div>
-                    </div>
-                  )}
+            {/* ══ ORDERS ══ */}
+            {activePage==="orders" && (<>
+              <div className="a-page-head">
+                <div>
+                  <h1 className="a-page-title">Commandes</h1>
+                  <p  className="a-page-sub">{orders.length} commandes au total</p>
                 </div>
-              </>
-            )}
-
-            {/* ══════════════════ ORDERS ══════════════════ */}
-            {activePage === "orders" && (
-              <>
-                <div className="a-page-head">
-                  <div>
-                    <h1 className="a-page-title">Commandes</h1>
-                    <p className="a-page-sub">{orders.length} commandes au total</p>
+                <button className="a-btn-primary" onClick={exportExcel}>⬇ Exporter Excel</button>
+              </div>
+              <div className="a-strip">
+                {Object.entries(STATUS_CFG).map(([k,s])=>(
+                  <div className="a-strip-pill" key={k} style={{"--sb":s.bg,"--sc":s.color}}>
+                    <span className="a-dot" style={{background:s.dot}}/>{s.label} · <b>{orders.filter(o=>o.status===k).length}</b>
                   </div>
-                  <button className="a-btn-coral" onClick={exportOrdersToExcel}>⬇ Exporter Excel</button>
+                ))}
+              </div>
+              <div className="a-card">
+                <div className="a-card-head">
+                  <div className="a-card-title">Toutes les commandes ({filteredOrders.length})</div>
+                  <div className="a-searchbar">
+                    <span>⌕</span>
+                    <input type="text" placeholder="Rechercher…" value={orderSearch} onChange={e=>setOrderSearch(e.target.value)}/>
+                  </div>
                 </div>
+                <ATable
+                  cols={["Commande","Client","Articles","Total","Statut","Date"]}
+                  empty={{icon:"📋",text:"Aucune commande"}}
+                  rows={filteredOrders.map(o=>{
+                    const sc=STATUS_CFG[o.status]||STATUS_CFG.pending;
+                    return [
+                      <div><div className="a-id">#{o.id}</div>{o.customer_phone&&<div className="a-muted-sm">📞 {o.customer_phone}</div>}</div>,
+                      <div><div className="a-fw">{o.customer_name}</div><div className="a-muted-sm">{o.customer_email}</div>{o.customer_address&&<div className="a-muted-sm">📍 {o.customer_address}</div>}</div>,
+                      <div style={{maxWidth:180}}>{o.items?.slice(0,2).map((it,i)=><div key={i} className="a-muted-sm">{it.product_name} <span style={{color:"#aaa"}}>×{it.quantity}</span></div>)}{o.items?.length>2&&<span style={{fontSize:11,color:"#EF776A"}}>+{o.items.length-2} autres</span>}</div>,
+                      <span className="a-coral a-fw">{fmt(o.total_amount)} MAD</span>,
+                      <select className="a-status-sel" value={o.status} onChange={e=>handleUpdateOrderStatus(o.id,e.target.value)} style={{background:sc.bg,color:sc.color}}>
+                        {Object.entries(STATUS_CFG).map(([v,c])=><option key={v} value={v}>{c.label}</option>)}
+                      </select>,
+                      <span className="a-muted-sm">{new Date(o.created_at).toLocaleDateString("fr-FR")}</span>,
+                    ];
+                  })}
+                />
+              </div>
+            </>)}
 
-                {/* Status strip */}
-                <div className="a-status-strip">
-                  {Object.entries(STATUS_CFG).map(([k, s]) => (
-                    <div key={k} className="a-status-pill" style={{ "--s-bg": s.bg, "--s-color": s.color }}>
-                      <span className="a-status-dot" style={{ background: s.dot }} />
-                      {s.label} · <strong>{orders.filter(o => o.status === k).length}</strong>
-                    </div>
+            {/* ══ CUSTOMERS ══ */}
+            {activePage==="customers" && (<>
+              <div className="a-page-head">
+                <h1 className="a-page-title">Clients</h1>
+                <p  className="a-page-sub">{customers.length} clients enregistrés</p>
+              </div>
+              <div className="a-card">
+                <div className="a-card-head"><div className="a-card-title">Base clients</div></div>
+                <ATable
+                  cols={["Client","Email","Téléphone","Commandes","Total dépensé"]}
+                  empty={{icon:"👥",text:"Aucun client"}}
+                  rows={customers.map(c=>{
+                    const clientOrders=orders.filter(o=>o.customer_email===c.customer_email);
+                    const total=clientOrders.reduce((s,o)=>s+Number(o.total_amount),0);
+                    return [
+                      <div className="a-cust-row"><div className="a-avatar">{c.customer_name?.charAt(0)?.toUpperCase()}</div><span className="a-fw">{c.customer_name}</span></div>,
+                      <span className="a-muted-sm">{c.customer_email}</span>,
+                      <span className="a-muted-sm">{c.customer_phone||"—"}</span>,
+                      <span className="a-chip a-chip-blue">{clientOrders.length} cmd</span>,
+                      <span className="a-coral a-fw">{fmt(total)} MAD</span>,
+                    ];
+                  })}
+                />
+              </div>
+            </>)}
+
+            {/* ══ DELIVERY ══ */}
+            {activePage==="delivery" && (<>
+              <div className="a-page-head"><h1 className="a-page-title">Livraison</h1></div>
+              <div className="a-delivery-hero">
+                <div className="a-dh-icon">🚚</div>
+                <div>
+                  <div className="a-dh-title">Livraison partout au Maroc</div>
+                  <div className="a-dh-sub">Offerte dès 300 MAD · Délai 24-48h · Suivi en temps réel</div>
+                </div>
+                <div className="a-dh-badge">● Actif</div>
+              </div>
+              <div className="a-card">
+                <div className="a-card-head"><div className="a-card-title">En cours de livraison</div></div>
+                <ATable
+                  cols={["Commande","Client","Adresse","Statut"]}
+                  empty={{icon:"🚚",text:"Aucune livraison en cours"}}
+                  rows={orders.filter(o=>["shipped","processing"].includes(o.status)).map(o=>[
+                    <span className="a-id">#{o.id}</span>,
+                    <span className="a-fw">{o.customer_name}</span>,
+                    <span className="a-muted-sm">{o.customer_address||"—"}</span>,
+                    <ABadge cfg={STATUS_CFG[o.status]}/>,
+                  ])}
+                />
+              </div>
+              <div className="a-card" style={{padding:24}}>
+                <div className="a-card-title" style={{marginBottom:16}}>🇲🇦 Zones desservies</div>
+                <div className="a-zones">
+                  {["Casablanca","Rabat","Marrakech","Fès","Tanger","Agadir","Tétouan","Meknès","Oujda","El Jadida","Settat","Khouribga","Béni Mellal","Kénitra","Laâyoune"].map(z=>(
+                    <span key={z} className="a-zone">{z}</span>
                   ))}
                 </div>
+              </div>
+            </>)}
 
-                <div className="a-card">
-                  <div className="a-card-head">
-                    <div className="a-card-title">Toutes les commandes ({filteredOrders.length})</div>
-                    <div className="a-search">
-                      <span className="a-search-icon">⌕</span>
-                      <input type="text" placeholder="Rechercher…" value={orderSearch} onChange={e => setOrderSearch(e.target.value)} />
+            {/* ══ SETTINGS ══ */}
+            {activePage==="settings" && (<>
+              <div className="a-page-head"><h1 className="a-page-title">Paramètres</h1></div>
+              <div className="a-form-wrap" style={{maxWidth:600}}>
+                <div className="a-form-header">
+                  <div className="a-form-header-left">
+                    <div className="a-form-pulse"/>
+                    <div className="a-form-title">Informations de la boutique</div>
+                  </div>
+                </div>
+                <div className="a-form-grid-2">
+                  {[
+                    {label:"Nom de la boutique",type:"text", value:"Nahid Perfume",          col:2},
+                    {label:"Email admin",        type:"email",value:"admin@nahidperfume.com", col:1},
+                    {label:"Téléphone",          type:"text", value:"+212 6 00 00 00 00",     col:1},
+                    {label:"Ville",              type:"text", value:"Casablanca, Maroc",       col:1},
+                  ].map((f,i)=>(
+                    <div key={i} className={`a-field${f.col===2?" a-col-2":""}`}>
+                      <label className="a-lbl">{f.label}</label>
+                      <input className="af-input" type={f.type} defaultValue={f.value}/>
                     </div>
-                  </div>
-                  <ATable
-                    cols={["Commande", "Client", "Articles", "Total", "Statut", "Date"]}
-                    empty={{ icon:"📋", text:"Aucune commande" }}
-                    rows={filteredOrders.map(o => {
-                      const sc = STATUS_CFG[o.status] || STATUS_CFG.pending;
-                      return [
-                        <div>
-                          <div className="a-id">#{o.id}</div>
-                          {o.customer_phone && <div className="a-text-xs">📞 {o.customer_phone}</div>}
-                        </div>,
-                        <div>
-                          <div className="a-fw5">{o.customer_name}</div>
-                          <div className="a-text-xs">{o.customer_email}</div>
-                          {o.customer_address && <div className="a-text-xs">📍 {o.customer_address}</div>}
-                        </div>,
-                        <div className="a-items-cell">
-                          {o.items?.slice(0,2).map((it,i) => <div key={i} className="a-text-sm">{it.product_name} <span className="a-gray">×{it.quantity}</span></div>)}
-                          {o.items?.length > 2 && <span className="a-more">+{o.items.length-2} autres</span>}
-                        </div>,
-                        <span className="a-coral-fw">{fmt(o.total_amount)} MAD</span>,
-                        <select
-                          className="a-status-select"
-                          value={o.status}
-                          onChange={e => handleUpdateOrderStatus(o.id, e.target.value)}
-                          style={{ background: sc.bg, color: sc.color }}
-                        >
-                          {Object.entries(STATUS_CFG).map(([v, c]) => <option key={v} value={v}>{c.label}</option>)}
-                        </select>,
-                        <span className="a-date">{new Date(o.created_at).toLocaleDateString("fr-FR")}</span>,
-                      ];
-                    })}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* ══════════════════ CUSTOMERS ══════════════════ */}
-            {activePage === "customers" && (
-              <>
-                <div className="a-page-head">
-                  <div>
-                    <h1 className="a-page-title">Clients</h1>
-                    <p className="a-page-sub">{customers.length} clients enregistrés</p>
+                  ))}
+                  <div className="a-field">
+                    <label className="a-lbl">Devise</label>
+                    <select className="af-input" defaultValue="MAD"><option>MAD</option><option>EUR</option><option>USD</option></select>
                   </div>
                 </div>
-                <div className="a-card">
-                  <div className="a-card-head">
-                    <div className="a-card-title">Base clients</div>
-                  </div>
-                  <ATable
-                    cols={["Client", "Email", "Téléphone", "Commandes", "Total dépensé"]}
-                    empty={{ icon:"👥", text:"Aucun client" }}
-                    rows={customers.map((c, i) => {
-                      const clientOrders = orders.filter(o => o.customer_email === c.customer_email);
-                      const total = clientOrders.reduce((s, o) => s + Number(o.total_amount), 0);
-                      return [
-                        <div className="a-cust-cell">
-                          <div className="a-cust-avatar">{c.customer_name?.charAt(0)?.toUpperCase()}</div>
-                          <span className="a-fw5">{c.customer_name}</span>
-                        </div>,
-                        <span className="a-text-sm">{c.customer_email}</span>,
-                        <span className="a-text-sm">{c.customer_phone || "—"}</span>,
-                        <span className="a-count-badge">{clientOrders.length} cmd</span>,
-                        <span className="a-coral-fw">{fmt(total)} MAD</span>,
-                      ];
-                    })}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* ══════════════════ DELIVERY ══════════════════ */}
-            {activePage === "delivery" && (
-              <>
-                <div className="a-page-head">
-                  <h1 className="a-page-title">Livraison</h1>
-                </div>
-                <div className="a-delivery-banner">
-                  <div className="a-delivery-icon-wrap">🚚</div>
-                  <div>
-                    <div className="a-delivery-title">Livraison partout au Maroc</div>
-                    <div className="a-delivery-sub">Offerte dès 500 MAD · Délai 24-48h · Suivi en temps réel</div>
-                  </div>
-                  <div className="a-delivery-active">● Actif</div>
-                </div>
-
-                <div className="a-card">
-                  <div className="a-card-head"><div className="a-card-title">En cours de livraison</div></div>
-                  <ATable
-                    cols={["Commande","Client","Adresse","Statut"]}
-                    empty={{ icon:"🚚", text:"Aucune livraison en cours" }}
-                    rows={orders.filter(o => ["shipped","processing"].includes(o.status)).map(o => {
-                      const sc = STATUS_CFG[o.status];
-                      return [
-                        <span className="a-id">#{o.id}</span>,
-                        <span className="a-fw5">{o.customer_name}</span>,
-                        <span className="a-text-sm">{o.customer_address || "—"}</span>,
-                        <StatusBadge cfg={sc} />,
-                      ];
-                    })}
-                  />
-                </div>
-
-                <div className="a-card" style={{ marginTop:18, padding:24 }}>
-                  <div className="a-card-title" style={{ marginBottom:14 }}>🇲🇦 Zones desservies</div>
-                  <div className="a-zones">
-                    {["Casablanca","Rabat","Marrakech","Fès","Tanger","Agadir","Tétouan","Meknès","Oujda","El Jadida","Settat","Khouribga","Béni Mellal","Kénitra","Laâyoune"].map(z => (
-                      <span key={z} className="a-zone-chip">{z}</span>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* ══════════════════ SETTINGS ══════════════════ */}
-            {activePage === "settings" && (
-              <>
-                <div className="a-page-head">
-                  <h1 className="a-page-title">Paramètres</h1>
-                </div>
-                <div className="a-form-card" style={{ maxWidth:560 }}>
-                  <div className="a-form-title"><div className="a-form-title-dot" />Informations de la boutique</div>
-                  <div className="a-form-grid" style={{ gridTemplateColumns:"1fr 1fr" }}>
-                    {[
-                      { label:"Nom de la boutique", type:"text",  value:"Nahid Perfume",         span:2 },
-                      { label:"Email admin",         type:"email", value:"admin@nahidperfume.com", span:1 },
-                      { label:"Téléphone",           type:"text",  value:"+212 6 00 00 00 00",    span:1 },
-                      { label:"Ville",               type:"text",  value:"Casablanca, Maroc",      span:1 },
-                    ].map((f, i) => (
-                      <div key={i} className={`a-field ${f.span === 2 ? "a-span2" : ""}`}>
-                        <label className="a-field-label">{f.label}</label>
-                        <input className="a-field-input" type={f.type} defaultValue={f.value} />
-                      </div>
-                    ))}
-                    <div className="a-field">
-                      <label className="a-field-label">Devise</label>
-                      <select className="a-field-input" defaultValue="MAD">
-                        <option>MAD</option><option>EUR</option><option>USD</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="a-form-actions">
-                    <button className="a-btn-coral">💾 Sauvegarder</button>
-                  </div>
-                </div>
-              </>
-            )}
+                <div className="a-form-footer"><button className="a-btn-primary">💾 Sauvegarder</button></div>
+              </div>
+            </>)}
 
           </div>{/* /a-content */}
         </main>
@@ -656,584 +743,424 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
 };
 
 /* ── Sub-components ── */
-const StatusBadge = ({ cfg }) => (
-  <span className="a-status-badge" style={{ "--s-bg": cfg.bg, "--s-color": cfg.color }}>
-    <span className="a-status-dot" style={{ background: cfg.dot }} />
-    {cfg.label}
+const ABadge = ({cfg}) => (
+  <span className="a-badge" style={{"--sb":cfg.bg,"--sc":cfg.color}}>
+    <span className="a-dot" style={{background:cfg.dot}}/>{cfg.label}
   </span>
 );
 
-const ATable = ({ cols, rows, empty }) => (
-  <div className="a-table-wrap">
-    {rows.length === 0
-      ? <div className="a-empty"><div className="a-empty-icon">{empty.icon}</div><p>{empty.text}</p></div>
-      : <table className="a-table">
-          <thead>
-            <tr>{cols.map(c => <th key={c}>{c}</th>)}</tr>
-          </thead>
-          <tbody>
-            {rows.map((row, ri) => (
-              <tr key={ri} style={{ animationDelay: `${ri*0.03}s` }}>
-                {row.map((cell, ci) => <td key={ci}>{cell}</td>)}
-              </tr>
-            ))}
-          </tbody>
+const AField = ({label,icon,children}) => (
+  <div className="a-field">
+    {label && <label className="a-lbl">{icon && <span style={{marginRight:6}}>{icon}</span>}{label}</label>}
+    {children}
+  </div>
+);
+
+const ATable = ({cols,rows,empty}) => (
+  <div className="a-tbl-wrap">
+    {rows.length===0
+      ? <div className="a-empty"><div style={{fontSize:36,marginBottom:10,opacity:.4}}>{empty.icon}</div><p>{empty.text}</p></div>
+      : <table className="a-tbl">
+          <thead><tr>{cols.map(c=><th key={c}>{c}</th>)}</tr></thead>
+          <tbody>{rows.map((row,ri)=><tr key={ri} style={{animationDelay:`${ri*.03}s`}}>{row.map((cell,ci)=><td key={ci}>{cell}</td>)}</tr>)}</tbody>
         </table>
     }
   </div>
 );
 
-/* ═══════════════════════════════════════════════
-   CSS
-═══════════════════════════════════════════════ */
+/* ═══════════════════════ CSS ══════════════════════════════ */
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@400;500;600&display=swap');
 
-/* ── Tokens ──────────────────────────────── */
 :root {
-  --coral:    #EF776A;
-  --coral-d:  #D4574A;
-  --coral-xl: #FFF4F2;
-  --coral-l:  #FFE8E5;
-  --white:    #FFFFFF;
-  --bg:       #F8F5F3;
-  --border:   #EDE8E5;
-  --ink:      #1C1917;
-  --ink2:     #57534E;
-  --ink3:     #A8A29E;
-  --sidebar:  260px;
-  --radius:   16px;
-  --ease:     cubic-bezier(0.16,1,0.3,1);
-  --ff:       'DM Sans', sans-serif;
-  --ff-d:     'Playfair Display', serif;
-  --shadow:   0 1px 3px rgba(0,0,0,0.05), 0 6px 20px rgba(0,0,0,0.05);
-  --shadow-h: 0 4px 16px rgba(0,0,0,0.08), 0 12px 40px rgba(0,0,0,0.07);
+  --c:   #EF776A;
+  --cd:  #D4574A;
+  --cl:  #FFF4F2;
+  --cll: #FFE8E5;
+  --w:   #FFFFFF;
+  --bg:  #F7F4F1;
+  --bd:  #EDE9E5;
+  --ink: #1C1917;
+  --g:   #78716C;
+  --g2:  #A8A29E;
+  --sb:  260px;
+  --r:   16px;
+  --ff:  'DM Sans', sans-serif;
+  --ffd: 'Playfair Display', serif;
+  --sh:  0 1px 3px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.05);
+  --shh: 0 4px 20px rgba(0,0,0,.08), 0 16px 48px rgba(0,0,0,.07);
+  --ea:  cubic-bezier(.16,1,.3,1);
 }
 
-/* ── Reset ───────────────────────────────── */
-.a-root *, .a-root *::before, .a-root *::after,
-.a-login *, .a-login *::before, .a-login *::after { box-sizing:border-box; margin:0; padding:0; }
-.a-root, .a-login { font-family: var(--ff); color: var(--ink); }
-button { font-family: var(--ff); cursor: pointer; }
-input, select, textarea { font-family: var(--ff); }
+/* reset */
+.a-root*,.al-wrap*{box-sizing:border-box;margin:0;padding:0;}
+.a-root,.al-wrap{font-family:var(--ff);color:var(--ink);}
+button,input,select,textarea{font-family:var(--ff);}
 
-/* ══════════════════════════════════════════
-   LOGIN
-══════════════════════════════════════════ */
-.a-login {
-  min-height: 100vh;
-  background: var(--bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
+/* ── LOGIN ─────────────────────────────── */
+.al-wrap{
+  min-height:100vh; background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
 }
-
-/* Decorative petals */
-.a-petal {
-  position: absolute;
-  border-radius: 60% 40% 70% 30% / 50% 60% 40% 70%;
-  background: var(--coral);
-  opacity: 0.06;
-  pointer-events: none;
-  animation: a-petal-drift 12s ease-in-out infinite;
+.al-bg-blob{position:absolute;border-radius:50%;pointer-events:none;opacity:.07;}
+.al-blob-1{width:600px;height:600px;top:-200px;right:-200px;background:var(--c);animation:blobFloat 14s ease-in-out infinite;}
+.al-blob-2{width:400px;height:400px;bottom:-120px;left:-120px;background:var(--c);animation:blobFloat 18s ease-in-out infinite reverse;}
+@keyframes blobFloat{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.05) rotate(8deg)}}
+.al-card{
+  position:relative;z-index:2;
+  background:var(--w);border:1px solid var(--bd);border-radius:28px;
+  padding:clamp(36px,6vw,56px) clamp(28px,5vw,48px);
+  width:100%;max-width:440px;margin:24px;
+  box-shadow:var(--shh);
+  animation:slideUp .6s var(--ea);
 }
-.a-petal-1 { width:420px;height:420px; top:-160px;right:-120px; animation-delay:0s; }
-.a-petal-2 { width:280px;height:280px; bottom:-80px;left:-80px; animation-delay:-5s; opacity:0.04; }
-.a-petal-3 { width:160px;height:160px; top:40%;left:60%; animation-delay:-9s; opacity:0.05; }
-@keyframes a-petal-drift { 0%,100%{transform:rotate(0deg) scale(1)} 50%{transform:rotate(12deg) scale(1.05)} }
-
-.a-login-card {
-  position: relative;
-  z-index: 2;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 28px;
-  padding: 52px 44px;
-  width: 100%;
-  max-width: 420px;
-  margin: 24px;
-  box-shadow: var(--shadow-h);
-  animation: a-slide-up 0.6s var(--ease);
-}
-@keyframes a-slide-up { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-
-.a-login-mark {
-  width: 60px; height: 60px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, var(--coral), var(--coral-d));
-  color: white;
-  font-size: 26px;
-  font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 22px;
-  box-shadow: 0 8px 24px rgba(239,119,106,0.35);
-}
-.a-login-title { font-family: var(--ff-d); font-size: 26px; text-align:center; color:var(--ink); font-weight:500; margin-bottom:6px; }
-.a-login-sub   { font-size:13px; color:var(--ink3); text-align:center; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:32px; }
-.a-login-form  { display:flex; flex-direction:column; gap:14px; }
-.a-login-err   { background:#FEF2F2; border:1px solid #FECACA; color:#991B1B; padding:11px 14px; border-radius:10px; font-size:13px; text-align:center; }
-.a-login-hint  { font-size:11px; color:var(--ink3); text-align:center; margin-top:20px; letter-spacing:0.04em; }
-
-/* ══════════════════════════════════════════
-   ROOT LAYOUT
-══════════════════════════════════════════ */
-.a-root   { display:flex; min-height:100vh; background:var(--bg); }
-.a-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.25);z-index:49;backdrop-filter:blur(3px); }
-
-/* ══════════════════════════════════════════
-   SIDEBAR
-══════════════════════════════════════════ */
-.a-sidebar {
-  position: fixed;
-  top:0; left:0;
-  width: var(--sidebar);
-  height: 100vh;
-  background: var(--white);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  z-index: 50;
-  transition: transform 0.3s var(--ease);
-  overflow: hidden;
-}
-.a-sidebar--closed { transform: translateX(-100%); }
-
-/* Thin coral accent bar on the right edge */
-.a-sidebar-accent {
-  position: absolute;
-  top: 0; right: 0;
-  width: 3px; height: 100%;
-  background: linear-gradient(to bottom, var(--coral) 0%, transparent 100%);
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.a-sidebar-top {
-  padding: 22px 18px 18px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 12px;
-}
-.a-sidebar-logo { display:flex;align-items:center;gap:12px;flex:1;min-width:0; }
-.a-logo-mark {
-  width:36px;height:36px;border-radius:11px;
-  background:linear-gradient(135deg,var(--coral),var(--coral-d));
-  color:white;font-size:16px;font-weight:700;
+@keyframes slideUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+.al-logo{display:flex;align-items:center;gap:14px;margin-bottom:28px;}
+.al-logo-mark{
+  width:52px;height:52px;border-radius:16px;
+  background:linear-gradient(135deg,var(--c),var(--cd));
+  color:white;font-size:22px;font-weight:700;
   display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-  box-shadow:0 4px 12px rgba(239,119,106,0.3);
+  box-shadow:0 8px 24px rgba(239,119,106,.35);flex-shrink:0;
 }
-.a-logo-name { font-size:14px;font-weight:600;color:var(--ink);line-height:1.2; }
-.a-logo-sub  { font-size:10px;color:var(--ink3);letter-spacing:0.05em;text-transform:uppercase; }
-.a-sidebar-close {
-  background:none;border:none;color:var(--ink3);font-size:14px;padding:4px;
-  border-radius:6px;transition:all 0.15s;display:none;
-}
-.a-sidebar-close:hover { background:var(--bg);color:var(--ink); }
+.al-logo-name{font-family:var(--ffd);font-size:18px;font-weight:500;color:var(--ink);}
+.al-logo-sub{font-size:11px;color:var(--g2);letter-spacing:.1em;text-transform:uppercase;margin-top:2px;}
+.al-title{font-family:var(--ffd);font-size:clamp(22px,4vw,28px);font-weight:500;color:var(--ink);margin-bottom:6px;}
+.al-desc{font-size:14px;color:var(--g);margin-bottom:28px;}
+.al-form{display:flex;flex-direction:column;gap:16px;}
+.al-err{background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;padding:11px 14px;border-radius:10px;font-size:13px;display:flex;align-items:center;gap:8px;}
+.al-hint{margin-top:20px;font-size:11px;color:var(--g2);text-align:center;letter-spacing:.06em;}
 
-.a-nav { flex:1;padding:12px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:2px; }
-.a-nav-group-label { font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink3);padding:10px 10px 6px; }
+/* ── ROOT ──────────────────────────────── */
+.a-root{display:flex;min-height:100vh;background:var(--bg);}
+.a-overlay{position:fixed;inset:0;background:rgba(0,0,0,.22);z-index:49;backdrop-filter:blur(4px);}
 
-.a-nav-item {
-  display:flex;align-items:center;gap:10px;
-  padding:10px 14px;border-radius:12px;
-  border:none;background:none;
-  font-size:13.5px;font-weight:500;color:var(--ink2);
-  width:100%;text-align:left;
-  transition:all 0.18s;position:relative;
-  cursor:pointer;
+/* ── SIDEBAR ───────────────────────────── */
+.a-sidebar{
+  position:fixed;top:0;left:0;
+  width:var(--sb);height:100vh;
+  background:var(--w);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;z-index:50;
+  transition:transform .3s var(--ea);overflow:hidden;
 }
-.a-nav-item:hover { background:var(--coral-xl);color:var(--coral); }
-.a-nav-item--active {
-  background: var(--coral-l);
-  color: var(--coral);
-  font-weight: 600;
+.a-sidebar-closed{transform:translateX(-100%);}
+.a-sb-top{
+  padding:22px 18px 18px;border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;gap:12px;
 }
-.a-nav-item--active::before {
-  content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
-  width:3px;height:20px;background:var(--coral);border-radius:0 3px 3px 0;
+.a-sb-logo{display:flex;align-items:center;gap:12px;flex:1;min-width:0;}
+.a-sb-mark{
+  width:38px;height:38px;border-radius:12px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--c),var(--cd));
+  color:white;font-size:17px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(239,119,106,.35);
 }
-.a-nav-icon { font-size:15px;width:18px;text-align:center;flex-shrink:0; }
-.a-nav-badge {
-  margin-left:auto;background:var(--coral);color:white;
-  border-radius:20px;font-size:10px;padding:2px 7px;font-weight:700;
-}
-.a-sidebar-foot { padding:14px 10px;border-top:1px solid var(--border); }
-.a-logout {
-  display:flex;align-items:center;gap:10px;
-  padding:10px 14px;border-radius:12px;
-  border:none;background:none;
-  font-size:13px;font-weight:500;color:#C0897E;
-  width:100%;cursor:pointer;transition:all 0.18s;
-}
-.a-logout:hover { background:#FEF2F2;color:#B91C1C; }
+.a-sb-name{font-size:14px;font-weight:700;color:var(--ink);line-height:1.2;}
+.a-sb-role{font-size:10px;color:var(--g2);letter-spacing:.08em;text-transform:uppercase;}
+.a-sb-close{background:none;border:none;color:var(--g);font-size:13px;padding:4px;border-radius:6px;cursor:pointer;display:none;}
+.a-sb-close:hover{background:var(--bg);color:var(--ink);}
+.a-sb-divider{height:1px;background:linear-gradient(90deg,transparent,var(--bd),transparent);margin:0 16px;}
 
-/* ══════════════════════════════════════════
-   MAIN
-══════════════════════════════════════════ */
-.a-main {
-  flex:1;
-  transition:margin-left 0.3s var(--ease);
-  min-width:0;
+.a-nav{padding:14px 10px;display:flex;flex-direction:column;gap:2px;}
+.a-nav-label{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--g2);padding:10px 10px 6px;}
+.a-nav-item{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;
+  border:none;background:none;font-size:13.5px;font-weight:500;color:var(--g);
+  width:100%;text-align:left;cursor:pointer;transition:all .18s;position:relative;
 }
-.a-main--pushed { margin-left:var(--sidebar); }
+.a-nav-item:hover{background:var(--cl);color:var(--c);}
+.a-nav-active{background:var(--cll)!important;color:var(--c)!important;font-weight:700;}
+.a-nav-active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--c);border-radius:0 3px 3px 0;}
+.a-nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
+.a-nav-txt{flex:1;}
+.a-nav-badge{margin-left:auto;background:var(--c);color:white;border-radius:20px;font-size:10px;padding:2px 7px;font-weight:800;}
+.a-sb-foot{padding:14px 10px;border-top:1px solid var(--bd);}
+.a-sb-user{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--bg);margin-bottom:8px;}
+.a-sb-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--c),var(--cd));color:white;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.a-sb-uname{font-size:13px;font-weight:600;color:var(--ink);}
+.a-sb-uemail{font-size:10px;color:var(--g2);}
+.a-logout-btn{display:flex;align-items:center;gap:9px;padding:9px 14px;border-radius:10px;border:none;background:none;font-size:13px;font-weight:500;color:#C0897E;width:100%;cursor:pointer;transition:all .18s;}
+.a-logout-btn:hover{background:#FEF2F2;color:#991B1B;}
 
-/* ── Topbar ──────────────────────────────── */
-.a-topbar {
+/* ── MAIN ──────────────────────────────── */
+.a-main{flex:1;transition:margin-left .3s var(--ea);min-width:0;}
+.a-main-pushed{margin-left:var(--sb);}
+
+/* Topbar */
+.a-topbar{
   position:sticky;top:0;z-index:40;
-  background:rgba(255,255,255,0.88);
-  backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--border);
-  height:60px;padding:0 24px;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--bd);height:62px;
+  padding:0 clamp(14px,2vw,28px);
   display:flex;align-items:center;gap:14px;
 }
-.a-menu-btn {
-  width:36px;height:36px;border:none;background:none;
-  border-radius:10px;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:4px;
-  transition:background 0.15s;flex-shrink:0;
+.a-hamburger{width:38px;height:38px;border:none;background:none;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:background .15s;flex-shrink:0;}
+.a-hamburger:hover{background:var(--bg);}
+.a-hamburger span{display:block;width:17px;height:1.5px;background:var(--g);border-radius:2px;}
+.a-topbar-title{font-family:var(--ffd);font-size:17px;font-weight:500;color:var(--ink);white-space:nowrap;}
+.a-topbar-actions{display:flex;align-items:center;gap:8px;}
+.a-topbar-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--c),var(--cd));color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+
+/* Content */
+.a-content{padding:clamp(16px,3vw,32px);max-width:1400px;}
+
+/* Notification */
+.a-notif{position:fixed;top:72px;right:24px;z-index:9999;display:flex;align-items:center;gap:10px;padding:13px 20px;border-radius:14px;font-size:14px;font-weight:500;box-shadow:var(--shh);animation:notifIn .3s var(--ea);max-width:360px;}
+@keyframes notifIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.a-notif-ok{background:#F0FDF4;color:#166534;border:1px solid #BBF7D0;}
+.a-notif-err{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA;}
+
+/* Page head */
+.a-page-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:clamp(16px,2.5vw,28px);flex-wrap:wrap;gap:12px;}
+.a-page-title{font-family:var(--ffd);font-size:clamp(20px,3vw,28px);font-weight:500;color:var(--ink);line-height:1.2;}
+.a-page-sub{font-size:13px;color:var(--g);margin-top:4px;}
+
+/* KPI */
+.a-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+.a-kpi{
+  background:var(--w);border:1px solid var(--bd);border-radius:var(--r);
+  padding:22px 20px;box-shadow:var(--sh);cursor:default;
+  animation:kpiIn .5s var(--ea) both;position:relative;overflow:hidden;
+  transition:transform .2s var(--ea),box-shadow .2s;
 }
-.a-menu-btn:hover { background:var(--bg); }
-.a-menu-btn span { display:block;width:16px;height:1.5px;background:var(--ink2);border-radius:2px;transition:all 0.2s; }
-.a-topbar-title { font-family:var(--ff-d);font-size:17px;font-weight:500;color:var(--ink); }
-.a-topbar-right { margin-left:auto;display:flex;align-items:center;gap:10px; }
-.a-topbar-avatar {
-  width:32px;height:32px;border-radius:50%;
-  background:linear-gradient(135deg,var(--coral),var(--coral-d));
-  color:white;font-size:12px;font-weight:700;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;
-}
+.a-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--ka,var(--c));}
+.a-kpi:hover{transform:translateY(-4px);box-shadow:var(--shh);}
+@keyframes kpiIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.a-kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.a-kpi-icon{font-size:24px;}
+.a-kpi-bar{width:28px;height:28px;border-radius:8px;background:color-mix(in srgb,var(--ka,var(--c)) 12%,white);}
+.a-kpi-val{font-family:var(--ffd);font-size:clamp(20px,3vw,28px);font-weight:500;color:var(--ink);line-height:1;margin-bottom:6px;}
+.a-kpi-lbl{font-size:12px;font-weight:500;color:var(--g2);letter-spacing:.03em;}
 
-/* ── Content ─────────────────────────────── */
-.a-content { padding:28px;max-width:1400px; }
+/* Status strip */
+.a-strip{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.a-strip-pill{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;background:var(--sb);color:var(--sc);font-size:12px;font-weight:500;border:1px solid color-mix(in srgb,var(--sc) 15%,transparent);}
 
-/* ── Notification ────────────────────────── */
-.a-notif {
-  position:fixed;top:72px;right:24px;z-index:9999;
-  display:flex;align-items:center;gap:10px;
-  padding:13px 20px;border-radius:14px;
-  font-size:14px;font-weight:500;
-  box-shadow:var(--shadow-h);
-  animation:a-notif-in 0.35s var(--ease);
-  max-width:340px;
-}
-@keyframes a-notif-in { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
-.a-notif--ok  { background:#F0FDF4;color:#166534;border:1px solid #BBF7D0; }
-.a-notif--err { background:#FEF2F2;color:#991B1B;border:1px solid #FECACA; }
+/* Card */
+.a-card{background:var(--w);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-bottom:20px;transition:box-shadow .2s;}
+.a-card-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--bd);flex-wrap:wrap;gap:12px;}
+.a-card-title{font-size:15px;font-weight:700;color:var(--ink);}
 
-/* ── Page header ─────────────────────────── */
-.a-page-head { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px; }
-.a-page-title { font-family:var(--ff-d);font-size:26px;font-weight:500;color:var(--ink);line-height:1.2; }
-.a-page-sub   { font-size:13px;color:var(--ink3);margin-top:4px; }
+/* Table */
+.a-tbl-wrap{overflow-x:auto;}
+.a-tbl{width:100%;border-collapse:collapse;font-size:14px;}
+.a-tbl thead tr{background:#FDFCFC;}
+.a-tbl thead th{padding:11px 18px;text-align:left;font-size:9.5px;font-weight:800;color:var(--g2);letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid var(--bd);white-space:nowrap;}
+.a-tbl tbody tr{border-bottom:1px solid #F5F2F0;transition:background .14s;animation:rowIn .3s var(--ea) both;}
+@keyframes rowIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
+.a-tbl tbody tr:last-child{border-bottom:none;}
+.a-tbl tbody tr:hover{background:#FDFAF8;}
+.a-tbl tbody td{padding:13px 18px;vertical-align:middle;}
 
-/* ── KPI Cards ───────────────────────────── */
-.a-kpi-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px; }
-.a-kpi {
-  background:var(--white);
-  border:1px solid var(--kpi-border);
-  border-radius:var(--radius);
-  padding:22px 20px;
-  box-shadow:var(--shadow);
-  cursor:default;
-  animation:a-kpi-in 0.5s var(--ease) both;
-  position:relative;
-  overflow:hidden;
-  transition:transform 0.2s var(--ease), box-shadow 0.2s;
-}
-.a-kpi::before {
-  content:'';position:absolute;top:-30px;right:-30px;
-  width:80px;height:80px;border-radius:50%;
-  background:var(--kpi-bg);
-  opacity:0.8;
-  pointer-events:none;
-}
-.a-kpi:hover { transform:translateY(-3px);box-shadow:var(--shadow-h); }
-@keyframes a-kpi-in { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-.a-kpi-icon  { font-size:22px;margin-bottom:12px; }
-.a-kpi-value { font-family:var(--ff-d);font-size:26px;font-weight:400;color:var(--ink);line-height:1;margin-bottom:6px; }
-.a-kpi-label { font-size:12px;font-weight:500;color:var(--ink3);letter-spacing:0.03em; }
+/* Helpers */
+.a-id{font-weight:700;color:var(--g2);font-size:13px;}
+.a-fw{font-weight:600;}
+.a-coral{font-weight:700;color:var(--c);}
+.a-muted-sm{font-size:11.5px;color:var(--g);margin-top:2px;}
+.a-inspired{font-size:10.5px;color:var(--g2);font-style:italic;margin-top:2px;}
+.a-prod-row{display:flex;align-items:center;gap:12px;}
+.a-thumb{width:46px;height:46px;border-radius:10px;object-fit:cover;border:1px solid var(--bd);flex-shrink:0;}
+.a-thumb-ph{width:46px;height:46px;border-radius:10px;background:var(--cl);display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid var(--cll);flex-shrink:0;}
+.a-cust-row{display:flex;align-items:center;gap:10px;}
+.a-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--c),var(--cd));color:white;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.a-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block;}
+.a-stock{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;}
+.a-stock-low{color:#B91C1C;}
+.a-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;background:var(--sb);color:var(--sc);font-size:12px;font-weight:500;white-space:nowrap;}
 
-/* ── Status strip ────────────────────────── */
-.a-status-strip { display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px; }
-.a-status-pill {
-  display:flex;align-items:center;gap:6px;
-  padding:7px 14px;border-radius:999px;
-  background:var(--s-bg);color:var(--s-color);
-  font-size:12px;font-weight:500;
-  border:1px solid color-mix(in srgb, var(--s-color) 15%, transparent);
-}
-.a-status-dot { width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+/* Chips */
+.a-chip{display:inline-flex;align-items:center;padding:4px 11px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+.a-chip-coral{background:var(--cl);color:var(--c);}
+.a-chip-blue{background:#EFF6FF;color:#1D4ED8;}
+.a-chip-gold{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A;}
+.a-chip-gray{background:#F4F4F5;color:#71717A;}
 
-/* ── Card ────────────────────────────────── */
-.a-card {
-  background:var(--white);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  overflow:hidden;
-  margin-bottom:20px;
-  transition:box-shadow 0.2s;
-}
-.a-card-head {
-  display:flex;align-items:center;justify-content:space-between;
-  padding:18px 22px;
-  border-bottom:1px solid var(--border);
-  flex-wrap:wrap;gap:12px;
-}
-.a-card-title { font-size:15px;font-weight:600;color:var(--ink); }
+/* Actions */
+.a-actions-row{display:flex;gap:6px;}
+.a-ic-btn{width:32px;height:32px;border-radius:9px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s;}
+.a-ic-edit{background:#EFF6FF;color:#3B82F6;}
+.a-ic-edit:hover{background:#DBEAFE;transform:scale(1.1);}
+.a-ic-del{background:#FEF2F2;color:#EF4444;}
+.a-ic-del:hover{background:#FEE2E2;transform:scale(1.1);}
 
-/* ── Table ───────────────────────────────── */
-.a-table-wrap { overflow-x:auto; }
-.a-table { width:100%;border-collapse:collapse;font-size:14px; }
-.a-table thead tr { background:#FDFCFC; }
-.a-table thead th {
-  padding:12px 20px;text-align:left;
-  font-size:10px;font-weight:700;color:var(--ink3);
-  letter-spacing:0.1em;text-transform:uppercase;
-  border-bottom:1px solid var(--border);white-space:nowrap;
-}
-.a-table tbody tr {
-  border-bottom:1px solid #F5F2F0;
-  transition:background 0.15s;
-  animation:a-row-in 0.35s var(--ease) both;
-}
-@keyframes a-row-in { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
-.a-table tbody tr:last-child { border-bottom:none; }
-.a-table tbody tr:hover { background:#FDFAF8; }
-.a-table tbody td { padding:14px 20px;vertical-align:middle; }
+/* Pagination */
+.a-pager{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--bd);flex-wrap:wrap;gap:10px;}
+.a-pager-info{font-size:12px;color:var(--g2);}
+.a-pager-btns{display:flex;gap:5px;}
+.a-pg-btn{width:32px;height:32px;border-radius:9px;border:1px solid var(--bd);background:white;cursor:pointer;font-size:13px;font-weight:500;color:var(--g);transition:all .14s;display:flex;align-items:center;justify-content:center;}
+.a-pg-btn:hover:not(:disabled){background:var(--cl);border-color:var(--cll);color:var(--c);}
+.a-pg-active{background:var(--c)!important;border-color:var(--c)!important;color:white!important;}
+.a-pg-btn:disabled{opacity:.35;cursor:not-allowed;}
 
-/* ── Table cell helpers ──────────────────── */
-.a-id        { font-weight:600;color:var(--ink3);font-size:13px; }
-.a-fw5       { font-weight:500; }
-.a-coral-fw  { font-weight:600;color:var(--coral); }
-.a-date      { font-size:12px;color:var(--ink3);white-space:nowrap; }
-.a-text-sm   { font-size:12px;color:var(--ink3);margin-top:2px; }
-.a-text-xs   { font-size:11px;color:var(--ink3);margin-top:2px; }
-.a-gray      { color:var(--ink3); }
-.a-more      { font-size:11px;color:var(--coral); }
-.a-items-cell { max-width:180px; }
+/* Empty */
+.a-empty{text-align:center;padding:56px 20px;color:var(--g2);}
 
-.a-prod-cell { display:flex;align-items:center;gap:12px; }
-.a-thumb { width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--border); }
-.a-thumb-ph { width:44px;height:44px;border-radius:10px;background:var(--coral-xl);display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid var(--coral-l); }
+/* Search */
+.a-searchbar{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--bd);border-radius:40px;padding:8px 16px;transition:border-color .15s;}
+.a-searchbar:focus-within{border-color:var(--c);}
+.a-searchbar span{font-size:14px;color:var(--g2);}
+.a-searchbar input{border:none;background:none;outline:none;font-size:13px;color:var(--ink);min-width:140px;}
+.a-searchbar input::placeholder{color:var(--g2);}
 
-.a-cust-cell { display:flex;align-items:center;gap:10px; }
-.a-cust-avatar {
-  width:36px;height:36px;border-radius:50%;
-  background:linear-gradient(135deg,var(--coral),var(--coral-d));
-  color:white;font-weight:700;font-size:14px;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-}
+/* Status select */
+.a-status-sel{padding:5px 12px;border-radius:20px;border:none;cursor:pointer;outline:none;font-size:12px;font-weight:500;font-family:var(--ff);}
 
-/* ── Badges ──────────────────────────────── */
-.a-status-badge {
-  display:inline-flex;align-items:center;gap:5px;
-  padding:4px 11px;border-radius:20px;
-  background:var(--s-bg);color:var(--s-color);
-  font-size:12px;font-weight:500;white-space:nowrap;
-}
-.a-cat-badge    { background:var(--coral-xl);color:var(--coral);padding:4px 11px;border-radius:20px;font-size:12px;font-weight:500; }
-.a-count-badge  { background:#F0F4FF;color:#4F46E5;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:500; }
-.a-stock-badge  { display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:500; }
-.a-stock-ok  { background:#F0FDF4;color:#166534; }
-.a-stock-low { background:#FEF2F2;color:#991B1B; }
-
-/* ── Status select ───────────────────────── */
-.a-status-select {
-  padding:5px 12px;border-radius:20px;
-  border:none;cursor:pointer;outline:none;
-  font-size:12px;font-weight:500;
-  font-family:var(--ff);transition:all 0.15s;
-}
-
-/* ── Actions ─────────────────────────────── */
-.a-actions { display:flex;gap:6px; }
-.a-icon-btn {
-  width:32px;height:32px;border-radius:9px;
-  border:none;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;transition:all 0.15s;
-}
-.a-icon-edit { background:#EFF6FF;color:#3B82F6; }
-.a-icon-edit:hover { background:#DBEAFE;transform:scale(1.1); }
-.a-icon-del  { background:#FEF2F2;color:#EF4444; }
-.a-icon-del:hover  { background:#FEE2E2;transform:scale(1.1); }
-
-/* ── Pagination ──────────────────────────── */
-.a-pagination { display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px; }
-.a-pagination-info { font-size:12px;color:var(--ink3); }
-.a-pagination-btns { display:flex;gap:6px; }
-.a-page-btn {
-  width:32px;height:32px;border-radius:9px;
-  border:1px solid var(--border);background:white;
-  cursor:pointer;font-size:13px;font-weight:500;color:var(--ink2);
-  transition:all 0.15s;display:flex;align-items:center;justify-content:center;
-  font-family:var(--ff);
-}
-.a-page-btn:hover:not(:disabled) { background:var(--coral-xl);border-color:var(--coral-l);color:var(--coral); }
-.a-page-btn--active { background:var(--coral);border-color:var(--coral);color:white; }
-.a-page-btn:disabled { opacity:0.35;cursor:not-allowed; }
-
-/* ── Empty state ─────────────────────────── */
-.a-empty { text-align:center;padding:56px 20px;color:var(--ink3); }
-.a-empty-icon { font-size:36px;margin-bottom:12px;opacity:0.5; }
-
-/* ── Search ──────────────────────────────── */
-.a-search {
-  display:flex;align-items:center;gap:8px;
-  background:var(--bg);border:1px solid var(--border);
-  border-radius:40px;padding:8px 16px;
-  transition:border-color 0.15s;
-}
-.a-search:focus-within { border-color:var(--coral); }
-.a-search-icon { font-size:14px;color:var(--ink3); }
-.a-search input { border:none;background:none;outline:none;font-size:13px;color:var(--ink);font-family:var(--ff);min-width:160px; }
-.a-search input::placeholder { color:var(--ink3); }
-
-/* ── Buttons ─────────────────────────────── */
-.a-btn-coral {
+/* Buttons */
+.a-btn-primary{
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  background:var(--coral);color:white;border:none;
-  padding:10px 22px;border-radius:40px;
-  font-size:13.5px;font-weight:600;
-  cursor:pointer;transition:all 0.2s var(--ease);
-  box-shadow:0 4px 16px rgba(239,119,106,0.3);
-  white-space:nowrap;
+  background:var(--c);color:white;border:none;
+  padding:10px 22px;border-radius:40px;font-size:13.5px;font-weight:700;
+  cursor:pointer;transition:all .2s var(--ea);
+  box-shadow:0 4px 16px rgba(239,119,106,.3);white-space:nowrap;
 }
-.a-btn-coral:hover:not(:disabled) { background:var(--coral-d);transform:translateY(-1px);box-shadow:0 6px 22px rgba(239,119,106,0.4); }
-.a-btn-coral:active { transform:none; }
-.a-btn-coral:disabled { opacity:0.6;cursor:not-allowed; }
-.a-btn-full { width:100%;margin-top:4px; }
+.a-btn-primary:hover:not(:disabled){background:var(--cd);transform:translateY(-1px);box-shadow:0 6px 24px rgba(239,119,106,.42);}
+.a-btn-primary:disabled{opacity:.6;cursor:not-allowed;}
+.a-btn-full{width:100%;margin-top:4px;}
+.a-btn-sm{padding:8px 16px;font-size:13px;}
+.a-btn-ghost{background:none;border:1.5px solid var(--bd);color:var(--g);padding:9px 20px;border-radius:40px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;}
+.a-btn-ghost:hover{background:var(--bg);border-color:var(--c);color:var(--c);}
+.a-btn-ghost-sm{background:none;border:none;color:var(--c);font-size:13px;font-weight:600;cursor:pointer;padding:4px 8px;border-radius:8px;}
+.a-btn-ghost-sm:hover{background:var(--cl);}
 
-.a-btn-ghost {
-  background:none;border:1px solid var(--border);color:var(--ink2);
-  padding:9px 18px;border-radius:40px;font-size:13px;font-weight:500;
-  cursor:pointer;transition:all 0.15s;white-space:nowrap;
-}
-.a-btn-ghost:hover { background:var(--bg);border-color:var(--coral-l);color:var(--coral); }
+/* Category tabs */
+.a-cat-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.a-cat-tab{padding:7px 16px;border-radius:999px;border:1.5px solid var(--bd);background:white;font-size:13px;font-weight:500;color:var(--g);cursor:pointer;transition:all .15s;}
+.a-cat-tab:hover{border-color:var(--c);color:var(--c);}
+.a-cat-tab-active{background:var(--c);border-color:var(--c);color:white;font-weight:700;}
 
-/* ── Form card ───────────────────────────── */
-.a-form-card {
-  background:var(--white);border:1px solid var(--border);
-  border-radius:var(--radius);padding:26px 28px;
-  box-shadow:var(--shadow);margin-bottom:20px;
-  animation:a-form-in 0.4s var(--ease);
+/* ── PRODUCT FORM ─────────────────────── */
+.a-form-wrap{
+  background:var(--w);border:1px solid var(--bd);border-radius:22px;
+  padding:clamp(20px,3vw,32px);box-shadow:var(--sh);margin-bottom:20px;
+  animation:formIn .35s var(--ea);
 }
-@keyframes a-form-in { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes formIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.a-form-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px;flex-wrap:wrap;}
+.a-form-header-left{display:flex;align-items:flex-start;gap:14px;}
+.a-form-pulse{
+  width:12px;height:12px;border-radius:50%;background:var(--c);flex-shrink:0;margin-top:4px;
+  box-shadow:0 0 0 3px rgba(239,119,106,.2);
+  animation:pulseDot 2.5s ease infinite;
+}
+@keyframes pulseDot{0%,100%{box-shadow:0 0 0 3px rgba(239,119,106,.2)}50%{box-shadow:0 0 0 7px rgba(239,119,106,.08)}}
+.a-form-title{font-size:16px;font-weight:700;color:var(--ink);}
+.a-form-sub{font-size:12px;color:var(--g);margin-top:3px;}
 
-.a-form-title {
-  display:flex;align-items:center;gap:10px;
-  font-size:15px;font-weight:600;color:var(--ink);
-  margin-bottom:22px;
+.a-form-section-title{
+  font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--c);padding:16px 0 10px;
+  display:flex;align-items:center;gap:8px;
 }
-.a-form-title-dot {
-  width:10px;height:10px;border-radius:50%;
-  background:var(--coral);flex-shrink:0;
-  box-shadow:0 0 0 3px rgba(239,119,106,0.2);
-  animation:a-dot-pulse 2.5s ease-in-out infinite;
-}
-@keyframes a-dot-pulse { 0%,100%{box-shadow:0 0 0 3px rgba(239,119,106,0.2)} 50%{box-shadow:0 0 0 6px rgba(239,119,106,0.1)} }
+.a-form-section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--cll),transparent);}
 
-.a-form-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px; }
-.a-span2 { grid-column:span 2; }
-.a-span3 { grid-column:span 3; }
+.a-form-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:4px;}
+.a-form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.a-col-2{grid-column:span 2;}
+.a-col-3{grid-column:span 3;}
 
-/* ── Fields ──────────────────────────────── */
-.a-field { display:flex;flex-direction:column;gap:6px; }
-.a-field-label { font-size:11.5px;font-weight:600;color:var(--ink2);letter-spacing:0.04em; }
-.a-field-input {
-  padding:11px 14px;
-  border:1.5px solid var(--border);
-  border-radius:12px;font-size:14px;color:var(--ink);
-  background:white;outline:none;
-  transition:border-color 0.2s,box-shadow 0.2s;
-  width:100%;
-}
-.a-field-input:focus {
-  border-color:var(--coral);
-  box-shadow:0 0 0 3px rgba(239,119,106,0.12);
-}
-.a-field-input::placeholder { color:var(--ink3); }
-.a-field-textarea { min-height:90px;resize:vertical; }
-.a-img-preview { width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--border);margin-top:10px; }
+.a-field{display:flex;flex-direction:column;gap:6px;}
+.a-lbl{font-size:11px;font-weight:700;color:var(--g);letter-spacing:.06em;text-transform:uppercase;}
+.a-req{color:var(--c);}
 
-.a-form-actions { display:flex;gap:10px;padding-top:4px; }
+.af-input{
+  padding:11px 14px;border:1.5px solid var(--bd);border-radius:12px;
+  font-size:14px;color:var(--ink);background:white;outline:none;
+  transition:border-color .2s,box-shadow .2s;width:100%;
+}
+.af-input:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(239,119,106,.12);}
+.af-input::placeholder{color:var(--g2);}
+.af-textarea{min-height:88px;resize:vertical;line-height:1.6;}
+.af-hint{font-size:10.5px;color:var(--g2);margin-top:3px;}
 
-/* ── Delivery ────────────────────────────── */
-.a-delivery-banner {
-  background:linear-gradient(135deg,var(--coral-xl),white);
-  border:1px solid var(--coral-l);
-  border-radius:var(--radius);padding:24px 28px;
-  display:flex;align-items:center;gap:20px;
-  margin-bottom:20px;flex-wrap:wrap;
-  position:relative;overflow:hidden;
+.af-preview-wrap{display:flex;flex-direction:column;gap:6px;align-items:flex-start;}
+.af-preview{width:80px;height:80px;object-fit:cover;border-radius:12px;border:1px solid var(--bd);}
+.af-preview-lbl{font-size:10px;color:var(--g2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;}
+.af-preview-empty{
+  width:100%;height:80px;border-radius:12px;border:2px dashed var(--bd);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  color:var(--g2);font-size:20px;cursor:pointer;transition:border-color .2s;
+  background:var(--bg);
 }
-.a-delivery-banner::after {
-  content:'✦';position:absolute;right:28px;bottom:-8px;
-  font-size:80px;color:var(--coral);opacity:0.06;
-  pointer-events:none;
-}
-.a-delivery-icon-wrap { font-size:32px;flex-shrink:0; }
-.a-delivery-title { font-family:var(--ff-d);font-size:18px;font-weight:500;color:var(--ink); }
-.a-delivery-sub   { font-size:13px;color:var(--ink3);margin-top:3px; }
-.a-delivery-active {
-  margin-left:auto;background:white;color:#166534;
-  border:1px solid #BBF7D0;padding:7px 16px;
-  border-radius:40px;font-size:12px;font-weight:600;flex-shrink:0;
-}
+.af-preview-empty span{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;}
+.af-preview-empty:hover{border-color:var(--c);}
 
-.a-zones { display:flex;flex-wrap:wrap;gap:8px; }
-.a-zone-chip {
-  background:var(--coral-xl);color:var(--coral);
-  border:1px solid var(--coral-l);
-  padding:6px 14px;border-radius:40px;font-size:12px;font-weight:500;
-  transition:all 0.15s;cursor:default;
+/* Radio & Toggle groups */
+.a-radio-group{display:flex;flex-wrap:wrap;gap:6px;}
+.a-radio-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:600;
+  border:1.5px solid var(--bd);background:white;color:var(--g);
+  cursor:pointer;transition:all .15s;
 }
-.a-zone-chip:hover { background:var(--coral-l);transform:translateY(-1px); }
+.a-radio-pill:hover{border-color:var(--c);color:var(--c);}
+.a-radio-active{background:var(--c)!important;border-color:var(--c)!important;color:white!important;}
 
-/* ── Spinner ─────────────────────────────── */
-.a-spin {
-  display:inline-block;width:16px;height:16px;
-  border:2px solid rgba(255,255,255,0.4);
-  border-top-color:white;border-radius:50%;
-  animation:a-spin 0.7s linear infinite;
+.a-toggle-group{display:flex;flex-wrap:wrap;gap:8px;}
+.a-toggle-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;
+  border:1.5px solid var(--bd);background:white;color:var(--g);
+  cursor:pointer;transition:all .18s;
 }
-@keyframes a-spin { to{transform:rotate(360deg)} }
+.a-toggle-pill:hover{border-color:var(--c);color:var(--c);}
+.a-toggle-on{background:var(--c)!important;border-color:var(--c)!important;color:white!important;}
+.a-toggle-on-gold{background:#F59E0B!important;border-color:#D97706!important;color:white!important;}
 
-/* ══════════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════════ */
-@media (max-width:1280px) {
-  .a-kpi-grid { grid-template-columns:repeat(2,1fr); }
+.a-form-footer{display:flex;gap:10px;padding-top:20px;border-top:1px solid var(--bd);margin-top:8px;}
+
+/* Delivery */
+.a-delivery-hero{
+  background:linear-gradient(135deg,var(--cl),white);
+  border:1px solid var(--cll);border-radius:var(--r);
+  padding:clamp(18px,3vw,28px) clamp(20px,3vw,32px);
+  display:flex;align-items:center;gap:20px;margin-bottom:20px;
+  flex-wrap:wrap;position:relative;overflow:hidden;
 }
-@media (max-width:1024px) {
-  .a-main--pushed { margin-left:0 !important; }
-  .a-sidebar-close { display:flex !important; }
-  .a-content { padding:18px; }
-  .a-form-grid { grid-template-columns:1fr 1fr; }
-  .a-span3 { grid-column:span 2; }
+.a-delivery-hero::after{content:'✦';position:absolute;right:24px;bottom:-10px;font-size:88px;color:var(--c);opacity:.05;pointer-events:none;}
+.a-dh-icon{font-size:36px;flex-shrink:0;}
+.a-dh-title{font-family:var(--ffd);font-size:18px;font-weight:500;color:var(--ink);}
+.a-dh-sub{font-size:13px;color:var(--g);margin-top:3px;}
+.a-dh-badge{margin-left:auto;background:white;color:#166534;border:1px solid #BBF7D0;padding:7px 16px;border-radius:40px;font-size:12px;font-weight:700;flex-shrink:0;}
+
+.a-zones{display:flex;flex-wrap:wrap;gap:8px;}
+.a-zone{background:var(--cl);color:var(--c);border:1px solid var(--cll);padding:6px 14px;border-radius:40px;font-size:12px;font-weight:500;transition:all .14s;cursor:default;}
+.a-zone:hover{background:var(--cll);transform:translateY(-1px);}
+
+/* Spinner */
+.a-spin{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESPONSIVE ───────────────────────── */
+@media(max-width:1280px){.a-kpi-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:1024px){
+  .a-main-pushed{margin-left:0!important;}
+  .a-sb-close{display:flex!important;}
+  .a-content{padding:clamp(12px,2vw,20px);}
+  .a-form-grid-3{grid-template-columns:1fr 1fr;}
+  .a-col-3{grid-column:span 2;}
 }
-@media (max-width:768px) {
-  .a-kpi-grid { grid-template-columns:1fr 1fr;gap:12px; }
-  .a-form-grid { grid-template-columns:1fr; }
-  .a-span2,.a-span3 { grid-column:span 1; }
-  .a-content { padding:14px; }
-  .a-topbar { padding:0 14px; }
-  .a-page-head { flex-direction:column;align-items:flex-start; }
-  .a-card-head { flex-direction:column;align-items:flex-start; }
-  .a-table thead th:nth-child(n+4) { display:none; }
-  .a-table tbody td:nth-child(n+4) { display:none; }
+@media(max-width:768px){
+  .a-kpi-row{grid-template-columns:1fr 1fr;gap:12px;}
+  .a-form-grid-3,.a-form-grid-2{grid-template-columns:1fr;}
+  .a-col-2,.a-col-3{grid-column:span 1;}
+  .a-page-head{flex-direction:column;align-items:flex-start;}
+  .a-card-head{flex-direction:column;align-items:flex-start;}
+  .a-tbl thead th:nth-child(n+5){display:none;}
+  .a-tbl tbody td:nth-child(n+5){display:none;}
+  .a-topbar-title{font-size:15px;}
 }
-@media (max-width:480px) {
-  .a-kpi-grid { grid-template-columns:1fr 1fr;gap:10px; }
-  .a-kpi { padding:16px 14px; }
-  .a-kpi-value { font-size:20px; }
-  .a-status-strip { gap:6px; }
-  .a-status-pill { font-size:11px;padding:5px 10px; }
-  .a-login-card { padding:36px 24px; }
-  .a-btn-coral { padding:9px 18px;font-size:13px; }
+@media(max-width:480px){
+  .a-kpi-row{grid-template-columns:1fr 1fr;gap:10px;}
+  .a-kpi{padding:16px 14px;}
+  .a-kpi-val{font-size:20px;}
+  .a-strip{gap:5px;}
+  .a-strip-pill{font-size:11px;padding:5px 10px;}
+  .al-card{padding:32px 22px;}
+  .a-btn-primary{padding:9px 18px;font-size:13px;}
+  .a-radio-group,.a-toggle-group{gap:5px;}
+  .a-radio-pill,.a-toggle-pill{padding:6px 12px;font-size:12px;}
 }
 `;
 

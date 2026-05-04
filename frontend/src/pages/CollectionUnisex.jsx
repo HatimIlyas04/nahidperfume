@@ -5,7 +5,7 @@ import { useCollectionStyles } from "./collectionStyles";
 
 const CONFIG = {
   category:    "Unisex",
-  apiFilter:   (p) => p.category === "Unisex",
+  apiFilter:   (p) => p.gender === "Unisex",
   heroImage:   "https://i.postimg.cc/MZjKPjgN/unisex-Nahid.png",
   heroFallback:"https://images.unsplash.com/photo-1594035910387-fea47794261f?w=1400&q=80",
   accentColor: "#7B68EE",

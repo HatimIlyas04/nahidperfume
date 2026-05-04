@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& \"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -u root \"-pZA3TERza3ter\" nahidperfume -e \"SELECT id, name, category, gender, product_type FROM products LIMIT 10;\" 2>&1)"
+    ]
+  }
+}
