@@ -570,7 +570,7 @@ const CSS = `
   .or-products-head { flex-direction:column; align-items:flex-start; }
 }
 @media(max-width:480px){
-  .or-grid { grid-template-columns:1fr; gap:18px; }
+  .or-grid { grid-template-columns:1fr 1fr; gap:10px; }
   .or-card-body { padding:13px; }
   .or-card-desc { -webkit-line-clamp:1; }
   .or-card-note { display:none; }

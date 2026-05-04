@@ -635,7 +635,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
               )}
             </div>
 
-            <button className="nb-pill nb-pill-accent" onClick={e => goCol(e, "Coffrets", "/originals?category=Coffrets")}>
+            <button className="nb-pill nb-pill-accent" onClick={e => goCol(e, null, "/catalogue")}>
               <span className="nb-accent-pulse" />
               {t("nav.originals")}
             </button>
@@ -798,7 +798,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
             </div>
           )}
 
-          <Link to="/originals" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
+          <Link to="/catalogue" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
             <div className="nb-m-ico"><FaCrown size={11} /></div>
             <span className="nb-m-txt">{t("nav.originals")}</span>
             <span className="nb-m-tag">{t("nav.exclusif")}</span>

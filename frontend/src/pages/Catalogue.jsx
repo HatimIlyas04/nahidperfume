@@ -732,7 +732,7 @@ const CSS = `
   .cat-search-wrap { min-width:0; }
 }
 @media(max-width:380px){
-  .cat-grid { grid-template-columns:1fr; }
+  .cat-grid { grid-template-columns:1fr 1fr; gap:8px; }
 }
 `;
 
