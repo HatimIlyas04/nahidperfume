@@ -43,12 +43,14 @@ function App() {
   const addToCart = (product, quantity = 1) => {
     setCart(prevCart => {
       const existing = prevCart.find(item =>
-        item.id === product.id || item.packId === product.packId
+        item.id === product.id ||
+        (product.packId != null && item.packId === product.packId)
       );
       let newCart;
       if (existing) {
         newCart = prevCart.map(item =>
-          (item.id === product.id || item.packId === product.packId)
+          (item.id === product.id ||
+           (product.packId != null && item.packId === product.packId))
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
