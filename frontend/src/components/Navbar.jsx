@@ -1,6 +1,8 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useWishlist } from "../context/WishlistContext";
+import { useLanguage } from "../context/LanguageContext";
+import LanguageSelector from "./LanguageSelector";
 import {
   FiShoppingCart, FiUser, FiLogOut, FiSearch,
   FiMenu, FiX, FiGrid, FiBookOpen, FiHome, FiHeart,
@@ -9,26 +11,19 @@ import {
 import { FaCrown } from "react-icons/fa";
 import { RiTiktokLine } from "react-icons/ri";
 
-/* ─── Constants ─────────────────────────────────────────── */
-const ANN_ITEMS = [
-  "Livraison offerte dès 300 MAD",
-  "Échantillon gratuit avec chaque commande",
-  "Nouveauté — Collection Oud de Camboge",
-  "Paiement à la livraison — 100% sécurisé",
-  "4.9 / 5 · 2 400 clients satisfaits",
+/* ─── Image constants (URLs don't change with language) ─── */
+const IMG_SHOP_ALL = [
+  "https://images.unsplash.com/photo-1541643600914-78b084683601?w=80&q=80",
+  "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=80&q=80",
+  "https://images.unsplash.com/photo-1588405748880-8d2be9e5c6c0?w=80&q=80",
 ];
-
-const SHOP_ALL = [
-  { img:"https://images.unsplash.com/photo-1541643600914-78b084683601?w=80&q=80", title:"Tous les Parfums",  sub:"Toute notre collection · 78 fragrances", path:"/" },
-  { img:"https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=80&q=80", title:"Nahid Originals",  sub:"Créations exclusives de la maison",       path:"/originals" },
-  { img:"https://images.unsplash.com/photo-1588405748880-8d2be9e5c6c0?w=80&q=80", title:"Best-Sellers",     sub:"Les fragrances préférées de nos clients",  path:"/?category=Best-Sellers" },
+const IMG_SHOP_GENDER = [
+  "https://images.unsplash.com/photo-1594035910387-fea47794261f?w=80&q=80",
+  "https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?w=80&q=80",
+  "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=80&q=80",
 ];
-const SHOP_GENDER = [
-  { img:"https://images.unsplash.com/photo-1594035910387-fea47794261f?w=80&q=80", title:"Femme",  sub:"32 fragrances florales & boisées", path:"/collection/femme" },
-  { img:"https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?w=80&q=80",   title:"Homme",  sub:"28 fragrances viriles & intenses", path:"/collection/homme" },
-  { img:"https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=80&q=80", title:"Unisex", sub:"18 fragrances sans frontières",    path:"/collection/unisex" },
-];
-const QUICK_SEARCHES = ["Oud", "Rose de Taif", "Ambre Gris", "Musc Blanc", "Iris", "Santal"];
+const PATHS_ALL    = ["/", "/originals", "/?category=Best-Sellers"];
+const PATHS_GENDER = ["/collection/femme", "/collection/homme", "/collection/unisex"];
 
 /* ─── CSS ────────────────────────────────────────────────── */
 const CSS = `
@@ -71,7 +66,8 @@ const CSS = `
   animation:annScroll 44s linear infinite;
 }
 .nb-ann-track:hover { animation-play-state:paused; }
-@keyframes annScroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+@keyframes annScroll    { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+@keyframes annScrollRTL { 0%{transform:translateX(0)} 100%{transform:translateX(50%)}  }
 .nb-ann-item {
   font-family:var(--sans); font-size:.59rem; font-weight:600;
   letter-spacing:.18em; text-transform:uppercase; color:rgba(255,255,255,.88);
@@ -108,7 +104,7 @@ const CSS = `
   display:flex; align-items:center; gap:8px;
 }
 
-/* ── Logo — image only ── */
+/* ── Logo ── */
 .nb-logo {
   display:flex; align-items:center; text-decoration:none;
   flex-shrink:0; margin-right:12px;
@@ -121,55 +117,40 @@ const CSS = `
 
 /* ── Pill nav ── */
 .nb-pills { display:flex; align-items:center; gap:4px; flex-shrink:0; }
-
 .nb-pill {
   display:inline-flex; align-items:center; gap:5px;
   padding:7px 16px; border-radius:999px;
-  border:1.5px solid var(--b);
-  background:transparent;
+  border:1.5px solid var(--b); background:transparent;
   font-family:var(--sans); font-size:.74rem; font-weight:600;
   letter-spacing:.03em; color:var(--ink);
   cursor:pointer; text-decoration:none; white-space:nowrap;
   transition:border-color .18s, color .18s, background .18s, transform .2s var(--sp);
   line-height:1;
 }
-.nb-pill:hover {
-  border-color:var(--c); color:var(--c);
-  transform:translateY(-1px);
-}
-.nb-pill.pill-active {
-  background:var(--cll); border-color:var(--c); color:var(--c);
-}
-.nb-pill-chev {
-  opacity:.45; transition:transform .22s var(--sp), opacity .18s;
-}
+.nb-pill:hover { border-color:var(--c); color:var(--c); transform:translateY(-1px); }
+.nb-pill.pill-active { background:var(--cll); border-color:var(--c); color:var(--c); }
+.nb-pill-chev { opacity:.45; transition:transform .22s var(--sp), opacity .18s; }
 .nb-pill.pill-open .nb-pill-chev,
 .nb-pill:hover .nb-pill-chev { transform:rotate(180deg); opacity:.9; }
-
-/* accent pill */
 .nb-pill-accent {
   background:var(--c); border-color:var(--c); color:var(--w);
   box-shadow:0 3px 12px rgba(239,119,106,.3);
 }
 .nb-pill-accent:hover {
   background:var(--cd); border-color:var(--cd); color:var(--w);
-  box-shadow:0 5px 18px rgba(239,119,106,.42);
-  transform:translateY(-2px);
+  box-shadow:0 5px 18px rgba(239,119,106,.42); transform:translateY(-2px);
 }
 .nb-accent-pulse {
   width:6px; height:6px; border-radius:50%;
   background:rgba(255,255,255,.7); flex-shrink:0;
   animation:aPulse 2s ease infinite;
 }
-@keyframes aPulse {
-  0%,100%{transform:scale(1);opacity:.7}
-  50%{transform:scale(1.4);opacity:1}
-}
+@keyframes aPulse { 0%,100%{transform:scale(1);opacity:.7} 50%{transform:scale(1.4);opacity:1} }
 
 /* spacer */
 .nb-sp { flex:1; }
 
-/* ── Search bar inline ── */
+/* ── Search ── */
 .nb-s-wrap { position:relative; flex-shrink:0; }
 .nb-s-form {
   display:flex; align-items:center; gap:8px;
@@ -197,12 +178,9 @@ const CSS = `
 }
 .nb-s-btn:hover { background:var(--cd); transform:scale(1.1); }
 .nb-s-icon { color:var(--g); opacity:.5; flex-shrink:0; }
-
-/* search dropdown */
 .nb-s-drop {
   position:absolute; top:calc(100% + 10px); left:0; right:0; min-width:290px;
-  background:var(--w); border-radius:16px;
-  border:1px solid var(--b);
+  background:var(--w); border-radius:16px; border:1px solid var(--b);
   box-shadow:0 16px 56px rgba(0,0,0,.1);
   padding:8px 0; z-index:400;
   animation:dIn .2s var(--ex) both;
@@ -227,15 +205,12 @@ const CSS = `
   font-family:var(--sans); cursor:pointer; transition:background .13s;
 }
 .nb-s-res:hover { background:var(--cll); }
-.nb-s-res-img {
-  width:36px; height:36px; border-radius:8px; object-fit:cover;
-  background:#f2f2f2; flex-shrink:0;
-}
+.nb-s-res-img { width:36px; height:36px; border-radius:8px; object-fit:cover; background:#f2f2f2; flex-shrink:0; }
 .nb-s-res-name { font-size:.79rem; font-weight:700; color:var(--ink); }
 .nb-s-res-cat  { font-size:.63rem; color:var(--g); margin-top:1px; }
 
 /* ── Right icons ── */
-.nb-right { display:flex; align-items:center; gap:1px; flex-shrink:0; margin-left:2px; }
+.nb-right { display:flex; align-items:center; gap:4px; flex-shrink:0; margin-left:2px; }
 .nb-ic {
   width:38px; height:38px; border-radius:50%; border:none; background:none;
   display:flex; align-items:center; justify-content:center;
@@ -253,22 +228,15 @@ const CSS = `
 }
 @keyframes bPop { from{transform:scale(0)} to{transform:scale(1)} }
 .nb-div { width:1px; height:18px; background:var(--b); margin:0 4px; flex-shrink:0; }
-
-/* action pills */
 .nb-ap {
   display:inline-flex; align-items:center; gap:5px; padding:7px 14px;
   border-radius:999px; font-family:var(--sans); font-size:.67rem; font-weight:700;
   letter-spacing:.06em; text-transform:uppercase; cursor:pointer; text-decoration:none;
   white-space:nowrap; flex-shrink:0; transition:all .2s var(--ea); border:none; line-height:1;
 }
-.nb-ap-ghost {
-  background:none; border:1.5px solid var(--b); color:var(--ink);
-}
+.nb-ap-ghost { background:none; border:1.5px solid var(--b); color:var(--ink); }
 .nb-ap-ghost:hover { border-color:var(--c); color:var(--c); transform:translateY(-1px); }
-.nb-ap-fill {
-  background:var(--c); color:var(--w);
-  box-shadow:0 2px 10px rgba(239,119,106,.3);
-}
+.nb-ap-fill  { background:var(--c); color:var(--w); box-shadow:0 2px 10px rgba(239,119,106,.3); }
 .nb-ap-fill:hover { background:var(--cd); transform:translateY(-1px); box-shadow:0 4px 16px rgba(239,119,106,.4); }
 
 /* ── Shop dropdown ── */
@@ -281,10 +249,7 @@ const CSS = `
   overflow:hidden; z-index:300;
   animation:dIn .25s var(--ex) both;
 }
-.nb-shop-d::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:2px;
-  background:var(--c);
-}
+.nb-shop-d::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--c); }
 .nb-shop-lbl {
   font-size:.54rem; font-weight:800; letter-spacing:.24em; text-transform:uppercase;
   color:var(--g); padding:14px 18px 7px;
@@ -292,24 +257,18 @@ const CSS = `
 .nb-shop-row {
   display:flex; align-items:center; gap:12px; padding:9px 18px;
   border:none; background:none; width:100%; text-align:left;
-  font-family:var(--sans); text-decoration:none; cursor:pointer;
-  transition:background .16s;
+  font-family:var(--sans); cursor:pointer; transition:background .16s;
 }
 .nb-shop-row:hover { background:var(--cll); }
 .nb-shop-row:hover .nb-shop-arr { opacity:1; transform:translateX(3px); }
 .nb-shop-row:hover .nb-shop-img { transform:scale(1.06); }
-.nb-shop-img {
-  width:48px; height:48px; border-radius:10px; object-fit:cover;
-  background:#f2f2f2; flex-shrink:0; transition:transform .25s var(--sp);
-}
+.nb-shop-img { width:48px; height:48px; border-radius:10px; object-fit:cover; background:#f2f2f2; flex-shrink:0; transition:transform .25s var(--sp); }
 .nb-shop-info { flex:1; min-width:0; }
 .nb-shop-ttl { font-size:.86rem; font-weight:700; color:var(--ink); display:block; letter-spacing:-.01em; }
 .nb-shop-sub { font-size:.62rem; color:var(--g); margin-top:1px; display:block; }
 .nb-shop-arr { color:var(--g); opacity:0; flex-shrink:0; transition:opacity .16s, transform .2s var(--sp); }
 .nb-shop-div { height:1px; background:#f0f0f0; margin:5px 0; }
-.nb-shop-foot {
-  padding:10px 18px 14px; display:flex; gap:7px;
-}
+.nb-shop-foot { padding:10px 18px 14px; display:flex; gap:7px; }
 .nb-shop-foot-btn {
   flex:1; padding:10px; border-radius:999px;
   font-family:var(--sans); font-size:.68rem; font-weight:700;
@@ -336,10 +295,7 @@ const CSS = `
   transition:transform .4s cubic-bezier(.32,.72,0,1);
   box-shadow:-20px 0 60px rgba(0,0,0,.12);
 }
-.nb-dr::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:2px;
-  background:var(--c);
-}
+.nb-dr::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--c); }
 .nb-dr.open  { transform:translateX(0); }
 .nb-dr.close { transform:translateX(110%); }
 .nb-dr-head {
@@ -361,10 +317,7 @@ const CSS = `
   background:#f4f4f4; padding:0 12px; gap:9px; flex-shrink:0;
   border:1.5px solid transparent; transition:border-color .2s, background .2s, box-shadow .2s;
 }
-.nb-dr-s:focus-within {
-  background:var(--w); border-color:var(--c);
-  box-shadow:0 0 0 3px rgba(239,119,106,.1);
-}
+.nb-dr-s:focus-within { background:var(--w); border-color:var(--c); box-shadow:0 0 0 3px rgba(239,119,106,.1); }
 .nb-dr-s input {
   flex:1; border:none; background:none; font-family:var(--sans);
   font-size:.83rem; color:var(--ink); padding:11px 0; outline:none;
@@ -412,10 +365,7 @@ const CSS = `
 }
 .nb-m-sub-item:hover { background:var(--cll); color:var(--c); }
 .nb-m-sub-dot { width:4px; height:4px; border-radius:50%; background:currentColor; opacity:.3; flex-shrink:0; }
-.nb-dr-foot {
-  border-top:1px solid var(--b); padding:14px 16px 18px;
-  flex-shrink:0; background:#fafafa;
-}
+.nb-dr-foot { border-top:1px solid var(--b); padding:14px 16px 18px; flex-shrink:0; background:#fafafa; }
 .nb-dr-ftns { display:flex; gap:7px; margin-bottom:12px; }
 .nb-soc-row { display:flex; gap:6px; justify-content:center; }
 .nb-soc {
@@ -444,6 +394,27 @@ const CSS = `
   .nb-ann-item { font-size:.56rem; padding:0 20px; }
 }
 @media(max-width:480px){ .nb-dr{ max-width:100vw; width:100%; } }
+
+/* ── RTL overrides ── */
+[dir="rtl"] .nb-ann-track        { animation-name: annScrollRTL; }
+[dir="rtl"] .nb-ann::before      { left:auto; right:0; background:linear-gradient(-90deg,var(--c),transparent); }
+[dir="rtl"] .nb-ann::after       { right:auto; left:0; background:linear-gradient(90deg,var(--c),transparent); }
+[dir="rtl"] .nb-logo             { margin-right:0; margin-left:12px; }
+[dir="rtl"] .nb-right            { margin-left:0; margin-right:2px; }
+[dir="rtl"] .nb-shop-d           { left:auto; right:0; }
+[dir="rtl"] .nb-shop-row         { text-align:right; }
+[dir="rtl"] .nb-shop-row:hover .nb-shop-arr { transform:translateX(-3px); }
+[dir="rtl"] .nb-s-drop           { left:auto; right:0; }
+[dir="rtl"] .nb-s-drop-item,
+[dir="rtl"] .nb-s-res            { text-align:right; }
+[dir="rtl"] .nb-dr               { right:auto; left:0; box-shadow:20px 0 60px rgba(0,0,0,.12); }
+[dir="rtl"] .nb-dr.close         { transform:translateX(-110%); }
+[dir="rtl"] .nb-m-lnk            { text-align:right; }
+[dir="rtl"] .nb-m-lnk:hover      { padding-left:20px; padding-right:28px; }
+[dir="rtl"] .nb-m-lnk:hover .nb-m-chev { transform:translateX(-2px); }
+[dir="rtl"] .nb-m-lbl::after     { background:linear-gradient(270deg,var(--b),transparent); }
+[dir="rtl"] .nb-m-sub            { padding:2px 52px 4px 20px; }
+[dir="rtl"] .nb-m-sub-item       { text-align:right; }
 `;
 
 function injectCSS() {
@@ -461,6 +432,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
   const navigate = useNavigate();
   const location = useLocation();
   const { wishlist } = useWishlist();
+  const { t } = useLanguage();
   const wishCount = wishlist.length;
 
   const [menuOpen,      setMenuOpen]      = useState(false);
@@ -477,6 +449,24 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
   const searchRef = useRef(null);
   const token     = localStorage.getItem("adminToken");
   const isAdmin   = !!token || isAdminLoggedIn;
+
+  /* ── Translated data ── */
+  const ANN_ITEMS    = t("nav.announcements");
+  const QUICK_SEARCHES = t("nav.quickSearches");
+  const shopAllData  = t("nav.shopAll");
+  const shopGenderData = t("nav.shopGender");
+
+  const SHOP_ALL = IMG_SHOP_ALL.map((img, i) => ({
+    img, path: PATHS_ALL[i], ...shopAllData[i],
+  }));
+  const SHOP_GENDER = IMG_SHOP_GENDER.map((img, i) => ({
+    img, path: PATHS_GENDER[i], ...shopGenderData[i],
+  }));
+
+  const navLinks = [
+    { to: "/",              label: t("nav.links.home"),     icon: <FiHome size={12} />,     exact: true  },
+    { to: "/notre-histoire", label: t("nav.links.ourStory"), icon: <FiBookOpen size={12} />, exact: false },
+  ];
 
   /* Scroll progress */
   useEffect(() => {
@@ -513,7 +503,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
   /* Live search */
   useEffect(() => {
     if (!query || query.length < 2) { setLiveResults([]); return; }
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setSearching(true);
       try {
         const res = await fetch(`/api/products?search=${encodeURIComponent(query)}&limit=5`);
@@ -522,7 +512,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
       } catch { setLiveResults([]); }
       finally { setSearching(false); }
     }, 280);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [query]);
 
   const handleLogout = () => {
@@ -555,16 +545,11 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
     ? location.pathname === link.to
     : location.pathname.startsWith(link.to) && link.to !== "/";
 
-  const navLinks = [
-    { to: "/",              label: "Accueil",       icon: <FiHome size={12} />,     exact: true  },
-    { to: "/notre-histoire", label: "Notre Histoire", icon: <FiBookOpen size={12} />, exact: false },
-  ];
-
   const doubled = [...ANN_ITEMS, ...ANN_ITEMS];
 
   return (
     <>
-      {/* Announcement */}
+      {/* Announcement ticker */}
       <div className="nb-ann">
         <div className="nb-ann-track" aria-hidden="true">
           {doubled.map((text, i) => (
@@ -577,23 +562,19 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
         </div>
       </div>
 
-      {/* Nav */}
+      {/* Nav bar */}
       <nav className={`nb-root${scrolled ? " scrolled" : ""}`} role="navigation">
         <div className="nb-prog" style={{ width: `${progress}%` }} />
 
         <div className="nb-bar">
 
-          {/* Logo — image only */}
+          {/* Logo */}
           <Link to="/" className="nb-logo" aria-label="Nahid Perfume">
-            <img
-              src="/nahid.png"
-              alt="Nahid Perfume"
-              className="nb-logo-img"
-              onError={e => { e.currentTarget.style.display = "none"; }}
-            />
+            <img src="/nahid.png" alt="Nahid Perfume" className="nb-logo-img"
+              onError={e => { e.currentTarget.style.display = "none"; }} />
           </Link>
 
-          {/* Pills */}
+          {/* Desktop pills */}
           <div className="nb-pills">
             {navLinks.map(link => (
               <Link key={link.to} to={link.to}
@@ -610,13 +591,13 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
                 onClick={() => setShopOpen(v => !v)}
                 aria-expanded={shopOpen}
               >
-                Parfums
+                {t("nav.perfumes")}
                 <FiChevronDown size={12} className="nb-pill-chev" />
               </button>
 
               {shopOpen && (
                 <div className="nb-shop-d">
-                  <div className="nb-shop-lbl">Shop</div>
+                  <div className="nb-shop-lbl">{t("nav.shopLabel")}</div>
                   {SHOP_ALL.map((item, i) => (
                     <button key={i} className="nb-shop-row" onClick={e => goCol(e, null, item.path)}>
                       <img className="nb-shop-img" src={item.img} alt={item.title} loading="lazy" />
@@ -629,7 +610,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
                   ))}
 
                   <div className="nb-shop-div" />
-                  <div className="nb-shop-lbl">Shop par genre</div>
+                  <div className="nb-shop-lbl">{t("nav.shopByGenre")}</div>
                   {SHOP_GENDER.map((item, i) => (
                     <button key={i} className="nb-shop-row" onClick={e => goCol(e, null, item.path)}>
                       <img className="nb-shop-img" src={item.img} alt={item.title} loading="lazy" />
@@ -643,21 +624,20 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
 
                   <div className="nb-shop-foot">
                     <button className="nb-shop-foot-btn nb-sfoot-p" onClick={e => goCol(e, null, null)}>
-                      Voir tout
+                      {t("nav.viewAll")}
                     </button>
                     <Link to="/notre-histoire" className="nb-shop-foot-btn nb-sfoot-o"
                       onClick={() => setShopOpen(false)}>
-                      Notre histoire
+                      {t("nav.ourHistory")}
                     </Link>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Coffrets → redirige vers /originals?category=Coffrets */}
             <button className="nb-pill nb-pill-accent" onClick={e => goCol(e, "Coffrets", "/originals?category=Coffrets")}>
               <span className="nb-accent-pulse" />
-              Originals
+              {t("nav.originals")}
             </button>
           </div>
 
@@ -668,10 +648,13 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
             <form className="nb-s-form" onSubmit={handleSearch}>
               <FiSearch size={13} className="nb-s-icon" />
               <input
-                type="search" placeholder="Rechercher…" value={query}
+                type="search"
+                placeholder={t("nav.searchPlaceholder")}
+                value={query}
                 onChange={e => setQuery(e.target.value)}
                 onFocus={() => setSearchFocused(true)}
-                autoComplete="off" aria-label="Recherche"
+                autoComplete="off"
+                aria-label={t("nav.searchLabel")}
               />
               <button type="submit" className="nb-s-btn"><FiSearch size={12} /></button>
             </form>
@@ -680,7 +663,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
               <div className="nb-s-drop">
                 {query.length === 0 && (
                   <>
-                    <div className="nb-s-drop-lbl">Suggestions</div>
+                    <div className="nb-s-drop-lbl">{t("nav.suggestions")}</div>
                     {QUICK_SEARCHES.map(s => (
                       <button key={s} className="nb-s-drop-item" onClick={e => handleSearch(e, s)}>
                         <span className="nb-s-drop-icon">🔍</span>{s}
@@ -690,12 +673,12 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
                 )}
                 {query.length > 0 && searching && (
                   <div style={{ padding: "13px 14px", fontSize: ".77rem", color: "var(--g)", textAlign: "center" }}>
-                    Recherche en cours…
+                    {t("nav.searching")}
                   </div>
                 )}
                 {query.length > 0 && !searching && liveResults.length > 0 && (
                   <>
-                    <div className="nb-s-drop-lbl">Résultats</div>
+                    <div className="nb-s-drop-lbl">{t("nav.results")}</div>
                     {liveResults.map(p => (
                       <button key={p.id} className="nb-s-res"
                         onClick={() => { navigate(`/product/${p.id}`); setSearchFocused(false); setQuery(""); }}>
@@ -709,31 +692,33 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
                     <div className="nb-s-drop-div" />
                     <button className="nb-s-drop-item" onClick={e => handleSearch(e, query)}>
                       <span className="nb-s-drop-icon">→</span>
-                      Tous les résultats pour « {query} »
+                      {t("nav.viewAllResults")} « {query} »
                     </button>
                   </>
                 )}
                 {query.length > 0 && !searching && liveResults.length === 0 && (
                   <div style={{ padding: "13px 14px", fontSize: ".77rem", color: "var(--g)", textAlign: "center" }}>
-                    Aucun résultat pour « {query} »
+                    {t("nav.noResults")} « {query} »
                   </div>
                 )}
               </div>
             )}
           </div>
 
-          {/* Right icons */}
+          {/* Right icons — desktop */}
           <div className="nb-right">
             {isAdmin ? (
               <>
-                <Link to="/admin" className="nb-ap nb-ap-fill"><FaCrown size={10} /> Dashboard</Link>
-                <button onClick={handleLogout} className="nb-ap nb-ap-ghost"><FiLogOut size={11} /> Déco</button>
+                <Link to="/admin" className="nb-ap nb-ap-fill"><FaCrown size={10} /> {t("nav.dashboard")}</Link>
+                <button onClick={handleLogout} className="nb-ap nb-ap-ghost"><FiLogOut size={11} /> {t("nav.logout")}</button>
               </>
             ) : (
-              <Link to="/admin" className="nb-ap nb-ap-ghost"><FiUser size={11} /> Espace Pro</Link>
+              <Link to="/admin" className="nb-ap nb-ap-ghost"><FiUser size={11} /> {t("nav.proSpace")}</Link>
             )}
             <div className="nb-div" />
-            <Link to="/wishlist" className="nb-ic" aria-label="Favoris">
+            <LanguageSelector />
+            <div className="nb-div" />
+            <Link to="/wishlist" className="nb-ic" aria-label={t("nav.favorites")}>
               <FiHeart size={17} />
               {wishCount > 0 && <span className="nb-badge">{wishCount > 99 ? "99+" : wishCount}</span>}
             </Link>
@@ -743,7 +728,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
             </Link>
           </div>
 
-          {/* Mobile */}
+          {/* Mobile icons */}
           <div className="nb-mob">
             <Link to="/cart" className="nb-ic">
               <FiShoppingCart size={20} />
@@ -759,19 +744,22 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
       {/* Backdrop */}
       {menuOpen && <div className="nb-bk" onClick={() => setMenuOpen(false)} />}
 
-      {/* Drawer */}
+      {/* Mobile drawer */}
       <aside className={`nb-dr ${menuOpen ? "open" : "close"}`} role="dialog" aria-modal="true">
         <div className="nb-dr-head">
           <Link to="/" className="nb-dr-logo" onClick={() => setMenuOpen(false)}>
             <img src="/nahid.png" alt="Nahid Perfume" className="nb-dr-logo-img"
               onError={e => { e.currentTarget.style.display = "none"; }} />
           </Link>
-          <button className="nb-xbtn" onClick={() => setMenuOpen(false)}><FiX size={14} /></button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <LanguageSelector />
+            <button className="nb-xbtn" onClick={() => setMenuOpen(false)}><FiX size={14} /></button>
+          </div>
         </div>
 
         <form className="nb-dr-s" onSubmit={e => handleSearch(e)}>
           <FiSearch size={13} style={{ color: "var(--g)", flexShrink: 0 }} />
-          <input type="search" placeholder="Rechercher un parfum…" value={query}
+          <input type="search" placeholder={t("nav.searchPerfume")} value={query}
             onChange={e => setQuery(e.target.value)} />
           {query && (
             <button type="submit" style={{ background: "none", border: "none", color: "var(--c)", cursor: "pointer" }}>
@@ -781,7 +769,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
         </form>
 
         <nav className="nb-dr-body">
-          <div className="nb-m-lbl">Navigation</div>
+          <div className="nb-m-lbl">{t("nav.navigation")}</div>
           {navLinks.map(link => (
             <Link key={link.to} to={link.to}
               className={`nb-m-lnk${isActive(link) ? " act" : ""}`}
@@ -794,7 +782,7 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
 
           <button className="nb-m-lnk" onClick={() => setMobileShop(v => !v)}>
             <div className="nb-m-ico"><FiGrid size={12} /></div>
-            <span className="nb-m-txt">Parfums</span>
+            <span className="nb-m-txt">{t("nav.perfumes")}</span>
             <span style={{ fontSize: ".58rem", color: "var(--g)", opacity: .5, marginRight: "3px" }}>
               {mobileShop ? "▲" : "▼"}
             </span>
@@ -812,56 +800,59 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
 
           <Link to="/originals" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
             <div className="nb-m-ico"><FaCrown size={11} /></div>
-            <span className="nb-m-txt">Originals</span>
-            <span className="nb-m-tag">Exclusif</span>
+            <span className="nb-m-txt">{t("nav.originals")}</span>
+            <span className="nb-m-tag">{t("nav.exclusif")}</span>
           </Link>
 
           <Link to="/wishlist" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
             <div className="nb-m-ico"><FiHeart size={12} /></div>
-            <span className="nb-m-txt">Favoris</span>
+            <span className="nb-m-txt">{t("nav.favorites")}</span>
             {wishCount > 0
               ? <span className="nb-m-tag">{wishCount}</span>
               : <FiChevronRight size={12} className="nb-m-chev" />
             }
           </Link>
 
-          <div className="nb-m-lbl">Compte</div>
+          <div className="nb-m-lbl">{t("nav.account")}</div>
           {isAdmin ? (
             <>
               <Link to="/admin" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
                 <div className="nb-m-ico"><FaCrown size={11} /></div>
-                <span className="nb-m-txt">Dashboard</span>
-                <span className="nb-m-tag">Admin</span>
+                <span className="nb-m-txt">{t("nav.dashboard")}</span>
+                <span className="nb-m-tag">{t("nav.admin")}</span>
               </Link>
               <button className="nb-m-lnk" onClick={handleLogout} style={{ color: "var(--g)" }}>
                 <div className="nb-m-ico"><FiLogOut size={12} /></div>
-                <span className="nb-m-txt">Déconnexion</span>
+                <span className="nb-m-txt">{t("nav.disconnect")}</span>
               </button>
             </>
           ) : (
             <Link to="/admin" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
               <div className="nb-m-ico"><FiUser size={12} /></div>
-              <span className="nb-m-txt">Espace Pro</span>
+              <span className="nb-m-txt">{t("nav.proSpace")}</span>
               <FiChevronRight size={12} className="nb-m-chev" />
             </Link>
           )}
 
-          <div className="nb-m-lbl">Aide</div>
-          {[{ label: "Livraison", to: "/livraison" }, { label: "FAQ", to: "/faq" }, { label: "Contact", to: "/contact" }]
-            .map(({ label, to }) => (
-              <Link key={to} to={to} className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
-                <div className="nb-m-ico" style={{ background: "transparent" }} />
-                <span className="nb-m-txt" style={{ color: "var(--g)", fontSize: ".81rem" }}>{label}</span>
-                <FiChevronRight size={12} className="nb-m-chev" />
-              </Link>
-            ))}
+          <div className="nb-m-lbl">{t("nav.help")}</div>
+          {[
+            { label: t("nav.delivery"), to: "/livraison" },
+            { label: t("nav.faq"),      to: "/faq"       },
+            { label: t("nav.contact"),  to: "/contact"   },
+          ].map(({ label, to }) => (
+            <Link key={to} to={to} className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
+              <div className="nb-m-ico" style={{ background: "transparent" }} />
+              <span className="nb-m-txt" style={{ color: "var(--g)", fontSize: ".81rem" }}>{label}</span>
+              <FiChevronRight size={12} className="nb-m-chev" />
+            </Link>
+          ))}
         </nav>
 
         <div className="nb-dr-foot">
           <div className="nb-dr-ftns">
             <button className="nb-shop-foot-btn nb-sfoot-p" style={{ flex: 1 }}
               onClick={e => { goCol(e, null, null); setMenuOpen(false); }}>
-              Explorer la collection
+              {t("nav.exploreCollection")}
             </button>
             <Link to="/cart" className="nb-shop-foot-btn nb-sfoot-o"
               style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}
@@ -878,9 +869,9 @@ export default function Navbar({ cartCount = 0, isAdminLoggedIn, setIsAdminLogge
           </div>
           <div className="nb-soc-div" />
           <div className="nb-legal">
-            <a href="#">Mentions légales</a>
-            <a href="#">Confidentialité</a>
-            <a href="#">CGV</a>
+            <a href="#">{t("nav.legalNotice")}</a>
+            <a href="#">{t("nav.privacy")}</a>
+            <a href="#">{t("nav.terms")}</a>
           </div>
         </div>
       </aside>

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 import { WishlistProvider } from "./context/WishlistContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import Home from "./pages/Home";
 import Cart from "./pages/Cart";
 import ProductDetails from "./pages/ProductDetails";
@@ -17,8 +18,7 @@ import OriginalsPage from "./pages/OriginalsPage";
 import Catalogue from "./pages/Catalogue";
 import Wishlist from "./pages/Wishlist";
 
-axios.defaults.baseURL = "http://localhost:5000";
-
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 function App() {
   const [cart, setCart] = useState([]);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -91,6 +91,7 @@ function App() {
   const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
 
   return (
+    <LanguageProvider>
     <WishlistProvider>
       <BrowserRouter>
         <Navbar
@@ -114,6 +115,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </WishlistProvider>
+    </LanguageProvider>
   );
 }
 
