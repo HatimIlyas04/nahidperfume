@@ -15,11 +15,16 @@ app.use(express.json());
 // CONNEXION MYSQL (CORRIGÉE)
 // ============================================
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'nahidperfume'
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
+
 
 db.connect((err) => {
     if (err) {
@@ -82,38 +87,45 @@ app.get('/api/products/:id', (req, res) => {
 
 // POST - Ajouter un produit (ADMIN)
 app.post('/api/products', authAdmin, (req, res) => {
-    const { name, description, price, image_url, category, stock } = req.body;
-    
-    console.log('📦 Ajout produit reçu:', { name, price, category });
-    
+    const { name, description, scent_notes, scent_family, price, image_url, category, gender, product_type, inspired_by, stock, is_new, is_bestseller } = req.body;
+
+    console.log('📦 Ajout produit reçu:', { name, price, category, gender });
+
     if (!name || !price) {
         return res.status(400).json({ error: 'Nom et prix sont requis' });
     }
-    
+
     const query = `
-        INSERT INTO products (name, description, price, image_url, category, stock) 
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO products (name, description, scent_notes, scent_family, price, image_url, category, gender, product_type, inspired_by, stock, is_new, is_bestseller)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
+
     const values = [
         name,
         description || '',
+        scent_notes || '',
+        scent_family || 'warm',
         parseFloat(price),
         image_url || 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400',
         category || 'Autre',
-        stock || 10
+        gender || 'Unisex',
+        product_type || 'Original',
+        product_type === 'Inspired By' ? (inspired_by || '') : null,
+        parseInt(stock) || 10,
+        is_new ? 1 : 0,
+        is_bestseller ? 1 : 0
     ];
-    
+
     db.query(query, values, (err, result) => {
         if (err) {
             console.error('❌ Erreur insertion:', err);
             return res.status(500).json({ error: err.message });
         }
-        
+
         console.log('✅ Produit ajouté, ID:', result.insertId);
-        res.status(201).json({ 
-            id: result.insertId, 
-            message: '✅ Produit ajouté avec succès' 
+        res.status(201).json({
+            id: result.insertId,
+            message: '✅ Produit ajouté avec succès'
         });
     });
 });
@@ -121,27 +133,36 @@ app.post('/api/products', authAdmin, (req, res) => {
 // PUT - Modifier un produit (ADMIN)
 app.put('/api/products/:id', authAdmin, (req, res) => {
     const id = parseInt(req.params.id);
-    const { name, description, price, image_url, category, stock } = req.body;
-    
+    const { name, description, scent_notes, scent_family, price, image_url, category, gender, product_type, inspired_by, stock, is_new, is_bestseller } = req.body;
+
     console.log('✏️ Modification produit ID:', id);
-    
+
     if (isNaN(id)) {
         return res.status(400).json({ error: 'ID invalide' });
     }
-    
+
     const query = `
-        UPDATE products 
-        SET name = ?, description = ?, price = ?, image_url = ?, category = ?, stock = ? 
+        UPDATE products
+        SET name = ?, description = ?, scent_notes = ?, scent_family = ?, price = ?,
+            image_url = ?, category = ?, gender = ?, product_type = ?, inspired_by = ?,
+            stock = ?, is_new = ?, is_bestseller = ?
         WHERE id = ?
     `;
-    
+
     const values = [
         name,
         description || '',
+        scent_notes || '',
+        scent_family || 'warm',
         parseFloat(price),
         image_url || '',
         category || 'Autre',
+        gender || 'Unisex',
+        product_type || 'Original',
+        product_type === 'Inspired By' ? (inspired_by || '') : null,
         parseInt(stock) || 10,
+        is_new ? 1 : 0,
+        is_bestseller ? 1 : 0,
         id
     ];
     
