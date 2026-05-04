@@ -18,7 +18,7 @@ import OriginalsPage from "./pages/OriginalsPage";
 import Catalogue from "./pages/Catalogue";
 import Wishlist from "./pages/Wishlist";
 
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+axios.defaults.baseURL = "https://nahidperfume-backend.onrender.com";
 function App() {
   const [cart, setCart] = useState([]);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -92,29 +92,29 @@ function App() {
 
   return (
     <LanguageProvider>
-    <WishlistProvider>
-      <BrowserRouter>
-        <Navbar
-          cartCount={cartCount}
-          isAdminLoggedIn={isAdminLoggedIn}
-          setIsAdminLoggedIn={setIsAdminLoggedIn}
-        />
-        <Routes>
-          <Route path="/"                    element={<Home addToCart={addToCart} />} />
-          <Route path="/notre-histoire"      element={<NotreHistoire />} />
-          <Route path="/originals"           element={<OriginalsPage addToCart={addToCart} />} />
-          <Route path="/catalogue"           element={<Catalogue     addToCart={addToCart} />} />
-          <Route path="/collection/femme"    element={<CollectionFemme  addToCart={addToCart} />} />
-          <Route path="/collection/homme"    element={<CollectionHomme  addToCart={addToCart} />} />
-          <Route path="/collection/unisex"   element={<CollectionUnisex addToCart={addToCart} />} />
-          <Route path="/product/:id"         element={<ProductDetails   addToCart={addToCart} />} />
-          <Route path="/cart"                element={<Cart cart={cart} removeFromCart={removeFromCart} updateQuantity={updateQuantity} />} />
-          <Route path="/checkout"            element={<Checkout cart={cart} clearCart={clearCart} />} />
-          <Route path="/wishlist"            element={<Wishlist addToCart={addToCart} />} />
-          <Route path="/admin"               element={<Admin isAdminLoggedIn={isAdminLoggedIn} setIsAdminLoggedIn={setIsAdminLoggedIn} />} />
-        </Routes>
-      </BrowserRouter>
-    </WishlistProvider>
+      <WishlistProvider>
+        <BrowserRouter>
+          <Navbar
+            cartCount={cartCount}
+            isAdminLoggedIn={isAdminLoggedIn}
+            setIsAdminLoggedIn={setIsAdminLoggedIn}
+          />
+          <Routes>
+            <Route path="/" element={<Home addToCart={addToCart} />} />
+            <Route path="/notre-histoire" element={<NotreHistoire />} />
+            <Route path="/originals" element={<OriginalsPage addToCart={addToCart} />} />
+            <Route path="/catalogue" element={<Catalogue addToCart={addToCart} />} />
+            <Route path="/collection/femme" element={<CollectionFemme addToCart={addToCart} />} />
+            <Route path="/collection/homme" element={<CollectionHomme addToCart={addToCart} />} />
+            <Route path="/collection/unisex" element={<CollectionUnisex addToCart={addToCart} />} />
+            <Route path="/product/:id" element={<ProductDetails addToCart={addToCart} />} />
+            <Route path="/cart" element={<Cart cart={cart} removeFromCart={removeFromCart} updateQuantity={updateQuantity} />} />
+            <Route path="/checkout" element={<Checkout cart={cart} clearCart={clearCart} />} />
+            <Route path="/wishlist" element={<Wishlist addToCart={addToCart} />} />
+            <Route path="/admin" element={<Admin isAdminLoggedIn={isAdminLoggedIn} setIsAdminLoggedIn={setIsAdminLoggedIn} />} />
+          </Routes>
+        </BrowserRouter>
+      </WishlistProvider>
     </LanguageProvider>
   );
 }
