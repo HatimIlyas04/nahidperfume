@@ -1,422 +1,309 @@
 const express = require('express');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const compression = require('compression');
 
 dotenv.config();
 
 const app = express();
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 
 // ============================================
-// CONNEXION MYSQL (CORRIGÉE)
+// CONNECTION POOL (auto-reconnect, concurrent queries)
 // ============================================
-const db = mysql.createConnection({
+const pool = mysql.createPool({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    ssl: {
-        rejectUnauthorized: false
-    }
+    ssl: { rejectUnauthorized: false },
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
 });
 
-
-db.connect((err) => {
-    if (err) {
-        console.error('❌ Erreur DB:', err.message);
-        process.exit(1);
-    }
-    console.log('✅ Connecté à MySQL');
-});
-
-// Partager db avec les routes
-app.set('db', db);
+pool.getConnection()
+    .then(conn => { conn.release(); console.log('✅ Connecté à MySQL (pool)'); })
+    .catch(err => { console.error('❌ Erreur DB:', err.message); process.exit(1); });
 
 // ============================================
 // MIDDLEWARE AUTH ADMIN
 // ============================================
 const authAdmin = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
-    
-    if (!token) {
-        return res.status(401).json({ error: 'Accès non autorisé - Token manquant' });
-    }
-    
+    if (!token) return res.status(401).json({ error: 'Accès non autorisé - Token manquant' });
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'nahid_secret_key_2024');
         req.adminId = decoded.id;
         req.adminUsername = decoded.username;
         next();
-    } catch (err) {
+    } catch {
         return res.status(401).json({ error: 'Token invalide ou expiré' });
     }
 };
 
 // ============================================
+// PING — keep-alive (empêche Render de s'endormir)
+// ============================================
+app.get('/api/ping', (req, res) => res.json({ ok: true }));
+
+// ============================================
 // ROUTES PRODUITS (PUBLIQUES)
 // ============================================
 
-// GET - Tous les produits
-app.get('/api/products', (req, res) => {
-    db.query('SELECT * FROM products ORDER BY id DESC', (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+// GET - Tous les produits (avec cache HTTP 5 min)
+app.get('/api/products', async (req, res) => {
+    try {
+        const [results] = await pool.query('SELECT * FROM products ORDER BY id DESC');
+        res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
         res.json(results);
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // GET - Produit par ID
-app.get('/api/products/:id', (req, res) => {
+app.get('/api/products/:id', async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
-    
-    db.query('SELECT * FROM products WHERE id = ?', [id], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
+    try {
+        const [results] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
         if (results.length === 0) return res.status(404).json({ error: 'Produit non trouvé' });
+        res.set('Cache-Control', 'public, max-age=300');
         res.json(results[0]);
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // ============================================
-// ROUTES ADMIN (PROTÉGÉES)
+// ROUTES ADMIN — PRODUITS (PROTÉGÉES)
 // ============================================
 
-// POST - Ajouter un produit (ADMIN)
-app.post('/api/products', authAdmin, (req, res) => {
+// POST - Ajouter un produit
+app.post('/api/products', authAdmin, async (req, res) => {
     const { name, description, scent_notes, scent_family, price, image_url, category, gender, product_type, inspired_by, stock, is_new, is_bestseller } = req.body;
-
-    console.log('📦 Ajout produit reçu:', { name, price, category, gender });
-
-    if (!name || !price) {
-        return res.status(400).json({ error: 'Nom et prix sont requis' });
-    }
-
+    if (!name || !price) return res.status(400).json({ error: 'Nom et prix sont requis' });
     const query = `
         INSERT INTO products (name, description, scent_notes, scent_family, price, image_url, category, gender, product_type, inspired_by, stock, is_new, is_bestseller)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
     const values = [
-        name,
-        description || '',
-        scent_notes || '',
-        scent_family || 'warm',
+        name, description || '', scent_notes || '', scent_family || 'warm',
         parseFloat(price),
         image_url || 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400',
-        category || 'Autre',
-        gender || 'Unisex',
-        product_type || 'Original',
+        category || 'Autre', gender || 'Unisex', product_type || 'Original',
         product_type === 'Inspired By' ? (inspired_by || '') : null,
-        parseInt(stock) || 10,
-        is_new ? 1 : 0,
-        is_bestseller ? 1 : 0
+        parseInt(stock) || 10, is_new ? 1 : 0, is_bestseller ? 1 : 0,
     ];
-
-    db.query(query, values, (err, result) => {
-        if (err) {
-            console.error('❌ Erreur insertion:', err);
-            return res.status(500).json({ error: err.message });
-        }
-
-        console.log('✅ Produit ajouté, ID:', result.insertId);
-        res.status(201).json({
-            id: result.insertId,
-            message: '✅ Produit ajouté avec succès'
-        });
-    });
+    try {
+        const [result] = await pool.query(query, values);
+        res.status(201).json({ id: result.insertId, message: '✅ Produit ajouté avec succès' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// PUT - Modifier un produit (ADMIN)
-app.put('/api/products/:id', authAdmin, (req, res) => {
+// PUT - Modifier un produit
+app.put('/api/products/:id', authAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
     const { name, description, scent_notes, scent_family, price, image_url, category, gender, product_type, inspired_by, stock, is_new, is_bestseller } = req.body;
-
-    console.log('✏️ Modification produit ID:', id);
-
-    if (isNaN(id)) {
-        return res.status(400).json({ error: 'ID invalide' });
-    }
-
     const query = `
         UPDATE products
-        SET name = ?, description = ?, scent_notes = ?, scent_family = ?, price = ?,
-            image_url = ?, category = ?, gender = ?, product_type = ?, inspired_by = ?,
-            stock = ?, is_new = ?, is_bestseller = ?
-        WHERE id = ?
+        SET name=?, description=?, scent_notes=?, scent_family=?, price=?,
+            image_url=?, category=?, gender=?, product_type=?, inspired_by=?,
+            stock=?, is_new=?, is_bestseller=?
+        WHERE id=?
     `;
-
     const values = [
-        name,
-        description || '',
-        scent_notes || '',
-        scent_family || 'warm',
-        parseFloat(price),
-        image_url || '',
-        category || 'Autre',
-        gender || 'Unisex',
+        name, description || '', scent_notes || '', scent_family || 'warm',
+        parseFloat(price), image_url || '', category || 'Autre', gender || 'Unisex',
         product_type || 'Original',
         product_type === 'Inspired By' ? (inspired_by || '') : null,
-        parseInt(stock) || 10,
-        is_new ? 1 : 0,
-        is_bestseller ? 1 : 0,
-        id
+        parseInt(stock) || 10, is_new ? 1 : 0, is_bestseller ? 1 : 0, id,
     ];
-    
-    db.query(query, values, (err, result) => {
-        if (err) {
-            console.error('❌ Erreur modification:', err);
-            return res.status(500).json({ error: err.message });
-        }
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Produit non trouvé' });
-        }
-        
-        console.log('✅ Produit modifié, ID:', id);
+    try {
+        const [result] = await pool.query(query, values);
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Produit non trouvé' });
         res.json({ message: '✅ Produit modifié avec succès' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// DELETE - Supprimer un produit (ADMIN)
-app.delete('/api/products/:id', authAdmin, (req, res) => {
+// DELETE - Supprimer un produit
+app.delete('/api/products/:id', authAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
-    
-    console.log('🗑️ Suppression produit ID:', id);
-    
-    if (isNaN(id)) {
-        return res.status(400).json({ error: 'ID invalide' });
-    }
-    
-    db.query('DELETE FROM products WHERE id = ?', [id], (err, result) => {
-        if (err) {
-            console.error('❌ Erreur suppression:', err);
-            return res.status(500).json({ error: err.message });
-        }
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Produit non trouvé' });
-        }
-        
-        console.log('✅ Produit supprimé, ID:', id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
+    try {
+        const [result] = await pool.query('DELETE FROM products WHERE id = ?', [id]);
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Produit non trouvé' });
         res.json({ message: '✅ Produit supprimé avec succès' });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // ============================================
 // ROUTES ADMIN AUTH
 // ============================================
 
-// POST - Login admin
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
     const { username, password } = req.body;
-    
-    console.log('🔐 Tentative login:', username);
-    
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Username et password requis' });
-    }
-    
-    db.query('SELECT * FROM admins WHERE username = ?', [username], (err, results) => {
-        if (err) {
-            console.error('❌ Erreur DB:', err);
-            return res.status(500).json({ error: err.message });
-        }
-        
-        if (results.length === 0) {
-            console.log('❌ Utilisateur non trouvé:', username);
-            return res.status(401).json({ error: 'Identifiants invalides' });
-        }
-        
+    if (!username || !password) return res.status(400).json({ error: 'Username et password requis' });
+    try {
+        const [results] = await pool.query('SELECT * FROM admins WHERE username = ?', [username]);
+        if (results.length === 0) return res.status(401).json({ error: 'Identifiants invalides' });
         const admin = results[0];
-        
         if (password === 'admin123') {
             const token = jwt.sign(
                 { id: admin.id, username: admin.username },
                 process.env.JWT_SECRET || 'nahid_secret_key_2024',
                 { expiresIn: '24h' }
             );
-            console.log('✅ Login réussi:', username);
             res.json({ token, username: admin.username, message: '✅ Connecté' });
         } else {
-            console.log('❌ Mot de passe incorrect:', username);
             res.status(401).json({ error: 'Identifiants invalides' });
         }
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// GET - Statistiques admin
-app.get('/api/admin/stats', authAdmin, (req, res) => {
-    const stats = {};
-    
-    db.query('SELECT COUNT(*) as total FROM products', (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        stats.totalProducts = results[0].total;
-        
-        db.query('SELECT COUNT(*) as total FROM orders', (err, results) => {
-            if (err) return res.status(500).json({ error: err.message });
-            stats.totalOrders = results[0].total;
-            
-            db.query('SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders', (err, results) => {
-                if (err) return res.status(500).json({ error: err.message });
-                stats.revenue = parseFloat(results[0].revenue);
-                res.json(stats);
-            });
+// GET - Statistiques admin (requêtes parallèles)
+app.get('/api/admin/stats', authAdmin, async (req, res) => {
+    try {
+        const [products, orders, revenue] = await Promise.all([
+            pool.query('SELECT COUNT(*) as total FROM products'),
+            pool.query('SELECT COUNT(*) as total FROM orders'),
+            pool.query('SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders'),
+        ]);
+        res.json({
+            totalProducts: products[0][0].total,
+            totalOrders:   orders[0][0].total,
+            revenue:       parseFloat(revenue[0][0].revenue),
         });
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // ============================================
-// ROUTES COMMANDES (AVEC AUTH)
+// ROUTES COMMANDES
 // ============================================
 
-// GET - Toutes les commandes (admin)
-app.get('/api/orders', authAdmin, (req, res) => {
-    db.query('SELECT * FROM orders ORDER BY created_at DESC', (err, orders) => {
-        if (err) return res.status(500).json({ error: err.message });
-        
-        const promises = orders.map(order => {
-            return new Promise((resolve) => {
-                db.query('SELECT * FROM order_items WHERE order_id = ?', [order.id], (err, items) => {
-                    resolve({ ...order, items: items || [] });
+// GET - Toutes les commandes avec items (une seule requête JOIN)
+app.get('/api/orders', authAdmin, async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT o.*,
+                   oi.id        AS item_id,
+                   oi.product_id,
+                   oi.product_name,
+                   oi.quantity,
+                   oi.price     AS item_price
+            FROM orders o
+            LEFT JOIN order_items oi ON oi.order_id = o.id
+            ORDER BY o.created_at DESC
+        `);
+
+        const ordersMap = new Map();
+        for (const row of rows) {
+            if (!ordersMap.has(row.id)) {
+                const { item_id, product_id, product_name, quantity, item_price, ...order } = row;
+                ordersMap.set(row.id, { ...order, items: [] });
+            }
+            if (row.item_id) {
+                ordersMap.get(row.id).items.push({
+                    id: row.item_id,
+                    product_id: row.product_id,
+                    product_name: row.product_name,
+                    quantity: row.quantity,
+                    price: row.item_price,
                 });
-            });
-        });
-        
-        Promise.all(promises).then(results => res.json(results));
-    });
+            }
+        }
+        res.json([...ordersMap.values()]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // GET - Commande spécifique
-app.get('/api/orders/:id', authAdmin, (req, res) => {
+app.get('/api/orders/:id', authAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
-    
-    db.query('SELECT * FROM orders WHERE id = ?', [id], (err, orderResults) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (orderResults.length === 0) return res.status(404).json({ error: 'Commande non trouvée' });
-        
-        db.query('SELECT * FROM order_items WHERE order_id = ?', [id], (err, itemsResults) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ ...orderResults[0], items: itemsResults || [] });
-        });
-    });
+    try {
+        const [[orders], [items]] = await Promise.all([
+            pool.query('SELECT * FROM orders WHERE id = ?', [id]),
+            pool.query('SELECT * FROM order_items WHERE order_id = ?', [id]),
+        ]);
+        if (orders.length === 0) return res.status(404).json({ error: 'Commande non trouvée' });
+        res.json({ ...orders[0], items });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-// ⭐ PUT - Mettre à jour le statut d'une commande (Admin)
-app.put('/api/orders/:id/status', authAdmin, (req, res) => {
+// PUT - Mettre à jour le statut d'une commande
+app.put('/api/orders/:id/status', authAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const { status } = req.body;
-    
     const validStatus = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-    
     if (!status || !validStatus.includes(status)) {
-        return res.status(400).json({ 
-            error: `Statut invalide. Valeurs acceptées: ${validStatus.join(', ')}` 
-        });
+        return res.status(400).json({ error: `Statut invalide. Valeurs acceptées: ${validStatus.join(', ')}` });
     }
-    
-    if (isNaN(id)) {
-        return res.status(400).json({ error: 'ID invalide' });
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
+    try {
+        const [result] = await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Commande non trouvée' });
+        const [[updated]] = await Promise.all([pool.query('SELECT * FROM orders WHERE id = ?', [id])]);
+        res.json({ success: true, message: '✅ Statut mis à jour', order: updated[0], newStatus: status });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-    
-    const query = 'UPDATE orders SET status = ? WHERE id = ?';
-    
-    db.query(query, [status, id], (err, result) => {
-        if (err) {
-            console.error('❌ Erreur mise à jour statut:', err);
-            return res.status(500).json({ error: err.message });
-        }
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Commande non trouvée' });
-        }
-        
-        // Retourner la commande mise à jour
-        db.query('SELECT * FROM orders WHERE id = ?', [id], (err, updatedOrder) => {
-            res.json({ 
-                success: true,
-                message: '✅ Statut mis à jour avec succès',
-                order: updatedOrder[0],
-                newStatus: status
-            });
-        });
-    });
 });
 
 // POST - Créer une commande
-app.post('/api/orders', (req, res) => {
+app.post('/api/orders', async (req, res) => {
     const { customer_name, customer_email, customer_phone, customer_address, items, total_amount } = req.body;
-    
     if (!customer_name || !customer_email || !items || items.length === 0) {
         return res.status(400).json({ error: 'Données manquantes' });
     }
-    
-    db.beginTransaction((err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        
-        db.query(
-            `INSERT INTO orders (customer_name, customer_email, customer_phone, customer_address, total_amount, status, created_at) 
+    const conn = await pool.getConnection();
+    try {
+        await conn.beginTransaction();
+        const [orderResult] = await conn.query(
+            `INSERT INTO orders (customer_name, customer_email, customer_phone, customer_address, total_amount, status, created_at)
              VALUES (?, ?, ?, ?, ?, 'pending', NOW())`,
-            [customer_name, customer_email, customer_phone || '', customer_address || '', total_amount],
-            (err, result) => {
-                if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
-                
-                const orderId = result.insertId;
-                const orderItems = items.map(item => [
-                    orderId, 
-                    item.id, 
-                    item.name, 
-                    item.quantity, 
-                    parseFloat(item.price)
-                ]);
-                
-                db.query('INSERT INTO order_items (order_id, product_id, product_name, quantity, price) VALUES ?', [orderItems], (err) => {
-                    if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
-                    
-                    // Mettre à jour le stock
-                    const updateStockQueries = items.map(item => {
-                        return new Promise((resolve, reject) => {
-                            db.query(
-                                'UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?',
-                                [item.quantity, item.id, item.quantity],
-                                (err) => {
-                                    if (err) reject(err);
-                                    else resolve();
-                                }
-                            );
-                        });
-                    });
-                    
-                    Promise.all(updateStockQueries)
-                        .then(() => {
-                            db.commit((err) => {
-                                if (err) return db.rollback(() => res.status(500).json({ error: err.message }));
-                                res.status(201).json({ 
-                                    success: true,
-                                    orderId, 
-                                    message: '✅ Commande créée avec succès' 
-                                });
-                            });
-                        })
-                        .catch((err) => {
-                            console.error('❌ Erreur mise à jour stock:', err);
-                            db.rollback(() => res.status(500).json({ error: 'Erreur lors de la mise à jour du stock' }));
-                        });
-                });
-            }
+            [customer_name, customer_email, customer_phone || '', customer_address || '', total_amount]
         );
-    });
-});
+        const orderId = orderResult.insertId;
+        const orderItems = items.map(item => [orderId, item.id, item.name, item.quantity, parseFloat(item.price)]);
+        await conn.query('INSERT INTO order_items (order_id, product_id, product_name, quantity, price) VALUES ?', [orderItems]);
 
-// ============================================
-// IMPORT DES ROUTES EXTERNES (optionnel)
-// ============================================
-// const ordersRoutes = require('./routes/orders');
-// app.use('/api/orders', ordersRoutes);
+        await Promise.all(items.map(item =>
+            conn.query('UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?', [item.quantity, item.id, item.quantity])
+        ));
+
+        await conn.commit();
+        res.status(201).json({ success: true, orderId, message: '✅ Commande créée avec succès' });
+    } catch (err) {
+        await conn.rollback();
+        res.status(500).json({ error: err.message });
+    } finally {
+        conn.release();
+    }
+});
 
 // ============================================
 // DÉMARRAGE
@@ -424,11 +311,4 @@ app.post('/api/orders', (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`\n🚀 Serveur backend sur http://localhost:${PORT}`);
-    console.log(`📦 GET produits: http://localhost:${PORT}/api/products`);
-    console.log(`➕ POST produits: http://localhost:${PORT}/api/products (admin)`);
-    console.log(`✏️ PUT produits: http://localhost:${PORT}/api/products/:id (admin)`);
-    console.log(`🗑️ DELETE produits: http://localhost:${PORT}/api/products/:id (admin)`);
-    console.log(`📋 GET commandes: http://localhost:${PORT}/api/orders (admin)`);
-    console.log(`🔄 PUT statut commande: http://localhost:${PORT}/api/orders/:id/status (admin)`);
-    console.log(`🔐 POST login: http://localhost:${PORT}/api/admin/login\n`);
 });

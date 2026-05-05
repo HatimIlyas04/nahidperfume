@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import ProductCard from "../components/ProductCard";
+import { getCachedProducts, setCachedProducts } from "../utils/productCache";
 import { useCollectionStyles } from "./collectionStyles";
 
 const CONFIG = {
@@ -69,8 +70,10 @@ export default function CollectionHomme({ addToCart }) {
   });
 
   useEffect(() => {
+    const cached = getCachedProducts();
+    if (cached) { setProducts(cached.filter(CONFIG.apiFilter)); setLoading(false); return; }
     axios.get("/api/products")
-      .then(res => { setProducts(res.data.filter(CONFIG.apiFilter)); })
+      .then(res => { setCachedProducts(res.data); setProducts(res.data.filter(CONFIG.apiFilter)); })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);

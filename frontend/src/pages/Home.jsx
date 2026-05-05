@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { getCachedProducts, setCachedProducts } from "../utils/productCache";
 import ProductCard from "../components/ProductCard";
 import BundleBuilder from "../components/BundleBuilder.jsx";
 import ReviewsSection from "../components/ReviewsSection";
+import CategorySection from "../components/CategorySection";
+
 import PackOffersSection from "../components/PackOffersSection";
 
 /* ═══════════════════════════════════════════════════════════
@@ -962,8 +965,10 @@ export default function Home({ addToCart }) {
   }, []);
 
   useEffect(() => {
+    const cached = getCachedProducts();
+    if (cached) { setProducts(cached); setLoading(false); return; }
     axios.get("/api/products")
-      .then(r => setProducts(r.data))
+      .then(r => { setCachedProducts(r.data); setProducts(r.data); })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);
@@ -1044,473 +1049,8 @@ export default function Home({ addToCart }) {
         </div>
       </section>
       {/* ── CATEGORY SECTION ── */}
-      <section className="category-premium-section">
-        <div className="category-premium-inner">
-          {/* Header */}
-          <div className="category-premium-header">
-            <div className="category-premium-eyebrow">Nos Collections</div>
-            <h2 className="category-premium-title">
-              Choisissez votre <em>univers</em>
-            </h2>
-            <Link to="/catalogue" className="category-premium-link">
-              Voir tout le catalogue →
-            </Link>
-          </div>
+      <CategorySection />
 
-          {/* Grid des catégories */}
-          <div className="category-premium-grid">
-            {/* Femme */}
-            <Link to="/collection/femme" className="category-premium-card card-femme">
-              <img
-                src="/femmeNahid.png"
-                alt="Femme"
-                className="category-premium-img"
-                onError={e => { e.currentTarget.src = "https://i.postimg.cc/dQTtHTgz/femme-Nahid.png"; }}
-              />
-              <div className="category-premium-overlay" />
-              <div className="category-premium-top">
-                <span className="category-premium-tag">Féminin</span>
-                <span className="category-premium-count">32 parfums</span>
-              </div>
-              <div className="category-premium-body">
-                <div className="category-premium-line" />
-                <span className="category-premium-label">Femme</span>
-                <span className="category-premium-sub">Fragrances florales & boisées</span>
-                <div className="category-premium-cta">
-                  <span className="category-premium-btn">Explorer →</span>
-                </div>
-              </div>
-            </Link>
-
-            {/* Homme */}
-            <Link to="/collection/homme" className="category-premium-card card-homme">
-              <img
-                src="/hommeNahid.png"
-                alt="Homme"
-                className="category-premium-img"
-                onError={e => { e.currentTarget.src = "https://i.postimg.cc/WpJbWJxx/homme-Nahid.jpg"; }}
-              />
-              <div className="category-premium-overlay" />
-              <div className="category-premium-top">
-                <span className="category-premium-tag">Masculin</span>
-                <span className="category-premium-count">28 parfums</span>
-              </div>
-              <div className="category-premium-body">
-                <div className="category-premium-line" />
-                <span className="category-premium-label">Homme</span>
-                <span className="category-premium-sub">Fragrances viriles & intenses</span>
-                <div className="category-premium-cta">
-                  <span className="category-premium-btn">Explorer →</span>
-                </div>
-              </div>
-            </Link>
-
-            {/* Unisex */}
-            <Link to="/collection/unisex" className="category-premium-card card-unisex">
-              <img
-                src="/unisexNahid.png"
-                alt="Unisex"
-                className="category-premium-img"
-                onError={e => { e.currentTarget.src = "https://i.postimg.cc/MZjKPjgN/unisex-Nahid.png"; }}
-              />
-              <div className="category-premium-overlay" />
-              <div className="category-premium-top">
-                <span className="category-premium-tag">Libre</span>
-                <span className="category-premium-count">18 parfums</span>
-              </div>
-              <div className="category-premium-body">
-                <div className="category-premium-line" />
-                <span className="category-premium-label">Unisex</span>
-                <span className="category-premium-sub">Fragrances sans frontières</span>
-                <div className="category-premium-cta">
-                  <span className="category-premium-btn">Explorer →</span>
-                </div>
-              </div>
-            </Link>
-
-            {/* Originals */}
-            <Link to="/originals" className="category-premium-card card-originals">
-              <img
-                src="https://images.unsplash.com/photo-1541643600914-78b084683601?w=800"
-                alt="Originals"
-                className="category-premium-img"
-              />
-              <div className="category-premium-overlay" />
-              <div className="category-premium-top">
-                <span className="category-premium-tag premium-gold">✦ Exclusif</span>
-              </div>
-              <div className="category-premium-body">
-                <div className="category-premium-line gold-line" />
-                <span className="category-premium-label">Nahid Originals</span>
-                <span className="category-premium-sub">Créations exclusives de la maison</span>
-                <div className="category-premium-cta">
-                  <span className="category-premium-btn premium-gold-btn">Découvrir →</span>
-                </div>
-              </div>
-              <div className="category-premium-orb" />
-            </Link>
-
-            {/* Best-Sellers */}
-            <Link to="/?category=best-sellers" className="category-premium-card card-bestsellers">
-              <img
-                src="https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=800"
-                alt="Best-Sellers"
-                className="category-premium-img"
-              />
-              <div className="category-premium-overlay" />
-              <div className="category-premium-top">
-                <span className="category-premium-tag premium-coral">🔥 Tendance</span>
-              </div>
-              <div className="category-premium-body">
-                <div className="category-premium-line coral-line" />
-                <span className="category-premium-label">Best-Sellers</span>
-                <span className="category-premium-sub">Les fragrances préférées</span>
-                <div className="category-premium-cta">
-                  <span className="category-premium-btn premium-coral-btn">Voir tout →</span>
-                </div>
-              </div>
-              <div className="category-premium-rank">#1</div>
-            </Link>
-          </div>
-        </div>
-
-        <style>{`
-    /* ── CATEGORY PREMIUM SECTION ── */
-    .category-premium-section {
-      padding: clamp(80px, 10vw, 140px) 0;
-      background: #FAF8F5;
-      position: relative;
-      overflow: hidden;
-    }
-    .category-premium-section::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image: repeating-linear-gradient(0deg, transparent, transparent 32px, rgba(200,169,106,0.08) 32px, rgba(200,169,106,0.08) 33px);
-      pointer-events: none;
-    }
-    .category-premium-inner {
-      max-width: 1480px;
-      margin: 0 auto;
-      padding: 0 clamp(18px, 4vw, 64px);
-      position: relative;
-      z-index: 1;
-    }
-
-    /* Header */
-    .category-premium-header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: clamp(36px, 5vw, 60px);
-      flex-wrap: wrap;
-      gap: 18px;
-    }
-    .category-premium-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.59rem;
-      font-weight: 700;
-      letter-spacing: 0.32em;
-      text-transform: uppercase;
-      color: #EF776A;
-      margin-bottom: 12px;
-    }
-    .category-premium-eyebrow::before {
-      content: '';
-      width: 28px;
-      height: 1px;
-      background: #EF776A;
-      opacity: 0.7;
-    }
-    .category-premium-title {
-      font-family: 'Fraunces', Georgia, serif;
-      font-size: clamp(2rem, 4.5vw, 3.4rem);
-      font-weight: 400;
-      color: #1C1A16;
-      letter-spacing: -0.02em;
-      line-height: 1.08;
-    }
-    .category-premium-title em {
-      font-style: italic;
-      font-weight: 300;
-      color: #EF776A;
-    }
-    .category-premium-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #8C8478;
-      text-decoration: none;
-      padding: 10px 22px;
-      border-radius: 999px;
-      border: 1.5px solid rgba(28,26,22,0.09);
-      background: white;
-      transition: all 0.2s;
-    }
-    .category-premium-link:hover {
-      color: #EF776A;
-      border-color: #EF776A;
-      gap: 12px;
-      transform: translateY(-2px);
-    }
-
-    /* Grid 5 colonnes */
-    .category-premium-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: clamp(10px, 1.5vw, 18px);
-    }
-
-    /* Cards de base */
-    .category-premium-card {
-      position: relative;
-      border-radius: 22px;
-      overflow: hidden;
-      text-decoration: none;
-      background: #F2EDE3;
-      border: 1px solid rgba(28,26,22,0.09);
-      transition: transform 0.46s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.46s;
-      cursor: pointer;
-      display: block;
-    }
-    .category-premium-card:hover {
-      transform: translateY(-14px) scale(1.016);
-      box-shadow: 0 40px 90px rgba(28,26,22,0.16), 0 6px 22px rgba(28,26,22,0.07);
-      border-color: transparent;
-    }
-    /* Portraits (Femme, Homme, Unisex) */
-    .card-femme, .card-homme, .card-unisex { aspect-ratio: 3/4; }
-    /* Originals & Best-Sellers */
-    .card-originals, .card-bestsellers { aspect-ratio: 3/4; }
-
-    .category-premium-img {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.8s, filter 0.6s;
-      filter: brightness(0.94) saturate(0.96);
-    }
-    .category-premium-card:hover .category-premium-img {
-      transform: scale(1.09);
-      filter: brightness(1.02) saturate(1.06);
-    }
-
-    .category-premium-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(28,26,22,0.82) 0%, rgba(28,26,22,0.28) 42%, rgba(28,26,22,0.06) 68%, transparent 100%);
-      pointer-events: none;
-    }
-
-    /* Top area */
-    .category-premium-top {
-      position: absolute;
-      top: 14px;
-      left: 14px;
-      right: 14px;
-      z-index: 3;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-    }
-    .category-premium-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 5px 13px;
-      border-radius: 999px;
-      font-size: 0.56rem;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      backdrop-filter: blur(10px);
-      background: rgba(255,255,255,0.18);
-      border: 1px solid rgba(255,255,255,0.26);
-      color: rgba(255,255,255,0.9);
-    }
-    .premium-gold {
-      background: rgba(200,169,106,0.22);
-      border-color: rgba(200,169,106,0.45);
-      color: #E9D6A9;
-    }
-    .premium-coral {
-      background: rgba(239,119,106,0.22);
-      border-color: rgba(239,119,106,0.45);
-      color: #FFE8E5;
-    }
-    .category-premium-count {
-      font-size: 0.58rem;
-      font-weight: 700;
-      color: rgba(255,255,255,0.62);
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(0,0,0,0.22);
-      backdrop-filter: blur(8px);
-    }
-
-    /* Bottom body */
-    .category-premium-body {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 3;
-      padding: clamp(16px, 2.5vw, 24px);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .category-premium-line {
-      width: 0;
-      height: 1.5px;
-      background: linear-gradient(90deg, #EF776A, #C8A96A);
-      border-radius: 999px;
-      margin-bottom: 8px;
-      transition: width 0.52s;
-    }
-    .category-premium-card:hover .category-premium-line { width: 50px; }
-    .gold-line { background: linear-gradient(90deg, #C8A96A, #EF776A); }
-    .coral-line { background: linear-gradient(90deg, #EF776A, #C8503F); }
-
-    .category-premium-label {
-      font-family: 'Fraunces', Georgia, serif;
-      font-size: clamp(1.5rem, 3vw, 2.2rem);
-      font-weight: 400;
-      color: white;
-      letter-spacing: -0.01em;
-      line-height: 1.05;
-    }
-    .category-premium-sub {
-      font-size: 0.68rem;
-      font-weight: 500;
-      color: rgba(255,255,255,0.52);
-      letter-spacing: 0.04em;
-    }
-
-    /* CTA */
-    .category-premium-cta {
-      margin-top: 10px;
-      opacity: 0;
-      transform: translateY(12px);
-      transition: opacity 0.32s, transform 0.32s;
-    }
-    .category-premium-card:hover .category-premium-cta {
-      opacity: 1;
-      transform: none;
-    }
-    .category-premium-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 22px;
-      border-radius: 999px;
-      background: #EF776A;
-      color: white;
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.09em;
-      text-transform: uppercase;
-      transition: transform 0.25s;
-      box-shadow: 0 5px 20px rgba(239,119,106,0.45);
-    }
-    .premium-gold-btn {
-      background: linear-gradient(135deg, #C8A96A, #A8883E);
-      box-shadow: 0 5px 20px rgba(200,169,106,0.45);
-    }
-    .premium-coral-btn {
-      background: #EF776A;
-    }
-    .category-premium-card:hover .category-premium-btn {
-      transform: scale(1.04);
-    }
-
-    /* Originals orb */
-    .category-premium-orb {
-      position: absolute;
-      width: 180px;
-      height: 180px;
-      top: -50px;
-      right: -50px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(200,169,106,0.24), transparent 72%);
-      pointer-events: none;
-      z-index: 1;
-      animation: orbDrift 12s ease-in-out infinite;
-    }
-    @keyframes orbDrift {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(14px, -10px) scale(1.04); }
-    }
-
-    /* Best-Sellers rank */
-    .category-premium-rank {
-      position: absolute;
-      bottom: 24px;
-      right: 18px;
-      z-index: 4;
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #EF776A, #C8503F);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Fraunces', serif;
-      font-size: 1.15rem;
-      font-weight: 600;
-      box-shadow: 0 6px 22px rgba(239,119,106,0.5);
-      animation: floatY 3.5s ease-in-out infinite;
-    }
-    @keyframes floatY {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
-
-    /* Responsive */
-    @media (max-width: 1200px) {
-      .category-premium-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-      .card-originals { grid-column: span 2; aspect-ratio: 16/9; }
-      .card-bestsellers { grid-column: 3; }
-    }
-    @media (max-width: 860px) {
-      .category-premium-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-      .card-femme, .card-homme, .card-unisex, .card-originals, .card-bestsellers {
-        grid-column: auto;
-        aspect-ratio: 3/4;
-      }
-      .card-originals { grid-column: 2; }
-      .card-bestsellers { grid-column: span 2; aspect-ratio: 16/9; }
-      .category-premium-rank { display: none; }
-    }
-    @media (max-width: 560px) {
-      .category-premium-grid {
-        grid-template-columns: 1fr;
-      }
-      .category-premium-card {
-        grid-column: 1 !important;
-        aspect-ratio: 4/5;
-      }
-      .category-premium-header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .category-premium-cta { display: none; }
-    }
-  `}</style>
-      </section>
 
       {/* ── STORY ── */}
       <section className="story-section">
@@ -1720,44 +1260,44 @@ export default function Home({ addToCart }) {
               <div className="footer-social">
                 <a href="https://www.instagram.com/ilyas_hatim_10/" target="_blank" rel="noopener" className="social-btn social-ig" aria-label="Instagram">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                    <circle cx="12" cy="12" r="4.5"/>
-                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                    <circle cx="12" cy="12" r="4.5" />
+                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
                   </svg>
                 </a>
                 <a href="#" className="social-btn social-fb" aria-label="Facebook">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
                   </svg>
                 </a>
                 <a href="#" className="social-btn social-wa" aria-label="WhatsApp">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/>
-                    <path d="M12 2C6.486 2 2 6.486 2 12c0 1.89.522 3.66 1.427 5.18L2 22l4.949-1.397A9.948 9.948 0 0 0 12 22c5.514 0 10-4.486 10-10S17.514 2 12 2"/>
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" />
+                    <path d="M12 2C6.486 2 2 6.486 2 12c0 1.89.522 3.66 1.427 5.18L2 22l4.949-1.397A9.948 9.948 0 0 0 12 22c5.514 0 10-4.486 10-10S17.514 2 12 2" />
                   </svg>
                 </a>
                 <a href="#" className="social-btn social-tk" aria-label="TikTok">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.22 6.22 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.07a8.16 8.16 0 0 0 4.77 1.52V7.15a4.85 4.85 0 0 1-1-.46z"/>
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.22 6.22 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.07a8.16 8.16 0 0 0 4.77 1.52V7.15a4.85 4.85 0 0 1-1-.46z" />
                   </svg>
                 </a>
               </div>
             </div>
             <div>
               <h4 className="footer-heading">Découvrir</h4>
-              {["Nos Parfums","Notre Histoire","Scent Finder","Blog Olfactif","Gift Sets"].map(l => (
+              {["Nos Parfums", "Notre Histoire", "Scent Finder", "Blog Olfactif", "Gift Sets"].map(l => (
                 <a key={l} href="#" className="footer-link">{l}</a>
               ))}
             </div>
             <div>
               <h4 className="footer-heading">Aide</h4>
-              {["Contact","FAQ","Livraison & Retours","Suivi commande","Mentions légales"].map(l => (
+              {["Contact", "FAQ", "Livraison & Retours", "Suivi commande", "Mentions légales"].map(l => (
                 <a key={l} href="#" className="footer-link">{l}</a>
               ))}
             </div>
             <div>
               <h4 className="footer-heading">Newsletter</h4>
-              <p style={{fontSize:"0.82rem",lineHeight:"1.8",color:"rgba(255,255,255,0.28)",marginBottom:"22px"}}>
+              <p style={{ fontSize: "0.82rem", lineHeight: "1.8", color: "rgba(255,255,255,0.28)", marginBottom: "22px" }}>
                 Nouvelles fragrances et offres exclusives réservées à nos abonnés.
               </p>
               <div className="email-form">
@@ -1777,7 +1317,7 @@ export default function Home({ addToCart }) {
               </span>
             </div>
             <div className="footer-bottom-links">
-              {["Mentions légales","Politique de confidentialité","CGV"].map(l => (
+              {["Mentions légales", "Politique de confidentialité", "CGV"].map(l => (
                 <a key={l} href="#" className="footer-bottom-link">{l}</a>
               ))}
             </div>

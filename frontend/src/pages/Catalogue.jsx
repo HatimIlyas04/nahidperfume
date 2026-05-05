@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { getCachedProducts, setCachedProducts } from "../utils/productCache";
 
 /* ═══════════════════════════════════════════════════════════
    CATALOGUE PAGE — Nahid Perfume
@@ -1000,8 +1001,10 @@ const Catalogue = ({ addToCart }) => {
   const sortRef = useRef(null);
 
   useEffect(() => {
+    const cached = getCachedProducts();
+    if (cached) { setProducts(Array.isArray(cached) ? cached : []); setLoading(false); return; }
     axios.get("/api/products")
-      .then(r => setProducts(Array.isArray(r.data) ? r.data : []))
+      .then(r => { const d = Array.isArray(r.data) ? r.data : []; setCachedProducts(d); setProducts(d); })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);

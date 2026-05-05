@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { getCachedProducts, setCachedProducts } from "../utils/productCache";
 
 /* ═══════════════════════════════════════════════════════
    ORIGINALS PAGE — Nahid Perfume
@@ -724,15 +725,13 @@ const OriginalsPage = ({ addToCart }) => {
   const [filter,   setFilter]       = useState("Tous");
 
   useEffect(() => {
+    const filterOriginals = (all) => (Array.isArray(all) ? all : []).filter(p =>
+      p.product_type === "Original" || p.category === "Originals"
+    );
+    const cached = getCachedProducts();
+    if (cached) { setProducts(filterOriginals(cached)); setLoading(false); return; }
     axios.get("/api/products")
-      .then(r => {
-        const all = Array.isArray(r.data) ? r.data : [];
-        const originals = all.filter(p =>
-          p.product_type === "Original" ||
-          p.category === "Originals"
-        );
-        setProducts(originals);
-      })
+      .then(r => { setCachedProducts(r.data); setProducts(filterOriginals(r.data)); })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, []);
