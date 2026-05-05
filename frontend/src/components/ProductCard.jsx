@@ -424,15 +424,32 @@ const CSS = `
 .oc-oos { font-size:.63rem; font-weight:600; color:var(--g); font-style:italic; }
 
 /* ── Responsive ── */
-@media(max-width:480px){
+@media(max-width:640px){
   .pc,.oc { border-radius:18px; }
-  .pc-body,.oc-body { padding:11px 12px 14px; }
-  .pc-name { font-size:1rem; }
-  .oc-name { font-size:1.02rem; }
+  .pc-body,.oc-body { padding:10px 12px 14px; }
+  .pc-name { font-size:.98rem; }
+  .oc-name { font-size:1rem; }
   .pc-price,.oc-price { font-size:1.08rem; }
   .pc-add,.oc-add { width:36px; height:36px; }
   .pc-desc,.oc-desc { -webkit-line-clamp:1; }
   .oc-note { display:none; }
+}
+@media(max-width:480px){
+  .pc,.oc { border-radius:14px; }
+  .pc-img-wrap,.oc-img-wrap { aspect-ratio:4/5; }
+  .pc-body,.oc-body { padding:8px 10px 12px; }
+  .pc-meta { margin-bottom:5px; }
+  .pc-cat-pill { font-size:.5rem; padding:3px 8px; }
+  .pc-stars,.oc-stars { display:none; }
+  .pc-name { font-size:.88rem; line-height:1.2; margin-bottom:4px; }
+  .oc-name { font-size:.9rem; line-height:1.2; }
+  .pc-desc,.oc-desc { display:none; }
+  .oc-note { display:none; }
+  .pc-div,.oc-div { margin-bottom:8px; }
+  .pc-price,.oc-price { font-size:.98rem; }
+  .pc-cur,.oc-price-cur { font-size:.6rem; }
+  .pc-ship,.oc-ship { display:none; }
+  .pc-add,.oc-add { width:32px; height:32px; }
 }
 `;
 

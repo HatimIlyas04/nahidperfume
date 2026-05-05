@@ -731,9 +731,26 @@ const CSS = `
   .cat-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
   .cat-topbar { flex-wrap:wrap; gap:8px; }
   .cat-search-wrap { min-width:0; }
+  .cat-card { border-radius:16px; }
+  .cat-card-img-wrap { aspect-ratio:3/4; }
+  .cat-card-body { padding:10px 12px 14px; }
+  .cat-card-top-row { margin-bottom:6px; }
+  .cat-famille-pill { font-size:.6rem; padding:4px 9px; }
+  .cat-orig-inline { font-size:.54rem; padding:4px 8px; }
+  .cat-card-name { font-size:1rem; padding:6px 0 10px; }
+  .cat-div { margin-bottom:10px; }
+  .cat-price { font-size:1.1rem; }
+  .cat-price-cur { font-size:.64rem; }
+  .cat-ship { display:none; }
+  .cat-add { width:34px; height:34px; }
+  .cat-bgs { top:8px; left:8px; gap:4px; }
+  .cat-bdg { font-size:.48rem; padding:3px 8px; }
+  .cat-wish { width:28px; height:28px; top:8px; right:8px; }
 }
 @media(max-width:380px){
   .cat-grid { grid-template-columns:1fr 1fr; gap:8px; }
+  .cat-card-body { padding:8px 10px 12px; }
+  .cat-card-name { font-size:.9rem; }
 }
 `;
 
