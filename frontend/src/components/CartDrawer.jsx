@@ -31,11 +31,14 @@ const CartDrawer = ({ isOpen, onClose, cart, removeFromCart, updateQuantity, add
     return sum + price * item.quantity;
   }, 0);
 
-  const FREE_SHIPPING = 500;
-  const shipping = subtotal >= FREE_SHIPPING ? 0 : 30;
-  const total = subtotal + shipping;
-  const progress = Math.min((subtotal / FREE_SHIPPING) * 100, 100);
-  const remaining = FREE_SHIPPING - subtotal;
+  const FREE_SHIPPING    = 160;
+  const isOriginal       = (item) => item.product_type === "Original" || item.category === "Originals";
+  const originalsQty     = cart.filter(isOriginal).reduce((sum, item) => sum + (item.quantity || 1), 0);
+  const hasOriginalsFree = originalsQty >= 2;
+  const shipping         = (hasOriginalsFree || subtotal >= FREE_SHIPPING) ? 0 : 30;
+  const total            = subtotal + shipping;
+  const progress         = hasOriginalsFree ? 100 : Math.min((subtotal / FREE_SHIPPING) * 100, 100);
+  const remaining        = FREE_SHIPPING - subtotal;
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -84,9 +87,13 @@ const CartDrawer = ({ isOpen, onClose, cart, removeFromCart, updateQuantity, add
 
         {/* Free shipping progress */}
         <div style={styles.shippingBar}>
-          {subtotal >= FREE_SHIPPING ? (
+          {(subtotal >= FREE_SHIPPING || hasOriginalsFree) ? (
             <p style={styles.shippingMsg}>
               🎉 <strong>Livraison gratuite</strong> débloquée !
+            </p>
+          ) : originalsQty === 1 ? (
+            <p style={styles.shippingMsg}>
+              Plus qu'<strong>1 parfum original</strong> pour la livraison gratuite
             </p>
           ) : (
             <p style={styles.shippingMsg}>

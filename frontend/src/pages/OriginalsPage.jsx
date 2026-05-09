@@ -587,25 +587,6 @@ function injectCSS() {
   }
 }
 
-/* ── Parse main note from scent_notes ── */
-function parseMainNote(raw) {
-  if (!raw) return null;
-  const m = raw.match(/t[êe]te\s*[:：](.*?)(?:\||$)/i);
-  if (!m) return null;
-  return m[1].replace(/[🌹🌿🌙💧🍊🏜️🪵🍦🍫🤍🔥⭐]/g, "").trim().split(",").slice(0, 2).join(", ");
-}
-function parseCoeur(raw) {
-  if (!raw) return null;
-  const m = raw.match(/c[oœ]eur\s*[:：](.*?)(?:\||$)/i);
-  if (!m) return null;
-  return m[1].replace(/[🌹🌿🌙💧🍊🏜️🪵🍦🍫🤍🔥⭐]/g, "").trim();
-}
-function parseFond(raw) {
-  if (!raw) return null;
-  const m = raw.match(/fond\s*[:：](.*?)(?:\||$)/i);
-  if (!m) return null;
-  return m[1].replace(/[🌹🌿🌙💧🍊🏜️🪵🍦🍫🤍🔥⭐]/g, "").trim();
-}
 
 /* ── Individual Card ── */
 const OriginalCard = ({ product, addToCart, delay = 0, isBest = false }) => {
@@ -616,7 +597,7 @@ const OriginalCard = ({ product, addToCart, delay = 0, isBest = false }) => {
   const price    = parseFloat(product.price) || 0;
   const isOut    = product.stock === 0;
   const isLow    = product.stock > 0 && product.stock < 5;
-  const mainNote = parseMainNote(product.scent_notes);
+  const mainNote = product.top_notes ? product.top_notes.split(",").slice(0, 2).join(", ") : null;
 
   const ripple = (e, el) => {
     const r = el.getBoundingClientRect();
@@ -862,12 +843,12 @@ const OriginalsPage = ({ addToCart }) => {
               </h2>
               <p className="or-featured-desc">{featured.description}</p>
 
-              {featured.scent_notes && (
+              {(featured.top_notes || featured.middle_notes || featured.base_notes) && (
                 <div className="or-featured-notes">
                   {[
-                    { type:"Notes de tête", icon:"🌿", val:parseMainNote(featured.scent_notes) },
-                    { type:"Notes de cœur", icon:"🌸", val:parseCoeur(featured.scent_notes) },
-                    { type:"Notes de fond", icon:"🪵", val:parseFond(featured.scent_notes) },
+                    { type:"Notes de tête", icon:"🌿", val: featured.top_notes },
+                    { type:"Notes de cœur", icon:"🌸", val: featured.middle_notes },
+                    { type:"Notes de fond", icon:"🪵", val: featured.base_notes },
                   ].filter(n => n.val).map(n => (
                     <div className="or-featured-note" key={n.type}>
                       <span className="or-featured-note-icon">{n.icon}</span>

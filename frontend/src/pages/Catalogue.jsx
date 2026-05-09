@@ -829,7 +829,7 @@ function Card({ product, addToCart, delay = 0 }) {
   const isNew    = !!product.is_new;
   const isBest   = !!product.is_bestseller;
   const isOrig   = product.product_type === "Original" || product.category === "Originals";
-  const freeShip = price >= 300;
+  const freeShip = isOrig || price >= 160;
 
   const handleAdd = (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -903,7 +903,7 @@ function Card({ product, addToCart, delay = 0 }) {
               <span className="cat-price-cur">MAD</span>
             </span>
             <span className={`cat-ship${freeShip?" cat-ship-free":""}`}>
-              {freeShip ? "✓ Livraison gratuite" : "Livraison dès 300 MAD"}
+              {freeShip ? "✓ Livraison gratuite" : "Livraison dès 160 MAD"}
             </span>
           </div>
           {!isOut
@@ -1040,9 +1040,7 @@ const Catalogue = ({ addToCart }) => {
       const q = search.toLowerCase();
       return p.name.toLowerCase().includes(q) ||
              (p.description||"").toLowerCase().includes(q) ||
-             (p.category||"").toLowerCase().includes(q) ||
-             (p.scent_notes||"").toLowerCase().includes(q);
-    }
+             (p.category||"").toLowerCase().includes(q) ;    }
     return true;
   }).sort((a,b) => {
     if (sort==="price-asc")  return parseFloat(a.price) - parseFloat(b.price);

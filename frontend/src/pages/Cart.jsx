@@ -456,7 +456,8 @@ function injectCartStyles() {
 }
 
 /* ─── Helper: detect pack item ─────────────────── */
-const isPack = (item) => !!(item.packId || item.packName || (item.fragrances && item.fragrances.length > 0));
+const isPack     = (item) => !!(item.packId || item.packName || (item.fragrances && item.fragrances.length > 0));
+const isOriginal = (item) => item.product_type === "Original" || item.category === "Originals";
 
 /* ─── Cart Component ────────────────────────────── */
 const Cart = ({ cart, removeFromCart, updateQuantity }) => {
@@ -467,9 +468,11 @@ const Cart = ({ cart, removeFromCart, updateQuantity }) => {
     return sum + price * item.quantity;
   }, 0);
 
-  /* Livraison : gratuite sur tous les packs · gratuite dès 300 MAD pour parfums individuels */
-  const hasPackInCart = cart.some(isPack);
-  const shipping      = (hasPackInCart || subtotal >= 300) ? 0 : 30;
+  /* Livraison : gratuite sur tous les packs · 2 originals · ou dès 160 MAD (4 parfums inspirés) */
+  const hasPackInCart   = cart.some(isPack);
+  const originalsQty    = cart.filter(isOriginal).reduce((sum, item) => sum + (item.quantity || 1), 0);
+  const hasOriginalsFree = originalsQty >= 2;
+  const shipping         = (hasPackInCart || hasOriginalsFree || subtotal >= 160) ? 0 : 30;
   const total    = subtotal + shipping;
   const fmt      = (n) => Math.round(n).toLocaleString("fr-MA");
 
@@ -655,12 +658,15 @@ const Cart = ({ cart, removeFromCart, updateQuantity }) => {
                 </span>
               </div>
 
-              {subtotal > 0 && subtotal < 300 && !hasPackInCart && (
+              {subtotal > 0 && !hasPackInCart && !hasOriginalsFree && subtotal < 160 && (
                 <div className="ct-ship-progress">
                   <div className="ct-progress-track">
-                    <div className="ct-progress-fill" style={{ width: `${Math.min((subtotal / 300) * 100, 100)}%` }} />
+                    <div className="ct-progress-fill" style={{ width: `${Math.min((subtotal / 160) * 100, 100)}%` }} />
                   </div>
-                  <p className="ct-ship-note">Encore {fmt(300 - subtotal)} MAD pour la livraison gratuite</p>
+                  {originalsQty === 1
+                    ? <p className="ct-ship-note">Plus qu'1 parfum original pour la livraison gratuite</p>
+                    : <p className="ct-ship-note">Encore {fmt(160 - subtotal)} MAD pour la livraison gratuite</p>
+                  }
                 </div>
               )}
 
@@ -681,7 +687,7 @@ const Cart = ({ cart, removeFromCart, updateQuantity }) => {
 
               <div className="ct-trust-pills">
                 {[
-                  { icon: "🚚", text: "Livraison gratuite dès 300 MAD" },
+                  { icon: "🚚", text: "Livraison gratuite dès 160 MAD" },
                   { icon: "💳", text: "Paiement à la livraison" },
                   { icon: "⭐", text: "4.9/5 · 2 400 avis" },
                   { icon: "🇲🇦", text: "Partout au Maroc" },

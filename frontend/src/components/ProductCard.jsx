@@ -462,19 +462,6 @@ function injectStyles() {
   }
 }
 
-/* ── Parse first main note from scent_notes ── */
-function parseMainNote(raw) {
-  if (!raw) return null;
-  const m = raw.match(/t[êe]te\s*[:：](.*?)(?:\||$)/i);
-  if (!m) return null;
-  return m[1]
-    .replace(/[🌹🌿🌙💧🍊🏜️🪵🍦🍫🤍🔥⭐]/g, "")
-    .trim()
-    .split(",")
-    .slice(0, 2)
-    .join(", ");
-}
-
 /* ── Ripple helper ── */
 function addRipple(e, el) {
   const r = el.getBoundingClientRect();
@@ -500,7 +487,8 @@ function StandardCard({ product, addToCart }) {
   const isLow    = product.stock > 0 && product.stock < 5;
   const isNew    = !!product.is_new;
   const isBest   = !!product.is_bestseller;
-  const freeShip = price >= 300;
+  const isOrig   = product.product_type === "Original" || product.category === "Originals";
+  const freeShip = isOrig || price >= 160;
 
   const handleAdd = (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -561,7 +549,7 @@ function StandardCard({ product, addToCart }) {
         <div className="pc-foot">
           <div className="pc-pw">
             <span className="pc-price">{Math.round(price).toLocaleString("fr-MA")}<span className="pc-cur">MAD</span></span>
-            <span className={`pc-ship${freeShip ? " pc-ship-free" : ""}`}>{freeShip ? "✓ Livraison gratuite" : "Livraison dès 300 MAD"}</span>
+            <span className={`pc-ship${freeShip ? " pc-ship-free" : ""}`}>{freeShip ? "✓ Livraison gratuite" : "Livraison dès 160 MAD"}</span>
           </div>
           {!isOut
             ? <button className={`pc-add${added ? " ok" : ""}`} onClick={handleAdd} aria-label="Ajouter">
@@ -591,7 +579,9 @@ function OriginalCard({ product, addToCart }) {
   const isOut    = product.stock === 0;
   const isLow    = product.stock > 0 && product.stock < 5;
   const isBest   = !!product.is_bestseller;
-  const mainNote = parseMainNote(product.scent_notes);
+  const mainNote = product.top_notes
+    ? product.top_notes.split(",").slice(0, 2).join(", ")
+    : "";
 
   const handleAdd = (e) => {
     e.preventDefault(); e.stopPropagation();

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import Swal from "sweetalert2";
 import { useLanguage } from "../context/LanguageContext";
 
 /* ═══════════════════════════════════════════════════════
@@ -321,6 +322,16 @@ const checkoutCSS = `
   .co-trust-icon { font-size:0.85rem; flex-shrink:0; }
   .co-trust-text { font-size:0.62rem; font-weight:700; color:var(--co-ink-2); line-height:1.3; }
 
+  /* SweetAlert2 overrides (checkout context) */
+  .co-swal-popup {
+    font-family: var(--co-sans) !important;
+    border-radius: 24px !important;
+    border: 1px solid var(--co-border);
+    padding: 32px 28px !important;
+    box-shadow: 0 24px 64px rgba(28,26,22,.18) !important;
+  }
+  .swal2-container { z-index: 99999 !important; }
+
   /* Empty state */
   .co-empty { min-height:72vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:48px 24px; gap:18px; }
   .co-empty-icon-wrap { width:100px; height:100px; border-radius:50%; background:var(--co-cream-2); border:1px solid var(--co-border); display:flex; align-items:center; justify-content:center; font-size:2.8rem; animation:coFloat 3.5s ease-in-out infinite; }
@@ -341,7 +352,8 @@ const checkoutCSS = `
   .co-success-home { display:inline-flex; align-items:center; gap:10px; background:linear-gradient(135deg, var(--co-rose), var(--co-rose-d)); color:white; padding:15px 36px; border-radius:999px; border:none; font-family:var(--co-sans); font-size:0.78rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; box-shadow:0 8px 24px rgba(212,133,122,0.42); transition:transform 0.3s var(--co-spring), box-shadow 0.3s; }
 `;
 
-const isPack = (item) => !!(item.packId || item.packName || (item.fragrances && item.fragrances.length > 0));
+const isPack     = (item) => !!(item.packId || item.packName || (item.fragrances && item.fragrances.length > 0));
+const isOriginal = (item) => item.product_type === "Original" || item.category === "Originals";
 
 // Alert Component
 const Alert = ({ type, title, message, onClose, autoClose = 5000 }) => {
@@ -385,19 +397,10 @@ const Checkout = ({ cart, clearCart }) => {
     customer_address: "",
     customer_city: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [loading,   setLoading]   = useState(false);
+  const [success,   setSuccess]   = useState(false);
+  const [orderId,   setOrderId]   = useState(null);
   const [localCart, setLocalCart] = useState([]);
-  const [alert, setAlert] = useState(null);
-
-  // Show alert function
-  const showAlert = (type, title, message) => {
-    setAlert({ type, title, message });
-  };
-
-  const hideAlert = () => {
-    setAlert(null);
-  };
 
   // Inject styles
   useEffect(() => {
@@ -425,12 +428,14 @@ const Checkout = ({ cart, clearCart }) => {
   const activeCart = localCart.length > 0 ? localCart : (cart || []);
 
   // Totals
-  const hasPackInCart = activeCart.some(isPack);
+  const hasPackInCart    = activeCart.some(isPack);
   const subtotal = activeCart.reduce((sum, item) => {
     const price = typeof item.price === "string" ? parseFloat(item.price) : item.price;
     return sum + price * (item.quantity || 1);
   }, 0);
-  const shipping = (hasPackInCart || subtotal >= 300) ? 0 : 30;
+  const originalsQty     = activeCart.filter(isOriginal).reduce((sum, item) => sum + (item.quantity || 1), 0);
+  const hasOriginalsFree = originalsQty >= 2;
+  const shipping         = (hasPackInCart || hasOriginalsFree || subtotal >= 160) ? 0 : 30;
   const total = subtotal + shipping;
   const fmt = (n) => Math.round(n).toLocaleString("fr-MA");
 
@@ -459,17 +464,24 @@ const Checkout = ({ cart, clearCart }) => {
   };
 
   // Validation function
-  const validateForm = () => {
+  const validateForm = async () => {
+    const swalWarn = (title, text) => Swal.fire({
+      icon: "warning", iconColor: "#F59E0B",
+      title, text,
+      confirmButtonColor: "#EF776A",
+      confirmButtonText: "Corriger",
+      customClass: { popup: "co-swal-popup" },
+    });
     if (!formData.customer_name.trim()) {
-      showAlert('warning', 'Champ requis', 'Veuillez entrer votre nom complet');
+      await swalWarn("Champ requis", "Veuillez entrer votre nom complet.");
       return false;
     }
-    if (!formData.customer_email || !formData.customer_email.includes('@')) {
-      showAlert('warning', 'Email invalide', 'Veuillez entrer une adresse email valide');
+    if (!formData.customer_email || !formData.customer_email.includes("@")) {
+      await swalWarn("Email invalide", "Veuillez entrer une adresse email valide.");
       return false;
     }
     if (!formData.customer_address.trim()) {
-      showAlert('warning', 'Champ requis', 'Veuillez entrer votre adresse de livraison');
+      await swalWarn("Champ requis", "Veuillez entrer votre adresse de livraison.");
       return false;
     }
     return true;
@@ -478,14 +490,20 @@ const Checkout = ({ cart, clearCart }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const finalCart = activeCart;
-    if (!finalCart || finalCart.length === 0) { 
-      showAlert('error', 'Panier vide', 'Votre panier est vide. Ajoutez des produits avant de commander.');
-      setTimeout(() => navigate("/"), 2000);
-      return; 
+    if (!finalCart || finalCart.length === 0) {
+      await Swal.fire({
+        icon: "error", iconColor: "#EF776A",
+        title: "Panier vide",
+        text: "Ajoutez des produits avant de commander.",
+        confirmButtonColor: "#EF776A",
+        customClass: { popup: "co-swal-popup" },
+      });
+      navigate("/");
+      return;
     }
-    
-    if (!validateForm()) return;
-    
+
+    if (!(await validateForm())) return;
+
     handleRipple(e);
     setLoading(true);
     try {
@@ -497,25 +515,49 @@ const Checkout = ({ cart, clearCart }) => {
         is_pack: isPack(item),
         fragrances: item.fragrances || [],
       }));
-      
-      await axios.post("/api/orders", {
-        customer_name: formData.customer_name,
-        customer_email: formData.customer_email,
-        customer_phone: formData.customer_phone,
+
+      const res = await axios.post("/api/orders", {
+        customer_name:    formData.customer_name,
+        customer_email:   formData.customer_email,
+        customer_phone:   formData.customer_phone,
         customer_address: `${formData.customer_address}${formData.customer_city ? ", " + formData.customer_city : ""}`,
         items,
         total_amount: total,
       });
-      
-      showAlert('success', 'Commande confirmée !', 'Votre commande a été enregistrée avec succès. Vous allez être redirigé...');
-      setSuccess(true);
+
+      const orderId = res.data?.data?.orderId ? `NHD-${String(res.data.data.orderId).padStart(4, "0")}` : null;
+
+      await Swal.fire({
+        icon: "success",
+        iconColor: "#4ADE80",
+        title: "Commande confirmée ! 🎉",
+        html: `
+          <p style="color:#78716C;font-size:14px;line-height:1.7;margin:0">
+            Merci pour votre confiance. Notre équipe vous contactera sous peu pour confirmer votre livraison.
+          </p>
+          ${orderId ? `<div style="margin-top:14px;padding:10px 18px;background:#FAF5E9;border:1px solid #E9D6A9;border-radius:12px;font-size:12px;font-weight:700;color:#A8883E;letter-spacing:.06em">Réf : ${orderId}</div>` : ""}
+        `,
+        confirmButtonText: "Parfait !",
+        confirmButtonColor: "#EF776A",
+        allowOutsideClick: false,
+        backdrop: "rgba(28,26,22,0.55)",
+        customClass: { popup: "co-swal-popup" },
+      });
+
       clearCart();
       localStorage.removeItem("nahid_cart");
-      setTimeout(() => navigate("/"), 4000);
+      setOrderId(orderId);
+      setSuccess(true);
+      setTimeout(() => navigate("/"), 800);
     } catch (err) {
-      console.error("Erreur:", err.response?.data);
-      const errorMessage = err.response?.data?.error || "Une erreur est survenue lors de la commande";
-      showAlert('error', 'Erreur', errorMessage);
+      console.error("Erreur commande:", err.response?.data);
+      await Swal.fire({
+        icon: "error", iconColor: "#F87171",
+        title: "Une erreur est survenue",
+        text: err.response?.data?.error || "Impossible de passer la commande. Veuillez réessayer.",
+        confirmButtonColor: "#EF776A",
+        customClass: { popup: "co-swal-popup" },
+      });
     } finally {
       setLoading(false);
     }
@@ -546,12 +588,10 @@ const Checkout = ({ cart, clearCart }) => {
 
   // Success
   if (success) {
-    const orderId = "NHD-" + Math.random().toString(36).substring(2, 8).toUpperCase();
     return (
       <div className="co-page">
         <div className="co-orb-1" /><div className="co-orb-2" /><div className="co-texture" />
         <div className="container">
-          {alert && <Alert {...alert} onClose={hideAlert} />}
           <div className="co-success-wrap">
             <div className="co-success-ring">
               <svg viewBox="0 0 100 100">
@@ -562,7 +602,7 @@ const Checkout = ({ cart, clearCart }) => {
             </div>
             <h2 className="co-success-title">Commande <em>confirmée !</em></h2>
             <p className="co-success-sub">Merci pour votre confiance. Notre équipe prépare votre colis.</p>
-            <div className="co-success-ref">Réf: {orderId}</div>
+            {orderId && <div className="co-success-ref">Réf : {orderId}</div>}
             <button className="co-success-home" onClick={() => navigate("/")}>
               Retour à l'accueil →
             </button>
@@ -577,8 +617,6 @@ const Checkout = ({ cart, clearCart }) => {
     <div className="co-page">
       <div className="co-orb-1" /><div className="co-orb-2" /><div className="co-texture" />
       <div className="container">
-        {alert && <Alert {...alert} onClose={hideAlert} />}
-        
         <nav className="co-breadcrumb">
           <a href="/">Accueil</a><span className="co-bc-sep">›</span>
           <a href="/cart">Panier</a><span className="co-bc-sep">›</span>
@@ -671,7 +709,11 @@ const Checkout = ({ cart, clearCart }) => {
               <div className="co-totals">
                 <div className="co-tot-row"><span className="co-tot-label">Sous-total</span><span className="co-tot-val">{fmt(subtotal)} MAD</span></div>
                 <div className="co-tot-row"><span className="co-tot-label">Livraison</span><span className={`co-tot-val${shipping === 0 ? " free" : ""}`}>{shipping === 0 ? "🎉 Gratuite" : `${fmt(shipping)} MAD`}</span></div>
-                {!hasPackInCart && subtotal < 300 && subtotal > 0 && (<p className="co-tot-hint">+ {fmt(300 - subtotal)} MAD pour la livraison gratuite</p>)}
+                {!hasPackInCart && !hasOriginalsFree && subtotal < 160 && subtotal > 0 && (
+                  <p className="co-tot-hint">
+                    {originalsQty === 1 ? "Plus qu'1 parfum original pour la livraison gratuite" : `+ ${fmt(160 - subtotal)} MAD pour la livraison gratuite`}
+                  </p>
+                )}
                 <div className="co-tot-divider" />
                 <div className="co-tot-grand"><span className="co-tot-grand-label">Total</span><span className="co-tot-grand-val">{fmt(total)} MAD</span></div>
               </div>

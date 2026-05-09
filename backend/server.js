@@ -59,14 +59,14 @@ app.get('/api/ping', (req, res) => res.json({ ok: true }));
 // ROUTES PRODUITS (PUBLIQUES)
 // ============================================
 
-// GET - Tous les produits (avec cache HTTP 5 min)
+// GET - Tous les produits
 app.get('/api/products', async (req, res) => {
     try {
         const [results] = await pool.query('SELECT * FROM products ORDER BY id DESC');
-        res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.json(results);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -76,8 +76,8 @@ app.get('/api/products/:id', async (req, res) => {
     if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
     try {
         const [results] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
-        if (results.length === 0) return res.status(404).json({ error: 'Produit non trouvé' });
-        res.set('Cache-Control', 'public, max-age=300');
+        if (results.length === 0) return res.status(404).json({ success: false, error: 'Produit non trouvé' });
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.json(results[0]);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -90,25 +90,64 @@ app.get('/api/products/:id', async (req, res) => {
 
 // POST - Ajouter un produit
 app.post('/api/products', authAdmin, async (req, res) => {
-    const { name, description, scent_notes, scent_family, price, image_url, category, gender, product_type, inspired_by, stock, is_new, is_bestseller } = req.body;
+    const {
+        name, description, scent_family, price, image_url,
+        category, gender, product_type, inspired_by, stock, is_new, is_bestseller,
+        concentration, scent_intensity, longevity, ingredients,
+        top_notes, middle_notes, base_notes,
+    } = req.body;
     if (!name || !price) return res.status(400).json({ error: 'Nom et prix sont requis' });
+
+    const resolvedType = product_type || 'Original';
+    const autoSize = resolvedType === 'Inspired By' ? '30ml' : '50ml';
+
     const query = `
-        INSERT INTO products (name, description, scent_notes, scent_family, price, image_url, category, gender, product_type, inspired_by, stock, is_new, is_bestseller)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO products (
+ name,
+ description,
+ price,
+ image_url,
+ category,
+ gender,
+ product_type,
+ inspired_by,
+ stock,
+ is_new,
+ is_bestseller,
+ concentration,
+ scent_intensity,
+ longevity,
+ ingredients,
+ top_notes,
+ middle_notes,
+ base_notes,
+ size,
+ scent_family
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const values = [
-        name, description || '', scent_notes || '', scent_family || 'warm',
+        name, description || '', scent_family || 'warm',
         parseFloat(price),
         image_url || 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400',
-        category || 'Autre', gender || 'Unisex', product_type || 'Original',
-        product_type === 'Inspired By' ? (inspired_by || '') : null,
+        category || 'Autre', gender || 'Unisex', resolvedType,
+        resolvedType === 'Inspired By' ? (inspired_by || '') : null,
         parseInt(stock) || 10, is_new ? 1 : 0, is_bestseller ? 1 : 0,
+        concentration || null,
+        scent_intensity ? parseInt(scent_intensity) : null,
+        longevity || null,
+        ingredients || null,
+        top_notes || null, middle_notes || null, base_notes || null,
+        autoSize,
     ];
     try {
+        console.log("POST PRODUCT HIT");
+        console.log("query:", query);
+        console.log("values:", values);
         const [result] = await pool.query(query, values);
-        res.status(201).json({ id: result.insertId, message: '✅ Produit ajouté avec succès' });
+        res.status(201).json({ success: true, message: 'Produit ajouté avec succès', data: { id: result.insertId } });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("POST PRODUCT ERROR:", err.message);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -116,27 +155,45 @@ app.post('/api/products', authAdmin, async (req, res) => {
 app.put('/api/products/:id', authAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
-    const { name, description, scent_notes, scent_family, price, image_url, category, gender, product_type, inspired_by, stock, is_new, is_bestseller } = req.body;
+    const {
+        name, description, scent_family, price, image_url,
+        category, gender, product_type, inspired_by, stock, is_new, is_bestseller,
+        concentration, scent_intensity, longevity, ingredients,
+        top_notes, middle_notes, base_notes,
+    } = req.body;
+
+    const resolvedType = product_type || 'Original';
+    const autoSize = resolvedType === 'Inspired By' ? '30ml' : '50ml';
+
     const query = `
         UPDATE products
-        SET name=?, description=?, scent_notes=?, scent_family=?, price=?,
+        SET name=?, description=?, scent_family=?, price=?,
             image_url=?, category=?, gender=?, product_type=?, inspired_by=?,
-            stock=?, is_new=?, is_bestseller=?
+            stock=?, is_new=?, is_bestseller=?,
+            concentration=?, scent_intensity=?, longevity=?, ingredients=?,
+            top_notes=?, middle_notes=?, base_notes=?, size=?
         WHERE id=?
     `;
     const values = [
-        name, description || '', scent_notes || '', scent_family || 'warm',
+        name, description || '', scent_family || 'warm',
         parseFloat(price), image_url || '', category || 'Autre', gender || 'Unisex',
-        product_type || 'Original',
-        product_type === 'Inspired By' ? (inspired_by || '') : null,
-        parseInt(stock) || 10, is_new ? 1 : 0, is_bestseller ? 1 : 0, id,
+        resolvedType,
+        resolvedType === 'Inspired By' ? (inspired_by || '') : null,
+        parseInt(stock) || 10, is_new ? 1 : 0, is_bestseller ? 1 : 0,
+        concentration || null,
+        scent_intensity ? parseInt(scent_intensity) : null,
+        longevity || null,
+        ingredients || null,
+        top_notes || null, middle_notes || null, base_notes || null,
+        autoSize,
+        id,
     ];
     try {
         const [result] = await pool.query(query, values);
-        if (result.affectedRows === 0) return res.status(404).json({ error: 'Produit non trouvé' });
-        res.json({ message: '✅ Produit modifié avec succès' });
+        if (result.affectedRows === 0) return res.status(404).json({ success: false, error: 'Produit non trouvé' });
+        res.json({ success: true, message: 'Produit modifié avec succès' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -146,10 +203,10 @@ app.delete('/api/products/:id', authAdmin, async (req, res) => {
     if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
     try {
         const [result] = await pool.query('DELETE FROM products WHERE id = ?', [id]);
-        if (result.affectedRows === 0) return res.status(404).json({ error: 'Produit non trouvé' });
-        res.json({ message: '✅ Produit supprimé avec succès' });
+        if (result.affectedRows === 0) return res.status(404).json({ success: false, error: 'Produit non trouvé' });
+        res.json({ success: true, message: 'Produit supprimé avec succès' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -164,16 +221,14 @@ app.post('/api/admin/login', async (req, res) => {
         const [results] = await pool.query('SELECT * FROM admins WHERE username = ?', [username]);
         if (results.length === 0) return res.status(401).json({ error: 'Identifiants invalides' });
         const admin = results[0];
-        if (password === 'admin123') {
-            const token = jwt.sign(
-                { id: admin.id, username: admin.username },
-                process.env.JWT_SECRET || 'nahid_secret_key_2024',
-                { expiresIn: '24h' }
-            );
-            res.json({ token, username: admin.username, message: '✅ Connecté' });
-        } else {
-            res.status(401).json({ error: 'Identifiants invalides' });
-        }
+        const valid = await bcrypt.compare(password, admin.password);
+        if (!valid) return res.status(401).json({ error: 'Identifiants invalides' });
+        const token = jwt.sign(
+            { id: admin.id, username: admin.username },
+            process.env.JWT_SECRET || 'nahid_secret_key_2024',
+            { expiresIn: '24h' }
+        );
+        res.json({ token, username: admin.username, message: '✅ Connecté' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -189,8 +244,8 @@ app.get('/api/admin/stats', authAdmin, async (req, res) => {
         ]);
         res.json({
             totalProducts: products[0][0].total,
-            totalOrders:   orders[0][0].total,
-            revenue:       parseFloat(revenue[0][0].revenue),
+            totalOrders: orders[0][0].total,
+            revenue: parseFloat(revenue[0][0].revenue),
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -296,7 +351,7 @@ app.post('/api/orders', async (req, res) => {
         ));
 
         await conn.commit();
-        res.status(201).json({ success: true, orderId, message: '✅ Commande créée avec succès' });
+        res.status(201).json({ success: true, message: 'Commande créée avec succès', data: { orderId } });
     } catch (err) {
         await conn.rollback();
         res.status(500).json({ error: err.message });

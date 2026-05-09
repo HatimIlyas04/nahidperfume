@@ -1,5 +1,5 @@
-const KEY = 'nahid_products_v1';
-const TTL = 5 * 60 * 1000; // 5 minutes
+const KEY = 'nahid_products_v2';
+const TTL = 60 * 1000; // 1 minute — short enough that stale data resolves quickly
 
 export function getCachedProducts() {
   try {

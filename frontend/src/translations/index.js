@@ -5,7 +5,7 @@ export const translations = {
   fr: {
     nav: {
       announcements: [
-        "Livraison offerte dès 300 MAD",
+        "Livraison offerte dès 160 MAD",
         "Échantillon gratuit avec chaque commande",
         "Nouveauté — Collection Oud de Camboge",
         "Paiement à la livraison — 100% sécurisé",
@@ -145,7 +145,7 @@ export const translations = {
   en: {
     nav: {
       announcements: [
-        "Free shipping from 300 MAD",
+        "Free shipping from 160 MAD",
         "Free sample with every order",
         "New — Cambodian Oud Collection",
         "Cash on delivery — 100% secure",
@@ -285,7 +285,7 @@ export const translations = {
   ar: {
     nav: {
       announcements: [
-        "توصيل مجاني من 300 درهم",
+        "توصيل مجاني من 160 درهم",
         "عينة مجانية مع كل طلب",
         "جديد — مجموعة عود كامبودج",
         "الدفع عند الاستلام — آمن 100%",

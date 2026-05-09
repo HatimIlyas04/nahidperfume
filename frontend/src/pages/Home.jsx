@@ -818,8 +818,16 @@ export default function Home({ addToCart }) {
 
   useEffect(() => {
     const cached = getCachedProducts();
-    if (cached) { setProducts(cached); setLoading(false); return; }
-    axios.get("/api/products")
+    if (cached) {
+      setProducts(cached);
+      setLoading(false);
+      // Revalidate in background so stale data is never shown for more than one page visit
+      axios.get("/api/products", { headers: { "Cache-Control": "no-cache" } })
+        .then(r => { setCachedProducts(r.data); setProducts(r.data); })
+        .catch(() => {});
+      return;
+    }
+    axios.get("/api/products", { headers: { "Cache-Control": "no-cache" } })
       .then(r => { setCachedProducts(r.data); setProducts(r.data); })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
