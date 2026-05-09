@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FiChevronLeft, FiShoppingBag, FiStar, FiChevronDown, FiPhone } from "react-icons/fi
+import { FiChevronLeft, FiShoppingBag, FiStar, FiChevronDown, FiPhone } from "react-icons/fi";
 /* ─── Static ──────────────────────────────────────────────── */
 const SIZES_OPTS = [
   { label: "30 ml",          price_mult: 1.00, tag: null },

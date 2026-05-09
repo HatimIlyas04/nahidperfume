@@ -134,14 +134,21 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
   /* ── handleSaveProduct: scent_notes NOT sent, top/middle/base_notes used ── */
   const handleSaveProduct = async e => {
     e.preventDefault();
-    if (!formData.name || !formData.price) { notify("Nom et prix sont requis", "error"); return; }
+    if (!formData.name) { notify("Nom est requis", "error"); return; }
+
+    const priceNum = parseFloat(formData.price);
+    if (!formData.price || isNaN(priceNum) || priceNum < 0) {
+      notify("Prix invalide — entrez un nombre positif", "error");
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
         name:            formData.name,
         description:     formData.description     || "",
         scent_family:    formData.scent_family     || "warm",
-        price:           parseFloat(formData.price),
+        price:           priceNum,
         image_url:       formData.image_url        || "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400",
         category:        formData.category         || "Autre",
         gender:          formData.gender           || "Unisex",
@@ -205,25 +212,25 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
   const handleEditProduct = p => {
     setEditingProduct(p);
     setFormData({
-      name:            p.name,
-      description:     p.description      || "",
-      scent_family:    p.scent_family      || "warm",
-      price:           p.price,
-      image_url:       p.image_url         || "",
-      category:        p.category          || "",
-      gender:          p.gender            || "Unisex",
-      product_type:    p.product_type      || "Original",
-      inspired_by:     p.inspired_by       || "",
-      stock:           p.stock,
-      is_new:          p.is_new            ? "1" : "0",
-      is_bestseller:   p.is_bestseller     ? "1" : "0",
-      concentration:   p.concentration     || "",
+      name:            p.name              || "",
+      description:     p.description       || "",
+      scent_family:    p.scent_family       || "warm",
+      price:           p.price != null     ? String(parseFloat(p.price)) : "",
+      image_url:       p.image_url          || "",
+      category:        p.category           || "",
+      gender:          p.gender             || "Unisex",
+      product_type:    p.product_type       || "Original",
+      inspired_by:     p.inspired_by        || "",
+      stock:           p.stock != null     ? String(parseInt(p.stock)) : "10",
+      is_new:          p.is_new             ? "1" : "0",
+      is_bestseller:   p.is_bestseller      ? "1" : "0",
+      concentration:   p.concentration      || "",
       scent_intensity: p.scent_intensity != null ? String(p.scent_intensity) : "3",
-      longevity:       p.longevity         || "",
-      ingredients:     p.ingredients       || "",
-      top_notes:       p.top_notes         || "",
-      middle_notes:    p.middle_notes      || "",
-      base_notes:      p.base_notes        || "",
+      longevity:       p.longevity          || "",
+      ingredients:     p.ingredients        || "",
+      top_notes:       p.top_notes          || "",
+      middle_notes:    p.middle_notes       || "",
+      base_notes:      p.base_notes         || "",
     });
     setImagePreview(p.image_url);
     setShowForm(true);

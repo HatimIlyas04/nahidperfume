@@ -37,6 +37,12 @@ router.get('/:id', (req, res) => {
 // POST PRODUCT (FULL PERFUME SYSTEM)
 // =============================================
 router.post('/', (req, res) => {
+    console.log("POST PRODUCT HIT");
+
+    console.log("BODY:", req.body);
+    console.log("PRICE:", req.body.price);
+    console.log("TYPE:", typeof req.body.price);
+
     const {
         name,
         description,
