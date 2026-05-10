@@ -30,8 +30,31 @@ const pool = mysql.createPool({
     keepAliveInitialDelay: 0,
 });
 
+async function ensureAdmin() {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS admins (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(100) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        const [rows] = await pool.query('SELECT id FROM admins WHERE username = ?', ['nahid']);
+        if (rows.length === 0) {
+            const hash = await bcrypt.hash('nahid2026@', 10);
+            await pool.query('INSERT INTO admins (username, password) VALUES (?, ?)', ['nahid', hash]);
+            console.log('✅ Admin "nahid" créé avec succès');
+        } else {
+            console.log('✅ Admin "nahid" existe déjà (id=' + rows[0].id + ')');
+        }
+    } catch (err) {
+        console.error('❌ Erreur ensureAdmin:', err.message);
+    }
+}
+
 pool.getConnection()
-    .then(conn => { conn.release(); console.log('✅ Connecté à MySQL (pool)'); })
+    .then(conn => { conn.release(); console.log('✅ Connecté à MySQL (pool)'); ensureAdmin(); })
     .catch(err => { console.error('❌ Erreur DB:', err.message); process.exit(1); });
 
 // ============================================
@@ -312,20 +335,25 @@ app.delete('/api/products/:id', authAdmin, async (req, res) => {
 
 app.post('/api/admin/login', async (req, res) => {
     const { username, password } = req.body;
+    console.log(`[LOGIN] Tentative pour username: "${username}"`);
     if (!username || !password) return res.status(400).json({ error: 'Username et password requis' });
     try {
         const [results] = await pool.query('SELECT * FROM admins WHERE username = ?', [username]);
+        console.log(`[LOGIN] Admin trouvé: ${results.length > 0 ? 'OUI (id=' + results[0].id + ')' : 'NON'}`);
         if (results.length === 0) return res.status(401).json({ error: 'Identifiants invalides' });
         const admin = results[0];
         const valid = await bcrypt.compare(password, admin.password);
+        console.log(`[LOGIN] Mot de passe valide: ${valid ? 'OUI' : 'NON'}`);
         if (!valid) return res.status(401).json({ error: 'Identifiants invalides' });
         const token = jwt.sign(
             { id: admin.id, username: admin.username },
             process.env.JWT_SECRET || 'nahid_secret_key_2024',
             { expiresIn: '24h' }
         );
+        console.log(`[LOGIN] Token généré pour "${admin.username}"`);
         res.json({ token, username: admin.username, message: '✅ Connecté' });
     } catch (err) {
+        console.error('[LOGIN] Erreur:', err.message);
         res.status(500).json({ error: err.message });
     }
 });
