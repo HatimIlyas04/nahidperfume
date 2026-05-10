@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FiChevronLeft, FiShoppingBag, FiStar, FiChevronDown, FiPhone } from "react-icons/fi";
+import NahidFooter from "../components/NahidFooter";
+
 /* ─── Static ──────────────────────────────────────────────── */
 const SIZES_OPTS = [
   { label: "30 ml",          price_mult: 1.00, tag: null },
@@ -41,7 +43,6 @@ const FAMILY_LABELS = {
   herbal: "🌿 Herbal", earthy: "🌍 Terreux", warm: "🔥 Chaud",
 };
 
-
 function longevityPct(val) {
   if (!val) return 0;
   if (val.includes("12")) return 100;
@@ -52,12 +53,11 @@ function longevityPct(val) {
 }
 
 /* ════════════════════════════════════════════════════════════
-   CSS — Luxury Perfume Product Page
+   CSS
    ════════════════════════════════════════════════════════════ */
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&display=swap');
 
-/* ── Root tokens ── */
 .pd-page {
   --coral:      #EF776A;
   --coral-d:    #C9503F;
@@ -83,7 +83,6 @@ const CSS = `
   --expo:       cubic-bezier(.16,1,.3,1);
 }
 
-/* ── Animations ── */
 @keyframes pdFadeUp    { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:none} }
 @keyframes pdScaleIn   { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
 @keyframes pdSpin      { to{transform:rotate(360deg)} }
@@ -95,24 +94,24 @@ const CSS = `
 @keyframes pdAccordion { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
 @keyframes pdDotPop    { from{transform:scale(0)} to{transform:scale(1)} }
 @keyframes pdGlow      { 0%,100%{box-shadow:0 0 0 0 rgba(239,119,106,0)} 50%{box-shadow:0 0 0 12px rgba(239,119,106,.12)} }
+@keyframes pdImgFade   { from{opacity:0;transform:scale(1.03)} to{opacity:1;transform:scale(1)} }
+@keyframes pdThumbIn   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes pdRelIn     { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:none} }
 
-/* ── Page ── */
 .pd-page *, .pd-page *::before, .pd-page *::after { box-sizing:border-box; margin:0; padding:0; }
 .pd-page {
   position:relative; background:var(--cream); min-height:100vh;
-  padding:clamp(80px,10vh,110px) 0 clamp(80px,10vw,140px);
+  padding:clamp(80px,10vh,110px) 0 0;
   overflow-x:hidden; font-family:var(--sans); -webkit-font-smoothing:antialiased;
 }
 .pd-page .container { max-width:1280px; margin:0 auto; padding:0 clamp(16px,4vw,56px); }
 
-/* Ambient glow */
 .pd-ambient {
   position:fixed; inset:0; pointer-events:none; z-index:0;
   background:radial-gradient(ellipse 60% 55% at 80% 20%, var(--pd-ambient,#FADADD) 0%, transparent 70%);
   opacity:.32; transition:background .9s;
 }
 
-/* Back button */
 .pd-back {
   position:relative; z-index:2;
   display:inline-flex; align-items:center; gap:6px;
@@ -139,7 +138,7 @@ const CSS = `
 .pd-img-col    { position:sticky; top:96px; }
 .pd-details-col{ position:sticky; top:96px; }
 
-/* ── Image frame ── */
+/* ── Gallery ── */
 .pd-img-frame {
   position:relative; border-radius:28px; overflow:hidden;
   background:linear-gradient(145deg,#F4F0EA,#EDE8E0); aspect-ratio:3/4;
@@ -169,11 +168,36 @@ const CSS = `
   box-shadow:0 3px 14px rgba(239,119,106,.4);
   animation:pdBadgePop .4s var(--spring) .1s both;
 }
-.pd-img-wrap { width:100%;height:100%;opacity:0;transition:opacity .8s ease; }
-.pd-img-loaded { opacity:1; }
-.pd-img { width:100%;height:100%;object-fit:cover;transition:transform .7s var(--ease); }
+.pd-img-wrap { width:100%;height:100%; }
+.pd-img {
+  width:100%;height:100%;object-fit:cover;
+  transition:transform .7s var(--ease), opacity .28s ease;
+}
+.pd-img-loading { opacity:0; }
+.pd-img-anim    { animation:pdImgFade .32s ease forwards; }
 .pd-img-frame:hover .pd-img { transform:scale(1.04); }
 .pd-img-halo { position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;opacity:.5; }
+
+/* Thumbnail strip */
+.pd-thumbs {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:10px;
+}
+.pd-thumb {
+  aspect-ratio:3/4; border-radius:14px; overflow:hidden; cursor:pointer; padding:0;
+  border:2px solid transparent; background:linear-gradient(145deg,#F4F0EA,#EDE8E0);
+  transition:border-color .22s, transform .25s var(--spring), box-shadow .22s;
+  position:relative; animation:pdThumbIn .4s var(--expo) both;
+}
+.pd-thumb img { width:100%;height:100%;object-fit:cover;pointer-events:none;display:block; }
+.pd-thumb:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.1); }
+.pd-thumb-active {
+  border-color:var(--coral);
+  box-shadow:0 0 0 3px rgba(239,119,106,.18), 0 8px 24px rgba(239,119,106,.22) !important;
+}
+.pd-thumb-active::after {
+  content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:var(--coral); border-radius:0 0 12px 12px;
+}
 
 /* Rating strip */
 .pd-rating-strip {
@@ -185,7 +209,7 @@ const CSS = `
 .pd-rating-lbl { font-family:var(--sans);font-size:.72rem;font-weight:500;color:var(--muted); }
 .pd-rating-sep { color:var(--bd2); }
 
-/* ── Quick-spec strip under image ── */
+/* ── Quick-spec strip ── */
 .pd-spec-strip {
   display:flex; gap:0; margin-top:10px;
   background:white; border:1px solid var(--bd); border-radius:16px; overflow:hidden;
@@ -228,7 +252,6 @@ const CSS = `
   background:var(--coral-ll); border-radius:0 14px 14px 0;
 }
 
-/* Section label */
 .pd-section { margin-bottom:28px; }
 .pd-section-lbl {
   font-family:var(--sans); font-size:.58rem; font-weight:800;
@@ -260,9 +283,7 @@ const CSS = `
   transition:transform .25s var(--spring),box-shadow .25s;
 }
 .pd-pyr-row:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(14,14,12,.07); }
-.pd-pyr-accent {
-  width:5px; flex-shrink:0;
-}
+.pd-pyr-accent { width:5px; flex-shrink:0; }
 .pd-pyr-tete .pd-pyr-accent  { background:linear-gradient(180deg,#6BAA6B,#A8D5A8); }
 .pd-pyr-coeur .pd-pyr-accent { background:linear-gradient(180deg,var(--coral),#F4A0A0); }
 .pd-pyr-fond .pd-pyr-accent  { background:linear-gradient(180deg,var(--gold),#E9D6A9); }
@@ -285,12 +306,10 @@ const CSS = `
   font-family:var(--sans); font-size:.54rem; font-weight:800;
   letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-bottom:4px;
 }
-.pd-pyr-value {
-  font-family:var(--sans); font-size:.8rem; font-weight:600; color:var(--ink); line-height:1.4;
-}
-.pd-pyr-desc { font-family:var(--sans);font-size:.62rem;color:var(--muted);margin-top:2px;font-style:italic; }
+.pd-pyr-value { font-family:var(--sans); font-size:.8rem; font-weight:600; color:var(--ink); line-height:1.4; }
+.pd-pyr-desc  { font-family:var(--sans);font-size:.62rem;color:var(--muted);margin-top:2px;font-style:italic; }
 
-/* ══ CHARACTERISTICS GRID ══ */
+/* ══ CHARACTERISTICS ══ */
 .pd-chars { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .pd-char-card {
   background:white; border:1px solid var(--bd); border-radius:18px; padding:18px 18px 16px;
@@ -310,12 +329,10 @@ const CSS = `
 .pd-char-val   { font-family:var(--sans);font-size:.9rem;font-weight:800;color:var(--ink);line-height:1.2; }
 .pd-char-sub   { font-family:var(--sans);font-size:.62rem;color:var(--muted);margin-top:4px; }
 
-/* Intensity dots */
 .pd-dots { display:flex; gap:5px; margin-top:8px; }
 .pd-dot  { width:9px; height:9px; border-radius:50%; background:var(--sand); }
 .pd-dot.filled { background:var(--coral); animation:pdDotPop .4s var(--spring) both; }
 
-/* Animated progress bar */
 .pd-bar-track { height:6px; border-radius:999px; background:var(--sand); overflow:hidden; margin-top:9px; }
 .pd-bar-fill {
   height:100%; border-radius:999px;
@@ -323,12 +340,10 @@ const CSS = `
   animation:pdBarFill 1.2s var(--expo) both;
 }
 .pd-bar-fill.gold-bar { background:linear-gradient(90deg,var(--gold),var(--gold-d)); }
-
-/* Longevity clock scale */
 .pd-longevity-scale { display:flex; justify-content:space-between; margin-top:6px; }
 .pd-longevity-tick  { font-family:var(--sans);font-size:.5rem;font-weight:600;color:var(--muted2); }
 
-/* ══ COMPARISON CARD ══ */
+/* ══ COMPARISON ══ */
 .pd-compare {
   border-radius:22px; overflow:hidden;
   border:1px solid rgba(200,168,106,.3);
@@ -354,10 +369,7 @@ const CSS = `
   color:var(--ink); line-height:1.45;
 }
 .pd-compare-text em { font-style:italic; color:var(--gold-d); }
-.pd-compare-sub {
-  font-family:var(--sans); font-size:.68rem; color:var(--muted);
-  margin-top:8px; line-height:1.6;
-}
+.pd-compare-sub { font-family:var(--sans); font-size:.68rem; color:var(--muted); margin-top:8px; line-height:1.6; }
 .pd-compare-pill {
   display:inline-flex; align-items:center; gap:6px; margin-top:10px;
   padding:6px 14px; border-radius:999px;
@@ -365,7 +377,7 @@ const CSS = `
   font-family:var(--sans); font-size:.6rem; font-weight:700; color:var(--gold-d);
 }
 
-/* Sizes */
+/* ── Sizes ── */
 .pd-sizes { display:flex; flex-direction:column; gap:10px; }
 .pd-size-card {
   display:flex; align-items:center; gap:12px; padding:16px 20px;
@@ -480,7 +492,7 @@ const CSS = `
 /* ══ FAQ ══ */
 .pd-faq-section {
   position:relative;z-index:1; border-top:1px solid var(--bd);
-  padding-top:clamp(48px,6vw,80px);
+  padding-top:clamp(48px,6vw,80px); padding-bottom:clamp(48px,6vw,80px);
 }
 .pd-faq-header { margin-bottom:clamp(32px,4vw,52px);text-align:center; }
 .pd-faq-eyebrow {
@@ -514,7 +526,6 @@ const CSS = `
 .pd-faq-item.open .pd-faq-chevron { transform:rotate(180deg);color:var(--coral); }
 .pd-faq-a { padding:0 20px 18px;font-family:var(--sans);font-size:.78rem;font-weight:400;color:var(--muted);line-height:1.75;animation:pdAccordion .3s var(--ease) both;border-top:1px solid var(--bd);padding-top:14px; }
 
-/* Contact bar */
 .pd-contact-bar { display:flex;align-items:center;justify-content:center;gap:16px;margin-top:32px;flex-wrap:wrap; }
 .pd-contact-pill {
   display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:999px;
@@ -525,6 +536,58 @@ const CSS = `
 .pd-contact-wa:hover { transform:translateY(-3px);box-shadow:0 8px 28px rgba(37,211,102,.5); }
 .pd-contact-ig { background:linear-gradient(135deg,#E1306C,#833AB4);color:white;box-shadow:0 4px 18px rgba(225,48,108,.3); }
 .pd-contact-ig:hover { transform:translateY(-3px);box-shadow:0 8px 28px rgba(225,48,108,.45); }
+
+/* ══ RELATED PRODUCTS ══ */
+.pd-related {
+  background:var(--cream); border-top:1px solid var(--bd);
+  padding:clamp(56px,8vw,88px) 0 clamp(56px,8vw,88px);
+  position:relative; z-index:1;
+}
+.pd-related-hdr { text-align:center; margin-bottom:clamp(36px,5vw,56px); }
+.pd-related-eyebrow {
+  display:inline-flex; align-items:center; gap:10px;
+  font-family:var(--sans); font-size:.58rem; font-weight:800; letter-spacing:.28em; text-transform:uppercase;
+  color:var(--coral); margin-bottom:12px;
+}
+.pd-related-eyebrow::before,.pd-related-eyebrow::after { content:''; display:block; width:22px; height:1px; background:var(--coral); }
+.pd-related-title {
+  font-family:var(--sans); font-size:clamp(1.5rem,3.5vw,2.4rem);
+  font-weight:900; color:var(--ink); letter-spacing:-.03em; line-height:1.05;
+}
+.pd-related-grid {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(12px,2vw,22px);
+}
+.pd-rel-card {
+  background:white; border:1px solid var(--bd); border-radius:22px; overflow:hidden;
+  cursor:pointer; transition:transform .3s var(--spring), box-shadow .3s;
+  text-decoration:none; display:flex; flex-direction:column;
+  box-shadow:0 2px 12px rgba(14,14,12,.05);
+  animation:pdRelIn .5s var(--expo) both;
+}
+.pd-rel-card:hover { transform:translateY(-7px); box-shadow:0 20px 56px rgba(14,14,12,.11); }
+.pd-rel-img-wrap {
+  aspect-ratio:3/4; overflow:hidden; position:relative;
+  background:linear-gradient(145deg,#F4F0EA,#EDE8E0);
+}
+.pd-rel-img { width:100%; height:100%; object-fit:cover; transition:transform .55s var(--ease); display:block; }
+.pd-rel-card:hover .pd-rel-img { transform:scale(1.07); }
+.pd-rel-badge {
+  position:absolute; top:10px; left:10px;
+  background:white; color:var(--coral); font-family:var(--sans);
+  font-size:.55rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  padding:4px 10px; border-radius:999px; box-shadow:0 2px 10px rgba(239,119,106,.2);
+}
+.pd-rel-info { padding:14px 16px 18px; flex:1; display:flex; flex-direction:column; gap:5px; }
+.pd-rel-cat  { font-family:var(--sans); font-size:.55rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); }
+.pd-rel-name { font-family:var(--sans); font-size:.85rem; font-weight:800; color:var(--ink); line-height:1.25; letter-spacing:-.01em; }
+.pd-rel-price { font-family:var(--sans); font-size:.88rem; font-weight:700; color:var(--coral); margin-top:6px; }
+.pd-rel-btn {
+  margin-top:10px; padding:9px 14px; border-radius:12px; border:none;
+  background:var(--coral-l); color:var(--coral); font-family:var(--sans);
+  font-size:.68rem; font-weight:700; cursor:pointer; letter-spacing:.04em; text-transform:uppercase;
+  transition:background .2s, color .2s;
+}
+.pd-rel-card:hover .pd-rel-btn { background:var(--coral); color:white; }
 
 /* ══ STICKY BAR ══ */
 .pd-sticky {
@@ -567,6 +630,7 @@ const CSS = `
   .pd-img-col,.pd-details-col{position:static;}
   .pd-img-frame{aspect-ratio:4/3;border-radius:22px;}
   .pd-faq-grid{grid-template-columns:1fr;}
+  .pd-related-grid{grid-template-columns:repeat(2,1fr);}
 }
 @media (max-width:640px) {
   .pd-delivery{grid-template-columns:1fr;}
@@ -581,6 +645,8 @@ const CSS = `
   .pd-contact-pill{justify-content:center;}
   .pd-spec-strip{flex-wrap:wrap;}
   .pd-spec-item{flex:1 1 calc(50% - 1px);}
+  .pd-thumbs{grid-template-columns:repeat(4,1fr);gap:6px;}
+  .pd-related-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
 }
 @media (max-width:400px) {
   .pd-name{font-size:1.7rem;}
@@ -592,8 +658,6 @@ const CSS = `
 /* ════════════════════════════════════════════════════════════
    Sub-components
    ════════════════════════════════════════════════════════════ */
-
-/* AccordionItem */
 const AccordionItem = ({ emoji, label, children, defaultOpen = false }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -610,7 +674,6 @@ const AccordionItem = ({ emoji, label, children, defaultOpen = false }) => {
   );
 };
 
-/* Intensity dots */
 const IntensityDots = ({ value, max = 5 }) => (
   <div className="pd-dots">
     {Array.from({ length: max }, (_, i) => (
@@ -620,11 +683,30 @@ const IntensityDots = ({ value, max = 5 }) => (
   </div>
 );
 
-/* Bar with animation */
 const AnimBar = ({ pct, gold }) => (
   <div className="pd-bar-track">
     <div className={`pd-bar-fill${gold ? " gold-bar" : ""}`}
       style={{ "--target-w": `${pct}%`, width: `${pct}%` }} />
+  </div>
+);
+
+const RelatedCard = ({ product, onNavigate, fmt }) => (
+  <div className="pd-rel-card" onClick={() => onNavigate(`/product/${product.id}`)}>
+    <div className="pd-rel-img-wrap">
+      {product.image_url
+        ? <img src={product.image_url} alt={product.name} className="pd-rel-img" loading="lazy" />
+        : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "3rem", opacity: .3 }}>🌸</div>
+      }
+      {product.is_new ? <span className="pd-rel-badge">Nouveau</span>
+        : product.is_bestseller ? <span className="pd-rel-badge">Best-Seller</span>
+        : null}
+    </div>
+    <div className="pd-rel-info">
+      {product.category && <span className="pd-rel-cat">{product.category}</span>}
+      <span className="pd-rel-name">{product.name}</span>
+      <span className="pd-rel-price">{fmt(product.price)} MAD</span>
+      <button className="pd-rel-btn">Voir le produit →</button>
+    </div>
   </div>
 );
 
@@ -635,24 +717,41 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
   const { id }   = useParams();
   const navigate = useNavigate();
 
-  const [product,      setProduct]      = useState(null);
-  const [loading,      setLoading]      = useState(true);
-  const [selectedSize, setSelectedSize] = useState(0);
-  const [quantity,     setQuantity]     = useState(1);
-  const [added,        setAdded]        = useState(false);
-  const [showSticky,   setShowSticky]   = useState(false);
-  const [reveal,       setReveal]       = useState(false);
-  const [imgLoaded,    setImgLoaded]    = useState(false);
-  const [openFaq,      setOpenFaq]      = useState(null);
+  const [product,        setProduct]        = useState(null);
+  const [loading,        setLoading]        = useState(true);
+  const [selectedSize,   setSelectedSize]   = useState(0);
+  const [quantity,       setQuantity]       = useState(1);
+  const [added,          setAdded]          = useState(false);
+  const [showSticky,     setShowSticky]     = useState(false);
+  const [reveal,         setReveal]         = useState(false);
+  const [imgLoaded,      setImgLoaded]      = useState(false);
+  const [openFaq,        setOpenFaq]        = useState(null);
+  const [activeImage,    setActiveImage]    = useState(null);
+  const [imgAnim,        setImgAnim]        = useState(false);
+  const [relatedProds,   setRelatedProds]   = useState([]);
   const heroRef = useRef(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    setActiveImage(null);
+    setImgLoaded(false);
     axios.get(`/api/products/${id}`)
       .then(r => setProduct(r.data))
       .catch(() => navigate("/"))
       .finally(() => { setLoading(false); setTimeout(() => setReveal(true), 60); });
   }, [id, navigate]);
+
+  useEffect(() => {
+    if (!product) return;
+    axios.get("/api/products")
+      .then(r => {
+        const related = r.data
+          .filter(p => p.id !== product.id && p.category === product.category)
+          .slice(0, 4);
+        setRelatedProds(related.length >= 2 ? related : r.data.filter(p => p.id !== product.id).slice(0, 4));
+      })
+      .catch(() => {});
+  }, [product]);
 
   useEffect(() => {
     const fn = () => {
@@ -661,6 +760,32 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
     window.addEventListener("scroll", fn, { passive: true });
     return () => window.removeEventListener("scroll", fn);
   }, []);
+
+  /* ── Gallery images ── */
+  const galleryUrls = useMemo(() => {
+    if (!product?.gallery_images) return [];
+    try {
+      const parsed = JSON.parse(product.gallery_images);
+      return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+    } catch { return []; }
+  }, [product?.gallery_images]);
+
+  const allImages = useMemo(() => {
+    if (!product) return [];
+    return [product.image_url, ...galleryUrls].filter(Boolean).slice(0, 5);
+  }, [product, galleryUrls]);
+
+  const displayedImage = activeImage || product?.image_url;
+
+  const switchImage = (url) => {
+    if (url === displayedImage) return;
+    setImgAnim(true);
+    setTimeout(() => {
+      setActiveImage(url);
+      setImgLoaded(false);
+      setImgAnim(false);
+    }, 220);
+  };
 
   const fmt = n => Math.round(n).toLocaleString("fr-MA");
 
@@ -696,7 +821,6 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
     setTimeout(() => setAdded(false), 2500);
   };
 
-  /* ── Loader ── */
   if (loading) return (
     <>
       <style>{CSS}</style>
@@ -708,7 +832,6 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
   );
   if (!product) return null;
 
-  /* ── Spec strip items (only show those with data) ── */
   const specs = [
     product.concentration && { icon: "⚗️", val: product.concentration.replace("Extrait de ", "Extrait\n"), lbl: "Concentration" },
     product.size          && { icon: "📦", val: product.size, lbl: "Format" },
@@ -716,7 +839,6 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
     longevity             && { icon: "⏱", val: longevity, lbl: "Longévité" },
   ].filter(Boolean);
 
-  /* ── Render ── */
   return (
     <>
       <style>{CSS}</style>
@@ -732,14 +854,14 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
         </button>
 
         {/* ══════════════════════════════════════
-            HERO GRID — Image + Info columns
+            HERO GRID
             ══════════════════════════════════════ */}
         <div className="pd-grid container" ref={heroRef}>
 
-          {/* ── LEFT: Image + Spec strip ── */}
+          {/* ── LEFT: Gallery ── */}
           <div className="pd-img-col">
 
-            {/* Image frame */}
+            {/* Main image frame */}
             <div className="pd-img-frame" style={{ "--scent-color": genderCfg.color }}>
               <div className="pd-ring pd-ring-1" />
               <div className="pd-ring pd-ring-2" />
@@ -747,13 +869,14 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
                 <div className="pd-stock-badge">Dernières {product.stock} pièces</div>
               )}
               {isOriginal && <div className="pd-orig-badge">✦ Nahid Original</div>}
-              <div className={`pd-img-wrap${imgLoaded ? " pd-img-loaded" : ""}`}>
+              <div className="pd-img-wrap">
                 <img
-                  src={product.image_url}
+                  key={displayedImage}
+                  src={displayedImage}
                   alt={product.name}
                   loading="lazy"
                   onLoad={() => setImgLoaded(true)}
-                  className="pd-img"
+                  className={`pd-img${!imgLoaded ? " pd-img-loading" : ""}${imgAnim ? "" : " pd-img-anim"}`}
                 />
               </div>
               <div
@@ -761,6 +884,23 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
                 style={{ background: `radial-gradient(ellipse at 50% 80%, ${genderCfg.color}cc 0%, transparent 70%)` }}
               />
             </div>
+
+            {/* Thumbnail strip — shown only when there are multiple images */}
+            {allImages.length > 1 && (
+              <div className="pd-thumbs">
+                {allImages.map((url, i) => (
+                  <button
+                    key={i}
+                    className={`pd-thumb${displayedImage === url ? " pd-thumb-active" : ""}`}
+                    onClick={() => switchImage(url)}
+                    aria-label={`Photo ${i + 1}`}
+                    style={{ animationDelay: `${i * 0.07}s` }}
+                  >
+                    <img src={url} alt={`${product.name} photo ${i + 1}`} loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Rating strip */}
             <div className="pd-rating-strip">
@@ -797,7 +937,6 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
           {/* ── RIGHT: Details ── */}
           <div className="pd-details-col">
 
-            {/* Chips */}
             <div className="pd-chips-row">
               {product.category   && <span className="pd-chip pd-chip-coral">{product.category}</span>}
               {gender !== "Unisex"&& <span className="pd-chip pd-chip-blue">{genderCfg.emoji} {gender}</span>}
@@ -807,15 +946,12 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
               {product.size          && <span className="pd-chip pd-chip-size">📦 {product.size}</span>}
             </div>
 
-            {/* Name */}
             <h1 className="pd-name">{product.name}</h1>
 
-            {/* Tagline / description */}
             {product.description && (
               <p className="pd-tagline">{product.description}</p>
             )}
 
-            {/* ─── COMPARISON CARD (Inspired By) ─── */}
             {isInspired && inspiredBy && (
               <div className="pd-compare" style={{ marginBottom: 26 }}>
                 <div className="pd-compare-header">
@@ -832,15 +968,12 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
                       Une expérience olfactive similaire à une fraction du prix,
                       fabriquée au Maroc avec des matières premières de qualité.
                     </p>
-                    <div className="pd-compare-pill">
-                      ✦ Inspiré par {inspiredBy}
-                    </div>
+                    <div className="pd-compare-pill">✦ Inspiré par {inspiredBy}</div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ─── PERFUME PYRAMID ─── */}
             {hasPyramid && (
               <div className="pd-section">
                 <p className="pd-section-lbl">Pyramide olfactive</p>
@@ -897,12 +1030,10 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
               </div>
             )}
 
-            {/* ─── CHARACTERISTICS: Intensity + Longevity ─── */}
             {(intensity || longevity || product.concentration) && (
               <div className="pd-section">
                 <p className="pd-section-lbl">Caractéristiques</p>
                 <div className="pd-chars">
-
                   {intensity && (
                     <div className="pd-char-card coral">
                       <span className="pd-char-icon">💨</span>
@@ -912,7 +1043,6 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
                       <AnimBar pct={(intensity / 5) * 100} />
                     </div>
                   )}
-
                   {longevity && (
                     <div className="pd-char-card gold">
                       <span className="pd-char-icon">⏱</span>
@@ -927,7 +1057,6 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
                       </div>
                     </div>
                   )}
-
                   {product.concentration && (
                     <div className="pd-char-card teal">
                       <span className="pd-char-icon">⚗️</span>
@@ -936,7 +1065,6 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
                       <div className="pd-char-sub">Type de formulation</div>
                     </div>
                   )}
-
                   {product.size && (
                     <div className="pd-char-card purple">
                       <span className="pd-char-icon">📦</span>
@@ -949,7 +1077,7 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
               </div>
             )}
 
-            {/* ─── SIZE SELECTOR ─── */}
+            {/* Size selector */}
             <div className="pd-section">
               <p className="pd-section-lbl">Contenance</p>
               <div className="pd-sizes">
@@ -972,7 +1100,7 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
               </div>
             </div>
 
-            {/* ─── BUY ROW ─── */}
+            {/* Buy row */}
             <div className="pd-buy-row">
               <div className="pd-qty">
                 <button className="pd-qty-btn" onClick={() => setQuantity(q => Math.max(1, q - 1))}>−</button>
@@ -1000,7 +1128,7 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
               <FiPhone size={14} />
             </a>
 
-            {/* ─── DELIVERY PERKS ─── */}
+            {/* Delivery perks */}
             <div className="pd-section">
               <p className="pd-section-lbl">Livraison & Paiement</p>
               <div className="pd-delivery">
@@ -1016,7 +1144,7 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
               </div>
             </div>
 
-            {/* ─── ACCORDIONS: Description / Ingredients / Raw notes ─── */}
+            {/* Accordions */}
             {(product.description || product.ingredients) && (
               <div className="pd-section">
                 <p className="pd-section-lbl">Détails du produit</p>
@@ -1044,18 +1172,16 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
               </div>
             )}
 
-          </div>{/* end details-col */}
-        </div>{/* end pd-grid */}
+          </div>{/* /details-col */}
+        </div>{/* /pd-grid */}
 
         {/* ══════════════════════════════════════
-            FAQ SECTION
+            FAQ
             ══════════════════════════════════════ */}
         <div className="pd-faq-section container">
           <div className="pd-faq-header">
             <div className="pd-faq-eyebrow">Questions fréquentes</div>
-            <h2 className="pd-faq-title">
-              Tout ce que vous <em>devez savoir</em>
-            </h2>
+            <h2 className="pd-faq-title">Tout ce que vous <em>devez savoir</em></h2>
           </div>
 
           <div className="pd-faq-grid">
@@ -1086,6 +1212,29 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
         </div>
 
         {/* ══════════════════════════════════════
+            RELATED PRODUCTS
+            ══════════════════════════════════════ */}
+        {relatedProds.length > 0 && (
+          <div className="pd-related">
+            <div className="pd-related-hdr container">
+              <p className="pd-related-eyebrow">Découvrez aussi</p>
+              <h2 className="pd-related-title">Autres Parfums</h2>
+            </div>
+            <div className="pd-related-grid container">
+              {relatedProds.map((p, i) => (
+                <RelatedCard
+                  key={p.id}
+                  product={p}
+                  onNavigate={navigate}
+                  fmt={fmt}
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════
             STICKY BAR
             ══════════════════════════════════════ */}
         <div className={`pd-sticky${showSticky ? " pd-sticky-visible" : ""}`}>
@@ -1109,7 +1258,10 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
           </div>
         </div>
 
-      </div>
+      </div>{/* /pd-page */}
+
+      {/* ══ FOOTER ══ */}
+      <NahidFooter />
     </>
   );
 };

@@ -32,6 +32,21 @@ const pool = mysql.createPool({
     keepAliveInitialDelay: 0,
 });
 
+async function ensureSchema() {
+    try {
+        const [[{ cnt }]] = await pool.query(`
+            SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'gallery_images'
+        `);
+        if (cnt === 0) {
+            await pool.query('ALTER TABLE products ADD COLUMN gallery_images TEXT NULL AFTER image_url');
+            console.log('✅ Colonne gallery_images ajoutée à products');
+        }
+    } catch (err) {
+        console.error('❌ Erreur ensureSchema:', err.message);
+    }
+}
+
 async function ensureAdmin() {
     try {
         await pool.query(`
@@ -56,7 +71,7 @@ async function ensureAdmin() {
 }
 
 pool.getConnection()
-    .then(conn => { conn.release(); console.log('✅ Connecté à MySQL (pool)'); ensureAdmin(); })
+    .then(conn => { conn.release(); console.log('✅ Connecté à MySQL (pool)'); ensureAdmin(); ensureSchema(); })
     .catch(err => { console.error('❌ Erreur DB:', err.message); process.exit(1); });
 
 // ============================================
@@ -140,7 +155,7 @@ app.post('/api/products', authAdmin, async (req, res) => {
     console.log("req.body:", JSON.stringify(req.body));
 
     const {
-        name, description, scent_family, price, image_url,
+        name, description, scent_family, price, image_url, gallery_images,
         category, gender, product_type, inspired_by, stock, is_new, is_bestseller,
         concentration, scent_intensity, longevity, ingredients,
         top_notes, middle_notes, base_notes,
@@ -177,6 +192,7 @@ app.post('/api/products', authAdmin, async (req, res) => {
  description,
  price,
  image_url,
+ gallery_images,
  category,
  gender,
  product_type,
@@ -193,7 +209,7 @@ app.post('/api/products', authAdmin, async (req, res) => {
  base_notes,
  size,
  scent_family
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     // Values must follow the exact column order above
     const values = [
@@ -201,6 +217,7 @@ app.post('/api/products', authAdmin, async (req, res) => {
         description || '',                                              // description
         parsedPrice,                                                    // price (DECIMAL — must be number)
         image_url || 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400', // image_url
+        gallery_images || null,                                         // gallery_images (JSON string)
         category || 'Autre',                                            // category
         gender || 'Unisex',                                             // gender
         resolvedType,                                                   // product_type
@@ -245,7 +262,7 @@ app.put('/api/products/:id', authAdmin, async (req, res) => {
     console.log("BODY:", JSON.stringify(req.body));
 
     const {
-        name, description, scent_family, price, image_url,
+        name, description, scent_family, price, image_url, gallery_images,
         category, gender, product_type, inspired_by, stock, is_new, is_bestseller,
         concentration, scent_intensity, longevity, ingredients,
         top_notes, middle_notes, base_notes,
@@ -276,7 +293,7 @@ app.put('/api/products/:id', authAdmin, async (req, res) => {
     const query = `
         UPDATE products
         SET name=?, description=?, scent_family=?, price=?,
-            image_url=?, category=?, gender=?, product_type=?, inspired_by=?,
+            image_url=?, gallery_images=?, category=?, gender=?, product_type=?, inspired_by=?,
             stock=?, is_new=?, is_bestseller=?,
             concentration=?, scent_intensity=?, longevity=?, ingredients=?,
             top_notes=?, middle_notes=?, base_notes=?, size=?
@@ -288,6 +305,7 @@ app.put('/api/products/:id', authAdmin, async (req, res) => {
         scent_family || null,                                           // scent_family
         parsedPrice,                                                    // price (DECIMAL — must be number)
         image_url || '',                                                // image_url
+        gallery_images || null,                                         // gallery_images (JSON string)
         category || 'Autre',                                            // category
         gender || 'Unisex',                                             // gender
         resolvedType,                                                   // product_type

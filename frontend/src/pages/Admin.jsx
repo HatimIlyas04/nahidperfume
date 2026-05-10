@@ -34,7 +34,7 @@ const NAV = [
 /* ── EMPTY_FORM: scent_notes REMOVED — uses top/middle/base_notes only ── */
 const EMPTY_FORM = {
   name: "", description: "", scent_family: "warm",
-  price: "", image_url: "", category: "", gender: "Unisex",
+  price: "", image_url: "", gallery_images: ["", "", "", ""], category: "", gender: "Unisex",
   product_type: "Original", inspired_by: "", stock: "10",
   is_new: "0", is_bestseller: "0",
   concentration: "", scent_intensity: "3", longevity: "",
@@ -74,6 +74,7 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
   const [currentPage,    setCurrentPage]    = useState(1);
   const [imagePreview,   setImagePreview]   = useState("");
   const [showForm,       setShowForm]       = useState(false);
+  const [uploadingSlot,  setUploadingSlot]  = useState(null);
   const [filterCat,      setFilterCat]      = useState("Tous");
   const itemsPerPage = 8;
 
@@ -164,6 +165,7 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
         top_notes:       formData.top_notes        || null,
         middle_notes:    formData.middle_notes     || null,
         base_notes:      formData.base_notes       || null,
+      gallery_images:  JSON.stringify((formData.gallery_images || []).filter(u => u && u.trim())),
       };
 
       if (editingProduct) {
@@ -231,10 +233,42 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
       top_notes:       p.top_notes          || "",
       middle_notes:    p.middle_notes       || "",
       base_notes:      p.base_notes         || "",
+      gallery_images:  (() => {
+        try {
+          const arr = JSON.parse(p.gallery_images || "[]");
+          return [...arr, "", "", "", ""].slice(0, 4);
+        } catch { return ["", "", "", ""]; }
+      })(),
     });
     setImagePreview(p.image_url);
     setShowForm(true);
     setActivePage("products");
+  };
+
+  const handleImageUpload = async (file, slot) => {
+    if (!file) return;
+    setUploadingSlot(slot);
+    const data = new FormData();
+    data.append("file", file);
+    try {
+      const res = await axios.post("/api/upload/image", data, authHdr());
+      const url = res.data.url;
+      if (slot === "main") {
+        setFormData(f => ({ ...f, image_url: url }));
+        setImagePreview(url);
+      } else {
+        setFormData(f => {
+          const gallery = [...(f.gallery_images || ["", "", "", ""])];
+          gallery[slot] = url;
+          return { ...f, gallery_images: gallery };
+        });
+      }
+      notify("Image uploadée avec succès ✓");
+    } catch (err) {
+      notify("Erreur upload : " + (err.response?.data?.error || err.message), "error");
+    } finally {
+      setUploadingSlot(null);
+    }
   };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
@@ -629,33 +663,73 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
 
                     {/* Section: Média */}
                     <div className="a-form-section-title">🖼 Média & Visibilité</div>
-                    <div className="a-form-grid-3">
-                      <div className="a-field a-col-2">
-                        <label className="a-lbl">URL de l'image</label>
-                        <input className="af-input" type="text" placeholder="https://…" value={formData.image_url}
-                          onChange={e => { set("image_url")(e); setImagePreview(e.target.value); }} />
-                      </div>
-                      <div className="a-field">
+
+                    {/* ── Main image ── */}
+                    <div className="a-media-lbl">Image principale</div>
+                    <div className="a-media-main-zone">
+                      <div className="a-media-preview-box">
                         {imagePreview
-                          ? <div className="af-preview-wrap">
-                              <img src={imagePreview} alt="Aperçu" className="af-preview" onError={e => e.target.style.display = "none"} />
-                              <span className="af-preview-lbl">Aperçu</span>
-                            </div>
-                          : <div className="af-preview-empty">🖼<span>Aperçu image</span></div>
+                          ? <img src={imagePreview} alt="Aperçu" className="a-media-preview-img" onError={e => { e.target.style.display = "none"; }} />
+                          : <div className="a-media-placeholder"><span style={{ fontSize: 28 }}>🖼</span><span>Aperçu</span></div>
                         }
+                        {uploadingSlot === "main" && <div className="a-media-uploading"><span className="a-spin" /></div>}
                       </div>
-                      <div className="a-field a-col-3">
-                        <label className="a-lbl">Tags spéciaux</label>
-                        <div className="a-toggle-group">
-                          <label className={`a-toggle-pill${formData.is_new === "1" ? " a-toggle-on" : ""}`}>
-                            <input type="checkbox" checked={formData.is_new === "1"} onChange={e => setFormData(f => ({ ...f, is_new: e.target.checked ? "1" : "0" }))} hidden />
-                            🆕 Nouveau
+                      <div className="a-media-main-body">
+                        <div className="a-media-main-title">Photo principale du produit</div>
+                        <p className="a-media-main-sub">JPG · PNG · WEBP · Max 15 MB · Recommandé 900×900 px</p>
+                        <div className="a-media-actions">
+                          <label className={`a-btn-primary a-btn-sm a-media-upload-lbl${uploadingSlot !== null ? " a-btn-disabled" : ""}`}>
+                            {uploadingSlot === "main" ? <><span className="a-spin" /> Chargement…</> : "📤 Choisir un fichier"}
+                            <input type="file" accept="image/*" hidden disabled={uploadingSlot !== null}
+                              onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f, "main"); e.target.value = ""; }} />
                           </label>
-                          <label className={`a-toggle-pill${formData.is_bestseller === "1" ? " a-toggle-on-gold" : ""}`}>
-                            <input type="checkbox" checked={formData.is_bestseller === "1"} onChange={e => setFormData(f => ({ ...f, is_bestseller: e.target.checked ? "1" : "0" }))} hidden />
-                            🔥 Best-Seller
-                          </label>
+                          <span className="a-media-or">ou URL :</span>
+                          <input className="af-input a-media-url-in" type="text" placeholder="https://…" value={formData.image_url}
+                            onChange={e => { set("image_url")(e); setImagePreview(e.target.value); }} />
                         </div>
+                      </div>
+                    </div>
+
+                    {/* ── Gallery slots ── */}
+                    <div className="a-media-lbl" style={{ marginTop: 20 }}>Galerie — 4 images supplémentaires</div>
+                    <div className="a-gallery-grid">
+                      {[0, 1, 2, 3].map(idx => (
+                        <label key={idx} className={`a-gallery-slot${formData.gallery_images?.[idx] ? " a-gallery-filled" : ""}`}>
+                          <input type="file" accept="image/*" hidden disabled={uploadingSlot !== null}
+                            onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f, idx); e.target.value = ""; }} />
+                          {uploadingSlot === idx ? (
+                            <div className="a-gallery-loading"><span className="a-spin a-spin-dark" /></div>
+                          ) : formData.gallery_images?.[idx] ? (
+                            <>
+                              <img src={formData.gallery_images[idx]} alt={`Photo ${idx + 1}`} className="a-gallery-img"
+                                onError={e => { e.target.style.display = "none"; }} />
+                              <button type="button" className="a-gallery-remove"
+                                onClick={e => { e.preventDefault(); setFormData(f => { const g = [...f.gallery_images]; g[idx] = ""; return { ...f, gallery_images: g }; }); }}>
+                                ✕
+                              </button>
+                            </>
+                          ) : (
+                            <div className="a-gallery-empty-slot">
+                              <span className="a-gallery-plus">+</span>
+                              <span className="a-gallery-num">Photo {idx + 1}</span>
+                            </div>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+
+                    {/* Tags */}
+                    <div className="a-field" style={{ marginTop: 20 }}>
+                      <label className="a-lbl">Tags spéciaux</label>
+                      <div className="a-toggle-group">
+                        <label className={`a-toggle-pill${formData.is_new === "1" ? " a-toggle-on" : ""}`}>
+                          <input type="checkbox" checked={formData.is_new === "1"} onChange={e => setFormData(f => ({ ...f, is_new: e.target.checked ? "1" : "0" }))} hidden />
+                          🆕 Nouveau
+                        </label>
+                        <label className={`a-toggle-pill${formData.is_bestseller === "1" ? " a-toggle-on-gold" : ""}`}>
+                          <input type="checkbox" checked={formData.is_bestseller === "1"} onChange={e => setFormData(f => ({ ...f, is_bestseller: e.target.checked ? "1" : "0" }))} hidden />
+                          🔥 Best-Seller
+                        </label>
                       </div>
                     </div>
 
@@ -1346,6 +1420,77 @@ button, input, select, textarea { font-family: var(--ff); }
   .a-btn-primary { padding: 9px 18px; font-size: 13px; }
   .a-radio-group, .a-toggle-group { gap: 5px; }
   .a-radio-pill, .a-toggle-pill { padding: 6px 12px; font-size: 12px; }
+}
+
+/* ════════ MEDIA UPLOAD ════════ */
+.a-media-lbl {
+  font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--g); margin-bottom: 10px;
+}
+.a-media-main-zone {
+  display: flex; align-items: flex-start; gap: 18px;
+  background: var(--bg); border: 1.5px dashed var(--bd2);
+  border-radius: 16px; padding: 18px 20px;
+  transition: border-color .2s;
+}
+.a-media-main-zone:hover { border-color: var(--c); }
+.a-media-preview-box {
+  position: relative; width: 96px; height: 96px; flex-shrink: 0;
+  border-radius: 14px; overflow: hidden; border: 1px solid var(--bd);
+  background: white; display: flex; align-items: center; justify-content: center;
+}
+.a-media-preview-img { width: 100%; height: 100%; object-fit: cover; }
+.a-media-placeholder  {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; color: var(--g2);
+}
+.a-media-placeholder span { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.a-media-uploading {
+  position: absolute; inset: 0; background: rgba(255,255,255,.85);
+  display: flex; align-items: center; justify-content: center;
+}
+.a-media-main-body  { flex: 1; min-width: 0; }
+.a-media-main-title { font-size: 13.5px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+.a-media-main-sub   { font-size: 11px; color: var(--g2); margin-bottom: 13px; line-height: 1.5; }
+.a-media-actions    { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.a-media-upload-lbl { cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 6px; }
+.a-btn-disabled     { opacity: .6; pointer-events: none; }
+.a-media-or         { font-size: 11px; color: var(--g2); font-weight: 500; flex-shrink: 0; }
+.a-media-url-in     { flex: 1; min-width: 150px; font-size: 12px !important; padding: 8px 12px !important; border-radius: 10px !important; }
+
+.a-gallery-grid {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 12px;
+}
+.a-gallery-slot {
+  position: relative; aspect-ratio: 1; border-radius: 14px;
+  border: 2px dashed var(--bd2); background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; overflow: hidden;
+  transition: border-color .2s, background .2s, transform .2s var(--sp);
+}
+.a-gallery-slot:hover  { border-color: var(--c); background: var(--cl); transform: translateY(-3px); }
+.a-gallery-filled      { border-style: solid; border-color: transparent; }
+.a-gallery-empty-slot  { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.a-gallery-plus        { font-size: 24px; color: var(--g2); font-weight: 300; line-height: 1; }
+.a-gallery-num         { font-size: 9px; font-weight: 700; color: var(--g2); letter-spacing: .08em; text-transform: uppercase; }
+.a-gallery-img         { width: 100%; height: 100%; object-fit: cover; }
+.a-gallery-loading     { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.a-gallery-remove {
+  position: absolute; top: 5px; right: 5px; z-index: 2;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(0,0,0,.55); color: white; border: none;
+  cursor: pointer; font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.a-gallery-remove:hover { background: #EF4444; }
+.a-spin-dark { border-color: rgba(0,0,0,.1); border-top-color: var(--c); }
+
+@media (max-width: 640px) {
+  .a-media-main-zone  { flex-direction: column; }
+  .a-gallery-grid     { grid-template-columns: repeat(2,1fr); }
+  .a-media-actions    { flex-direction: column; align-items: flex-start; }
+  .a-media-url-in     { width: 100%; }
 }
 
 /* ════════ SweetAlert2 overrides ════════ */
