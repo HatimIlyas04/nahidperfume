@@ -8,6 +8,8 @@ const compression = require('compression');
 
 dotenv.config();
 
+const uploadRouter = require('./routes/upload');
+
 const app = express();
 app.use(compression());
 app.use(cors());
@@ -72,6 +74,9 @@ const authAdmin = (req, res, next) => {
         return res.status(401).json({ error: 'Token invalide ou expiré' });
     }
 };
+
+// ── Upload Cloudinary (protected) ─────────────────────────
+app.use('/api/upload', authAdmin, uploadRouter);
 
 // ============================================
 // PING — keep-alive (empêche Render de s'endormir)

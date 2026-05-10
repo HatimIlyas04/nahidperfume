@@ -851,7 +851,11 @@ export default function Home({ addToCart }) {
           autoPlay muted loop playsInline
           poster="https://images.unsplash.com/photo-1541643600914-78b084683702?w=1600&q=80"
         >
-          <source src="/videos/hero.mp4" type="video/mp4" />
+          {/* In production set VITE_HERO_VIDEO_URL in Vercel env vars to your Cloudinary URL */}
+          <source
+            src={import.meta.env.VITE_HERO_VIDEO_URL || "/videos/hero.mp4"}
+            type="video/mp4"
+          />
         </video>
         <div className="hero-overlay" />
 
