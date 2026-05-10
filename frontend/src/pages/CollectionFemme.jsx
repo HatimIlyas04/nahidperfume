@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import ProductCard from "../components/ProductCard";
 import { getCachedProducts, setCachedProducts } from "../utils/productCache";
+import NahidFooter from "../components/NahidFooter";
 import { useCollectionStyles } from "./collectionStyles";
 
 /* ── Config ──────────────────────────────────────────── */
@@ -223,6 +224,7 @@ export default function CollectionFemme({ addToCart }) {
           </div>
         )}
       </section>
+      <NahidFooter />
     </div>
   );
 }

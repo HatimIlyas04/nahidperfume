@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import NahidFooter from "../components/NahidFooter";
 
 /* ─── Inject CSS once ─────────────────────────────────── */
 const NH_CSS = `
@@ -1439,6 +1440,7 @@ const NotreHistoire = () => {
         </div>
       </section>
 
+      <NahidFooter />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { getCachedProducts, setCachedProducts } from "../utils/productCache";
 import ProductCard from "../components/ProductCard";
 import ReviewsSection from "../components/ReviewsSection";
 import CategorySection from "../components/CategorySection";
+import NahidFooter from "../components/NahidFooter";
 
 
 /* ═══════════════════════════════════════════════════════════
@@ -841,6 +842,7 @@ export default function Home({ addToCart }) {
   };
 
   return (
+    <>
     <div>
 
 
@@ -1107,81 +1109,8 @@ export default function Home({ addToCart }) {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
-      {/* ── FOOTER ── */}
-      <footer className="footer">
-        <div className="container">
-          <div className="footer-top">
-            <div>
-              <h3 className="footer-logo">Nahid<span>·</span>Perfume</h3>
-              <p className="footer-tagline">L'art de la parfumerie marocaine,<br />composé avec passion à Casablanca.</p>
-              <div className="footer-social">
-                <a href="https://www.instagram.com/ilyas_hatim_10/" target="_blank" rel="noopener" className="social-btn social-ig" aria-label="Instagram">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                    <circle cx="12" cy="12" r="4.5" />
-                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-                  </svg>
-                </a>
-                <a href="#" className="social-btn social-fb" aria-label="Facebook">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                  </svg>
-                </a>
-                <a href="#" className="social-btn social-wa" aria-label="WhatsApp">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" />
-                    <path d="M12 2C6.486 2 2 6.486 2 12c0 1.89.522 3.66 1.427 5.18L2 22l4.949-1.397A9.948 9.948 0 0 0 12 22c5.514 0 10-4.486 10-10S17.514 2 12 2" />
-                  </svg>
-                </a>
-                <a href="#" className="social-btn social-tk" aria-label="TikTok">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.22 6.22 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V9.07a8.16 8.16 0 0 0 4.77 1.52V7.15a4.85 4.85 0 0 1-1-.46z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-            <div>
-              <h4 className="footer-heading">Découvrir</h4>
-              {["Nos Parfums", "Notre Histoire", "Scent Finder", "Blog Olfactif", "Gift Sets"].map(l => (
-                <a key={l} href="#" className="footer-link">{l}</a>
-              ))}
-            </div>
-            <div>
-              <h4 className="footer-heading">Aide</h4>
-              {["Contact", "FAQ", "Livraison & Retours", "Suivi commande", "Mentions légales"].map(l => (
-                <a key={l} href="#" className="footer-link">{l}</a>
-              ))}
-            </div>
-            <div>
-              <h4 className="footer-heading">Newsletter</h4>
-              <p style={{ fontSize: "0.82rem", lineHeight: "1.8", color: "rgba(255,255,255,0.28)", marginBottom: "22px" }}>
-                Nouvelles fragrances et offres exclusives réservées à nos abonnés.
-              </p>
-              <div className="email-form">
-                <input className="email-input" type="email" placeholder="votre@email.com" />
-                <button className="email-btn">S'inscrire</button>
-              </div>
-            </div>
-          </div>
-          <div className="footer-bottom">
-            <div className="footer-bottom-left">
-              <span className="footer-copy">© 2026 Nahid Perfume · Casablanca, Maroc</span>
-              <span className="footer-credit">
-                Créé par{" "}
-                <a href="https://www.instagram.com/ilyas_hatim_10/" target="_blank" rel="noopener" className="footer-credit-link">
-                  Hatim Ilyas Viti
-                </a>
-              </span>
-            </div>
-            <div className="footer-bottom-links">
-              {["Mentions légales", "Politique de confidentialité", "CGV"].map(l => (
-                <a key={l} href="#" className="footer-bottom-link">{l}</a>
-              ))}
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
+    <NahidFooter />
+    </>
   );
 }

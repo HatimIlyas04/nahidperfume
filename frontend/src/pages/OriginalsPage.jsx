@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { getCachedProducts, setCachedProducts } from "../utils/productCache";
+import NahidFooter from "../components/NahidFooter";
 
 /* ═══════════════════════════════════════════════════════
    ORIGINALS PAGE — Nahid Perfume
@@ -949,6 +950,7 @@ const OriginalsPage = ({ addToCart }) => {
         </div>
       </section>
 
+      <NahidFooter />
     </div>
   );
 };

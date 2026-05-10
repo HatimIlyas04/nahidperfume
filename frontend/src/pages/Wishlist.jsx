@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useWishlist } from "../context/WishlistContext";
 import ProductCard from "../components/ProductCard";
+import NahidFooter from "../components/NahidFooter";
 
 /* ── CSS ─────────────────────────────────────────────────── */
 const CSS = `
@@ -568,6 +569,7 @@ export default function Wishlist({ addToCart }) {
           {toast}
         </div>
       )}
+      <NahidFooter />
     </div>
   );
 }

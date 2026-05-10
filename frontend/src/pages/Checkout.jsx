@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import NahidFooter from "../components/NahidFooter";
 import Swal from "sweetalert2";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -722,6 +723,7 @@ const Checkout = ({ cart, clearCart }) => {
           </aside>
         </div>
       </div>
+      <NahidFooter />
     </div>
   );
 };

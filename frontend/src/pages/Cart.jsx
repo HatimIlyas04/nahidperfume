@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import NahidFooter from "../components/NahidFooter";
 
 /* ─── Inject Cart CSS ──────────────────────────────── */
 const CART_CSS = `
@@ -702,6 +703,7 @@ const Cart = ({ cart, removeFromCart, updateQuantity }) => {
 
         </div>
       </div>
+      <NahidFooter />
     </div>
   );
 };
