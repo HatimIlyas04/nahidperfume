@@ -2,467 +2,593 @@ import { useState, useRef } from "react";
 import { useWishlist } from "../context/WishlistContext";
 import { Link } from "react-router-dom";
 
-/* ══════════════════════════════════════════════════════
-   PRODUCT CARD — Nahid Perfume
-   Same palette throughout: cream · coral #EF776A · gold
-   Original cards get a premium treatment but same colors.
-══════════════════════════════════════════════════════ */
-
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=DM+Sans:wght@200;300;400;500;600;700&display=swap');
 
 :root {
-  --c:   #EF776A;
-  --cd:  #D35F52;
-  --cl:  #FFF4F2;
-  --cll: #FFE8E5;
-  --w:   #FFFFFF;
-  --bg:  #FAF8F5;
-  --bg2: #F5EFE4;
-  --ink: #1C1A16;
-  --ink2:#3D3A33;
-  --g:   #8C8478;
-  --bd:  rgba(28,26,22,0.09);
-  --gold:#C8A96A;
+  --c:    #EF776A;
+  --cd:   #D35F52;
+  --cl:   #FFF4F2;
+  --cll:  #FFE8E5;
+  --w:    #FFFFFF;
+  --bg:   #FAF8F5;
+  --bg2:  #F5EFE4;
+  --ink:  #1C1A16;
+  --ink2: #3D3A33;
+  --g:    #8C8478;
+  --bd:   rgba(28,26,22,0.08);
+  --gold: #C8A96A;
   --goldd:#A8883E;
   --goldl:#E9D6A9;
   --goldxl:#FAF3E3;
-  --ff:  'DM Sans', sans-serif;
-  --ffs: 'Cormorant Garamond', Georgia, serif;
-  --sp:  cubic-bezier(.34,1.56,.64,1);
-  --ex:  cubic-bezier(.16,1,.3,1);
-  --ea:  cubic-bezier(.25,.46,.45,.94);
+  --ff:   'DM Sans', sans-serif;
+  --ffs:  'Cormorant Garamond', Georgia, serif;
+  --sp:   cubic-bezier(.34,1.56,.64,1);
+  --ex:   cubic-bezier(.16,1,.3,1);
+  --ea:   cubic-bezier(.25,.46,.45,.94);
 }
 
-/* Keyframes */
-@keyframes kPop  { 0%{transform:scale(1)} 42%{transform:scale(1.26)} 100%{transform:scale(1)} }
-@keyframes kChk  { from{stroke-dashoffset:24} to{stroke-dashoffset:0} }
-@keyframes kRip  { from{transform:scale(0);opacity:.5} to{transform:scale(4);opacity:0} }
-@keyframes kBdg  { from{opacity:0;transform:translateY(-5px) scale(.85)} to{opacity:1;transform:none} }
-@keyframes kGlw  { 0%,100%{box-shadow:0 0 0 0 rgba(239,119,106,0)} 50%{box-shadow:0 0 0 5px rgba(239,119,106,.18)} }
-@keyframes kHrt  { 0%{transform:scale(1)} 30%{transform:scale(1.38)} 60%{transform:scale(.92)} 100%{transform:scale(1)} }
+/* ── Keyframes ── */
+@keyframes kPop { 0%{transform:scale(1)} 42%{transform:scale(1.26)} 100%{transform:scale(1)} }
+@keyframes kChk { from{stroke-dashoffset:24} to{stroke-dashoffset:0} }
+@keyframes kRip { from{transform:scale(0);opacity:.5} to{transform:scale(4);opacity:0} }
+@keyframes kBdg { from{opacity:0;transform:translateY(-6px) scale(.82)} to{opacity:1;transform:none} }
+@keyframes kGlw { 0%,100%{box-shadow:0 0 0 0 rgba(239,119,106,0)} 50%{box-shadow:0 0 0 5px rgba(239,119,106,.18)} }
+@keyframes kHrt { 0%{transform:scale(1)} 30%{transform:scale(1.38)} 60%{transform:scale(.92)} 100%{transform:scale(1)} }
 @keyframes kOrb  { 0%,100%{transform:translate(0,0)} 50%{transform:translate(8px,-6px)} }
 @keyframes kShn  { from{transform:translateX(-100%) skewX(-18deg)} to{transform:translateX(220%) skewX(-18deg)} }
+@keyframes kSlide{ from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
 
-/* ══════════════════════════════════════════
+/* ══════════════════════════════════════════════════
    STANDARD CARD
-══════════════════════════════════════════ */
+══════════════════════════════════════════════════ */
 .pc {
-  position:relative; border-radius:22px; overflow:hidden;
-  background:var(--w); border:1px solid var(--bd);
-  font-family:var(--ff); cursor:pointer; will-change:transform;
-  transition:transform .44s var(--sp), box-shadow .44s var(--ea), border-color .3s;
-  display:flex; flex-direction:column;
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--w);
+  border: 1px solid rgba(28,26,22,0.07);
+  font-family: var(--ff);
+  cursor: pointer;
+  will-change: transform;
+  display: flex;
+  flex-direction: column;
+  transition: transform .5s var(--ex), box-shadow .5s var(--ea);
+  box-shadow: 0 2px 12px rgba(28,26,22,0.06), 0 1px 3px rgba(28,26,22,0.04);
 }
 .pc:hover {
-  transform:translateY(-11px) scale(1.013);
-  box-shadow:0 28px 68px rgba(28,26,22,.13), 0 4px 18px rgba(28,26,22,.05);
-  border-color:transparent;
+  transform: translateY(-10px);
+  box-shadow:
+    0 30px 70px rgba(28,26,22,0.14),
+    0 8px 24px rgba(28,26,22,0.08),
+    0 0 0 1px rgba(239,119,106,0.12);
 }
-.pc:active { transform:translateY(-5px) scale(.997); }
+.pc:active { transform: translateY(-4px); }
 
-/* Image */
+/* ── Image wrapper ── */
 .pc-img-wrap {
-  position:relative; overflow:hidden; aspect-ratio:3/4;
-  background:var(--bg); display:block; text-decoration:none; flex-shrink:0;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4/5;
+  background: var(--bg);
+  display: block;
+  text-decoration: none;
+  flex-shrink: 0;
 }
 .pc-img {
-  width:100%; height:100%; object-fit:cover; object-position:center top;
-  display:block; filter:brightness(.97);
-  transition:transform .8s var(--ea), filter .5s;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+  display: block;
+  filter: brightness(.97);
+  transition: transform .9s var(--ea), filter .6s;
 }
-.pc:hover .pc-img { transform:scale(1.08); filter:brightness(1.04); }
+.pc:hover .pc-img { transform: scale(1.08); filter: brightness(1.04); }
+
+/* Dark gradient overlay on hover */
 .pc-ovl {
-  position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(to top,rgba(28,26,22,.52) 0%,rgba(28,26,22,.06) 42%,transparent 70%);
-  opacity:0; transition:opacity .4s;
+  position: absolute; inset: 0;
+  background: linear-gradient(to top,rgba(28,26,22,.55) 0%,rgba(28,26,22,.08) 40%,transparent 65%);
+  opacity: 0;
+  transition: opacity .4s;
+  pointer-events: none;
 }
-.pc:hover .pc-ovl { opacity:1; }
+.pc:hover .pc-ovl { opacity: 1; }
 
-/* Badges */
-.pc-bgs { position:absolute; top:12px; left:12px; display:flex; flex-direction:column; gap:6px; z-index:3; }
+/* ── Badges ── */
+.pc-bgs {
+  position: absolute; top: 14px; left: 14px;
+  display: flex; flex-direction: column; gap: 6px; z-index: 3;
+}
 .pc-b {
-  display:inline-flex; align-items:center; gap:5px; padding:5px 12px;
-  border-radius:999px; font-family:var(--ff); font-size:.56rem; font-weight:800;
-  letter-spacing:.1em; text-transform:uppercase; animation:kBdg .4s var(--sp) both; line-height:1;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 999px;
+  font-family: var(--ff); font-size: .56rem; font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase;
+  animation: kBdg .4s var(--sp) both; line-height: 1;
 }
-.pb-best { background:linear-gradient(135deg,var(--gold),#A0822A); color:white; box-shadow:0 3px 12px rgba(200,169,106,.45); }
-.pb-orig { background:linear-gradient(135deg,var(--c),var(--cd)); color:white; box-shadow:0 3px 12px rgba(239,119,106,.42); }
-.pb-new  { background:var(--w); color:var(--c); border:1px solid rgba(239,119,106,.28); }
-.pb-low  { background:rgba(255,255,255,.93); color:var(--c); border:1px solid rgba(239,119,106,.2); backdrop-filter:blur(8px); }
-.pb-out  { background:rgba(28,26,22,.82); color:white; backdrop-filter:blur(8px); }
-.bd-dot  { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
-.pb-best .bd-dot { background:rgba(255,255,255,.8); }
-.pb-orig .bd-dot { background:rgba(255,255,255,.8); }
-.pb-new  .bd-dot { background:var(--c); animation:kGlw 1.8s ease infinite; }
-.pb-low  .bd-dot { background:var(--c); animation:kGlw 1.5s ease infinite; }
+.pb-best { background: linear-gradient(135deg,var(--gold),#A0822A); color: white; box-shadow: 0 3px 12px rgba(200,169,106,.45); }
+.pb-new  { background: var(--w); color: var(--c); border: 1px solid rgba(239,119,106,.3); }
+.pb-low  { background: rgba(255,255,255,.93); color: var(--c); border: 1px solid rgba(239,119,106,.22); backdrop-filter: blur(8px); }
+.pb-out  { background: rgba(28,26,22,.82); color: white; backdrop-filter: blur(8px); }
+.bd-dot  { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.pb-best .bd-dot { background: rgba(255,255,255,.8); }
+.pb-new  .bd-dot { background: var(--c); animation: kGlw 1.8s ease infinite; }
+.pb-low  .bd-dot { background: var(--c); animation: kGlw 1.5s ease infinite; }
 
-/* Wishlist */
+/* ── Wishlist button ── */
 .pc-wish {
-  position:absolute; top:12px; right:12px; z-index:4;
-  width:36px; height:36px; border-radius:50%; border:none;
-  background:rgba(255,255,255,.9); backdrop-filter:blur(10px);
-  color:var(--g); cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  opacity:0; transform:translateY(-4px) scale(.84);
-  transition:opacity .25s, transform .25s var(--sp), color .2s, background .2s;
-  box-shadow:0 2px 14px rgba(0,0,0,.1);
+  position: absolute; top: 14px; right: 14px; z-index: 4;
+  width: 38px; height: 38px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,.92); backdrop-filter: blur(12px);
+  color: var(--g); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: translateY(-5px) scale(.82);
+  transition: opacity .28s, transform .28s var(--sp), color .2s, background .2s;
+  box-shadow: 0 2px 14px rgba(0,0,0,.1);
 }
-.pc:hover .pc-wish { opacity:1; transform:none; }
-.pc-wish:hover { background:white; color:var(--c); transform:scale(1.12) !important; }
-.pc-wish.wsh { color:var(--c); background:var(--cl); }
-.pc-wish.wsh svg { animation:kHrt .4s var(--sp) both; }
+.pc:hover .pc-wish { opacity: 1; transform: none; }
+.pc-wish:hover  { background: white; color: var(--c); transform: scale(1.12) !important; }
+.pc-wish.wsh    { color: var(--c); background: var(--cl); opacity: 1; transform: none; }
+.pc-wish.wsh svg { animation: kHrt .4s var(--sp) both; }
 
-/* Quick-add */
+/* ── Quick-add overlay (desktop hover) ── */
 .pc-qa {
-  position:absolute; bottom:0; left:0; right:0; z-index:4;
-  padding:14px 13px 13px;
-  background:linear-gradient(to top,rgba(28,26,22,.6) 0%,transparent 100%);
-  transform:translateY(100%); opacity:0;
-  transition:transform .36s var(--sp), opacity .26s;
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 4;
+  padding: 18px 16px 16px;
+  background: linear-gradient(to top,rgba(28,26,22,.65) 0%,transparent 100%);
+  transform: translateY(100%); opacity: 0;
+  transition: transform .38s var(--sp), opacity .28s;
 }
-.pc:hover .pc-qa { transform:none; opacity:1; }
+.pc:hover .pc-qa { transform: none; opacity: 1; }
 .pc-qbtn {
-  width:100%; padding:11px 16px; border-radius:999px; border:none;
-  background:white; color:var(--ink);
-  font-family:var(--ff); font-size:.7rem; font-weight:700;
-  letter-spacing:.07em; text-transform:uppercase; cursor:pointer;
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  transition:background .2s, transform .14s var(--sp), box-shadow .2s;
-  position:relative; overflow:hidden;
+  width: 100%; padding: 13px 18px; border-radius: 999px; border: none;
+  background: white; color: var(--ink);
+  font-family: var(--ff); font-size: .69rem; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background .2s, box-shadow .2s;
+  position: relative; overflow: hidden;
 }
-.pc-qbtn:hover { background:var(--c); color:white; transform:scale(1.02); box-shadow:0 6px 22px rgba(239,119,106,.42); }
-.pc-qbtn.qadd { background:#1B5E20 !important; color:white !important; }
-.pc-chk { stroke-dasharray:24; stroke-dashoffset:24; }
-.pc-qbtn.qadd .pc-chk { animation:kChk .3s var(--ea) both; }
-.k-rip { position:absolute; border-radius:50%; background:rgba(255,255,255,.36); width:10px; height:10px; margin:-5px 0 0 -5px; animation:kRip .5s var(--ea) forwards; pointer-events:none; }
+.pc-qbtn:hover { background: var(--c); color: white; box-shadow: 0 6px 22px rgba(239,119,106,.42); }
+.pc-qbtn.qadd  { background: #1B5E20 !important; color: white !important; }
+.pc-chk { stroke-dasharray: 24; stroke-dashoffset: 24; }
+.pc-qbtn.qadd .pc-chk { animation: kChk .3s var(--ea) both; }
+.k-rip {
+  position: absolute; border-radius: 50%; background: rgba(255,255,255,.36);
+  width: 10px; height: 10px; margin: -5px 0 0 -5px;
+  animation: kRip .5s var(--ea) forwards; pointer-events: none;
+}
 
-/* Body */
-.pc-body { padding:clamp(13px,2vw,17px); display:flex; flex-direction:column; flex:1; }
+/* ── Card body ── */
+.pc-body {
+  padding: 20px 22px 22px;
+  display: flex; flex-direction: column;
+  gap: 11px; flex: 1;
+}
 
-/* Category — styled pill */
-.pc-meta { display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; }
+/* Category + rating row */
+.pc-meta {
+  display: flex; align-items: center; justify-content: space-between;
+}
 .pc-cat-pill {
-  display:inline-flex; align-items:center; gap:5px;
-  padding:4px 11px; border-radius:999px;
-  background:var(--cl); border:1px solid rgba(239,119,106,.2);
-  font-size:.54rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--c);
-  transition:background .2s, border-color .2s;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 12px; border-radius: 999px;
+  background: var(--cl); border: 1px solid rgba(239,119,106,.2);
+  font-size: .54rem; font-weight: 800; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--c);
+  transition: background .2s;
 }
-.pc:hover .pc-cat-pill { background:var(--cll); border-color:rgba(239,119,106,.38); }
-.pc-cat-dot { width:4px; height:4px; border-radius:50%; background:var(--c); flex-shrink:0; }
-.pc-stars { font-size:.55rem; color:var(--gold); letter-spacing:.5px; }
-.pc-stars span { color:var(--g); font-size:.52rem; margin-left:2px; }
+.pc:hover .pc-cat-pill { background: var(--cll); }
+.pc-cat-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--c); flex-shrink: 0; }
+.pc-stars { font-size: .58rem; color: var(--gold); letter-spacing: .5px; }
+.pc-stars span { color: var(--g); font-size: .54rem; margin-left: 2px; }
 
+/* Name */
 .pc-name {
-  font-family:var(--ffs); font-size:clamp(1.06rem,1.8vw,1.22rem);
-  font-weight:600; color:var(--ink); letter-spacing:-.01em; line-height:1.2;
-  margin-bottom:6px; text-decoration:none; display:block; transition:color .22s;
+  font-family: var(--ffs);
+  font-size: clamp(1.12rem, 1.6vw, 1.32rem);
+  font-weight: 600; color: var(--ink);
+  letter-spacing: -.01em; line-height: 1.2;
+  text-decoration: none; display: block;
+  transition: color .22s;
 }
-.pc:hover .pc-name { color:var(--c); }
-.pc-desc {
-  font-size:.72rem; color:var(--g); line-height:1.66; flex:1; margin-bottom:13px;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-}
-.pc-div { height:1px; background:var(--bd); margin-bottom:12px; position:relative; overflow:hidden; }
-.pc-div::after {
-  content:''; position:absolute; top:0; left:0; height:100%; width:0%;
-  background:linear-gradient(90deg,var(--c),var(--gold)); transition:width .56s var(--ea);
-}
-.pc:hover .pc-div::after { width:100%; }
+.pc:hover .pc-name { color: var(--c); }
 
-.pc-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.pc-pw { display:flex; flex-direction:column; gap:2px; }
-.pc-price {
-  font-family:var(--ffs); font-size:clamp(1.15rem,2vw,1.32rem);
-  font-weight:600; color:var(--ink); letter-spacing:-.01em; line-height:1;
+/* Description */
+.pc-desc {
+  font-size: .73rem; color: var(--g); line-height: 1.7;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.pc-cur { font-family:var(--ff); font-size:.68rem; font-weight:700; color:var(--g); margin-left:3px; }
-.pc-ship { font-size:.56rem; font-weight:600; color:var(--g); }
-.pc-ship-free { color:#2E7D32; }
+
+/* Animated divider */
+.pc-div {
+  height: 1px; background: var(--bd);
+  position: relative; overflow: hidden;
+}
+.pc-div::after {
+  content: ''; position: absolute; top: 0; left: 0;
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg,var(--c),var(--gold));
+  transition: width .56s var(--ea);
+}
+.pc:hover .pc-div::after { width: 100%; }
+
+/* Footer: price + add button */
+.pc-foot {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 10px;
+  margin-top: auto;
+}
+.pc-pw { display: flex; flex-direction: column; gap: 3px; }
+.pc-price {
+  font-family: var(--ffs);
+  font-size: clamp(1.22rem, 2vw, 1.44rem);
+  font-weight: 600; color: var(--ink);
+  letter-spacing: -.01em; line-height: 1;
+}
+.pc-cur { font-family: var(--ff); font-size: .67rem; font-weight: 700; color: var(--g); margin-left: 3px; }
+.pc-ship { font-size: .57rem; font-weight: 600; color: var(--g); }
+.pc-ship-free { color: #2E7D32; }
 
 .pc-add {
-  width:42px; height:42px; border-radius:50%; border:none; flex-shrink:0;
-  background:linear-gradient(135deg,var(--c),var(--cd));
-  color:white; display:flex; align-items:center; justify-content:center;
-  cursor:pointer; transition:transform .22s var(--sp), box-shadow .22s;
-  box-shadow:0 4px 16px rgba(239,119,106,.4); position:relative; overflow:hidden;
+  width: 46px; height: 46px; border-radius: 50%; border: none; flex-shrink: 0;
+  background: linear-gradient(135deg,var(--c),var(--cd));
+  color: white; display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform .24s var(--sp), box-shadow .24s;
+  box-shadow: 0 4px 18px rgba(239,119,106,.38);
+  position: relative; overflow: hidden;
 }
-.pc-add:hover { transform:scale(1.18) rotate(90deg); box-shadow:0 8px 28px rgba(239,119,106,.54); }
-.pc-add:active { transform:scale(.95) rotate(90deg); }
-.pc-add.ok { background:linear-gradient(135deg,#2E7D32,#1B5E20); box-shadow:0 4px 14px rgba(46,125,50,.35); animation:kPop .4s var(--sp) both; }
-.pc-add svg { pointer-events:none; }
-.pc-oos { font-size:.63rem; font-weight:600; color:var(--g); font-style:italic; }
+.pc-add:hover { transform: scale(1.16) rotate(90deg); box-shadow: 0 8px 28px rgba(239,119,106,.56); }
+.pc-add:active { transform: scale(.94) rotate(90deg); }
+.pc-add.ok { background: linear-gradient(135deg,#2E7D32,#1B5E20); box-shadow: 0 4px 14px rgba(46,125,50,.35); animation: kPop .4s var(--sp) both; }
+.pc-add svg { pointer-events: none; }
+.pc-oos { font-size: .63rem; font-weight: 600; color: var(--g); font-style: italic; }
 
-/* ══════════════════════════════════════════
-   ORIGINAL CARD — same palette, premium look
-   Warm cream base with gold accents, coral CTA
-══════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════
+   ORIGINAL CARD — warm gold / cream premium
+══════════════════════════════════════════════════ */
 .oc {
-  position:relative; border-radius:22px; overflow:hidden;
-  background:var(--goldxl);
-  border:1px solid var(--goldl);
-  font-family:var(--ff); cursor:pointer; will-change:transform;
-  transition:transform .44s var(--sp), box-shadow .44s var(--ea), border-color .35s;
-  display:flex; flex-direction:column;
+  position: relative;
+  border-radius: 24px; overflow: hidden;
+  background: var(--goldxl);
+  border: 1px solid rgba(200,169,106,.28);
+  font-family: var(--ff); cursor: pointer; will-change: transform;
+  display: flex; flex-direction: column;
+  transition: transform .5s var(--ex), box-shadow .5s var(--ea);
+  box-shadow: 0 2px 14px rgba(200,169,106,.12), 0 1px 4px rgba(28,26,22,.05);
 }
-/* Gold top accent */
+/* Animated gold top accent */
 .oc::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:2.5px; z-index:5;
-  background:linear-gradient(90deg, var(--c), var(--gold), var(--c));
-  background-size:200% 100%;
-  animation:kShn 3s linear infinite;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2.5px; z-index: 5;
+  background: linear-gradient(90deg,var(--c),var(--gold),var(--c));
+  background-size: 200% 100%;
+  animation: kShn 3s linear infinite;
 }
 .oc:hover {
-  transform:translateY(-14px) scale(1.016);
+  transform: translateY(-12px);
   box-shadow:
-    0 40px 90px rgba(28,26,22,.16),
-    0 6px 24px rgba(28,26,22,.08),
-    0 0 0 1px rgba(200,169,106,.4);
-  border-color:var(--goldl);
+    0 36px 80px rgba(28,26,22,.16),
+    0 8px 28px rgba(28,26,22,.09),
+    0 0 0 1px rgba(200,169,106,.38);
 }
-.oc:active { transform:translateY(-7px) scale(.997); }
+.oc:active { transform: translateY(-5px); }
 
-/* Image */
+/* ── OC Image ── */
 .oc-img-wrap {
-  position:relative; overflow:hidden; aspect-ratio:3/4;
-  background:var(--bg2); display:block; text-decoration:none; flex-shrink:0;
+  position: relative; overflow: hidden; aspect-ratio: 4/5;
+  background: var(--bg2); display: block; text-decoration: none; flex-shrink: 0;
 }
 .oc-img {
-  width:100%; height:100%; object-fit:cover; object-position:center top;
-  display:block; filter:brightness(.95) saturate(.95);
-  transition:transform .8s var(--ea), filter .6s;
+  width: 100%; height: 100%; object-fit: cover; object-position: center top;
+  display: block; filter: brightness(.95) saturate(.95);
+  transition: transform .9s var(--ea), filter .6s;
 }
-.oc:hover .oc-img { transform:scale(1.09); filter:brightness(1.02) saturate(1.05); }
-
-/* Overlay — warm tint */
+.oc:hover .oc-img { transform: scale(1.08); filter: brightness(1.02) saturate(1.06); }
 .oc-ovl {
-  position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(
-    to top,
-    rgba(28,26,22,.6) 0%,
-    rgba(200,169,106,.06) 45%,
-    transparent 72%
-  );
-  opacity:.85;
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to top,rgba(28,26,22,.58) 0%,rgba(200,169,106,.04) 45%,transparent 70%);
+  opacity: .82;
 }
 
-/* Decorative gold orbs */
-.oc-orb {
-  position:absolute; border-radius:50%; pointer-events:none; z-index:1;
-}
+/* Decorative orbs */
+.oc-orb { position: absolute; border-radius: 50%; pointer-events: none; z-index: 1; }
 .oc-orb-1 {
-  width:140px; height:140px; top:-40px; right:-40px;
-  background:radial-gradient(circle,rgba(200,169,106,.28),transparent 70%);
-  animation:kOrb 12s ease-in-out infinite;
+  width: 150px; height: 150px; top: -45px; right: -45px;
+  background: radial-gradient(circle,rgba(200,169,106,.3),transparent 70%);
+  animation: kOrb 12s ease-in-out infinite;
 }
 .oc-orb-2 {
-  width:100px; height:100px; bottom:-20px; left:-20px;
-  background:radial-gradient(circle,rgba(239,119,106,.18),transparent 70%);
-  animation:kOrb 9s ease-in-out infinite reverse;
+  width: 110px; height: 110px; bottom: -25px; left: -25px;
+  background: radial-gradient(circle,rgba(239,119,106,.18),transparent 70%);
+  animation: kOrb 9s ease-in-out infinite reverse;
 }
 
-/* Original badge — always visible, top-left */
+/* Original badge */
 .oc-orig-bdg {
-  position:absolute; top:13px; left:13px; z-index:3;
-  display:inline-flex; align-items:center; gap:6px;
-  padding:6px 14px; border-radius:999px;
-  background:var(--goldxl); border:1px solid var(--goldl);
-  font-size:.56rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase;
-  color:var(--goldd); backdrop-filter:blur(8px);
-  box-shadow:0 3px 14px rgba(200,169,106,.35);
-  animation:kBdg .5s var(--sp) both;
+  position: absolute; top: 14px; left: 14px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px;
+  background: var(--goldxl); border: 1px solid var(--goldl);
+  font-size: .56rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--goldd); backdrop-filter: blur(8px);
+  box-shadow: 0 3px 14px rgba(200,169,106,.35);
+  animation: kBdg .5s var(--sp) both;
 }
-.oc-orig-dot { width:5px; height:5px; border-radius:50%; background:var(--gold); flex-shrink:0; }
+.oc-orig-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
 
-/* Best badge top-right */
+/* Best-seller badge */
 .oc-best-bdg {
-  position:absolute; top:13px; right:13px; z-index:3;
-  display:inline-flex; align-items:center; gap:5px;
-  padding:5px 12px; border-radius:999px;
-  background:linear-gradient(135deg,var(--c),var(--cd));
-  color:white; font-size:.54rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
-  box-shadow:0 3px 12px rgba(239,119,106,.45);
-  animation:kBdg .5s var(--sp) .08s both;
+  position: absolute; top: 14px; right: 14px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 999px;
+  background: linear-gradient(135deg,var(--c),var(--cd));
+  color: white; font-size: .54rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  box-shadow: 0 3px 12px rgba(239,119,106,.45);
+  animation: kBdg .5s var(--sp) .08s both;
 }
 
-/* Low stock */
+/* Low stock badge */
 .oc-low-bdg {
-  position:absolute; top:13px; right:13px; z-index:3;
-  padding:5px 12px; border-radius:999px;
-  background:rgba(255,255,255,.88); border:1px solid rgba(239,119,106,.3);
-  backdrop-filter:blur(8px);
-  color:var(--c); font-size:.54rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+  position: absolute; top: 14px; right: 14px; z-index: 3;
+  padding: 5px 12px; border-radius: 999px;
+  background: rgba(255,255,255,.88); border: 1px solid rgba(239,119,106,.3);
+  backdrop-filter: blur(8px);
+  color: var(--c); font-size: .54rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
 }
 
 /* Wishlist */
 .oc-wish {
-  position:absolute; top:13px; right:13px; z-index:5;
-  width:36px; height:36px; border-radius:50%; border:none;
-  background:rgba(255,255,255,.88); backdrop-filter:blur(10px);
-  color:var(--g); cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  opacity:0; transform:translateY(-4px) scale(.84);
-  transition:opacity .25s, transform .25s var(--sp), color .2s, background .2s;
-  box-shadow:0 2px 12px rgba(28,26,22,.12);
+  position: absolute; top: 14px; right: 14px; z-index: 5;
+  width: 38px; height: 38px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,.9); backdrop-filter: blur(12px);
+  color: var(--g); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: translateY(-5px) scale(.82);
+  transition: opacity .28s, transform .28s var(--sp), color .2s, background .2s;
+  box-shadow: 0 2px 12px rgba(28,26,22,.12);
 }
-.oc:hover .oc-wish { opacity:1; transform:none; }
-.oc-wish:hover { background:white; color:var(--c); transform:scale(1.12) !important; }
-.oc-wish.wsh { color:var(--c); background:var(--cl); }
-.oc-wish.wsh svg { animation:kHrt .4s var(--sp) both; }
+.oc:hover .oc-wish { opacity: 1; transform: none; }
+.oc-wish:hover  { background: white; color: var(--c); transform: scale(1.12) !important; }
+.oc-wish.wsh    { color: var(--c); background: var(--cl); opacity: 1; transform: none; }
+.oc-wish.wsh svg { animation: kHrt .4s var(--sp) both; }
 
-/* Category in image — golden pill */
+/* Category pill in image footer */
 .oc-img-foot {
-  position:absolute; bottom:0; left:0; right:0; z-index:2;
-  padding:11px 13px 12px;
-  background:linear-gradient(to top,rgba(28,26,22,.55) 0%,transparent 100%);
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+  padding: 12px 14px 13px;
+  background: linear-gradient(to top,rgba(28,26,22,.5) 0%,transparent);
 }
 .oc-img-cat {
-  display:inline-flex; align-items:center; gap:5px;
-  padding:4px 11px; border-radius:999px;
-  background:rgba(200,169,106,.2); border:1px solid rgba(200,169,106,.4);
-  backdrop-filter:blur(8px);
-  font-size:.54rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase;
-  color:var(--goldl);
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 11px; border-radius: 999px;
+  background: rgba(200,169,106,.22); border: 1px solid rgba(200,169,106,.42);
+  backdrop-filter: blur(8px);
+  font-size: .54rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--goldl);
 }
-.oc-img-cat-dot { width:4px; height:4px; border-radius:50%; background:var(--goldl); flex-shrink:0; }
+.oc-img-cat-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--goldl); flex-shrink: 0; }
 
-/* Quick-add */
+/* Quick-add (hover) */
 .oc-qa {
-  position:absolute; bottom:0; left:0; right:0; z-index:4;
-  padding:14px 13px 13px;
-  background:linear-gradient(to top,rgba(28,26,22,.6) 0%,transparent 100%);
-  transform:translateY(100%); opacity:0;
-  transition:transform .36s var(--sp), opacity .26s;
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 4;
+  padding: 18px 16px 16px;
+  background: linear-gradient(to top,rgba(28,26,22,.65) 0%,transparent);
+  transform: translateY(100%); opacity: 0;
+  transition: transform .38s var(--sp), opacity .28s;
 }
-.oc:hover .oc-qa { transform:none; opacity:1; }
+.oc:hover .oc-qa { transform: none; opacity: 1; }
 .oc-qbtn {
-  width:100%; padding:11px 16px; border-radius:999px; border:none;
-  background:var(--c); color:white;
-  font-family:var(--ff); font-size:.7rem; font-weight:700;
-  letter-spacing:.07em; text-transform:uppercase; cursor:pointer;
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  transition:background .2s, transform .14s var(--sp), box-shadow .2s;
-  position:relative; overflow:hidden;
-  box-shadow:0 5px 20px rgba(239,119,106,.45);
+  width: 100%; padding: 13px 18px; border-radius: 999px; border: none;
+  background: var(--c); color: white;
+  font-family: var(--ff); font-size: .69rem; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background .2s, box-shadow .2s;
+  position: relative; overflow: hidden;
+  box-shadow: 0 5px 20px rgba(239,119,106,.45);
 }
 .oc-qbtn::after {
-  content:''; position:absolute; inset:0;
-  background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%);
-  transform:translateX(-100%) skewX(-15deg);
-  transition:transform .5s var(--ea);
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(115deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%);
+  transform: translateX(-100%) skewX(-15deg);
+  transition: transform .5s var(--ea);
 }
-.oc-qbtn:hover { background:var(--cd); transform:scale(1.02); box-shadow:0 8px 28px rgba(239,119,106,.52); }
-.oc-qbtn:hover::after { transform:translateX(160%) skewX(-15deg); }
-.oc-qbtn.qadd { background:#1B5E20 !important; box-shadow:0 5px 18px rgba(46,125,50,.42) !important; }
-.oc-qbtn.qadd .pc-chk { animation:kChk .3s var(--ea) both; }
+.oc-qbtn:hover { background: var(--cd); box-shadow: 0 8px 28px rgba(239,119,106,.52); }
+.oc-qbtn:hover::after { transform: translateX(160%) skewX(-15deg); }
+.oc-qbtn.qadd { background: #1B5E20 !important; box-shadow: 0 5px 18px rgba(46,125,50,.42) !important; }
+.oc-qbtn.qadd .pc-chk { animation: kChk .3s var(--ea) both; }
 
-/* Body */
+/* OC Body */
 .oc-body {
-  padding:clamp(14px,2vw,19px);
-  background:var(--goldxl);
-  display:flex; flex-direction:column; flex:1;
-  position:relative; z-index:1;
+  padding: 20px 22px 22px;
+  background: var(--goldxl);
+  display: flex; flex-direction: column;
+  gap: 10px; flex: 1;
+  position: relative; z-index: 1;
 }
 
-/* Stars — gold */
-.oc-stars { font-size:.54rem; color:var(--gold); letter-spacing:.5px; margin-bottom:9px; }
-.oc-stars span { color:var(--g); font-size:.52rem; margin-left:2px; }
+/* Stars */
+.oc-stars { font-size: .58rem; color: var(--gold); letter-spacing: .5px; }
+.oc-stars span { color: var(--g); font-size: .54rem; margin-left: 2px; }
 
+/* Name */
 .oc-name {
-  font-family:var(--ffs); font-size:clamp(1.1rem,2vw,1.28rem);
-  font-weight:600; color:var(--ink); letter-spacing:-.01em; line-height:1.18;
-  margin-bottom:7px; text-decoration:none; display:block;
-  transition:color .22s;
+  font-family: var(--ffs);
+  font-size: clamp(1.12rem, 1.6vw, 1.32rem);
+  font-weight: 600; color: var(--ink);
+  letter-spacing: -.01em; line-height: 1.2;
+  text-decoration: none; display: block;
+  transition: color .22s;
 }
-.oc:hover .oc-name { color:var(--goldd); }
+.oc:hover .oc-name { color: var(--goldd); }
+
+/* Description */
 .oc-desc {
-  font-size:.72rem; color:var(--g); line-height:1.68; flex:1; margin-bottom:12px;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  font-size: .73rem; color: var(--g); line-height: 1.7;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 
-/* Note teaser */
+/* Top notes teaser */
 .oc-note {
-  display:flex; align-items:flex-start; gap:8px; padding:9px 12px;
-  border-radius:12px; margin-bottom:12px;
-  background:rgba(200,169,106,.12); border:1px solid rgba(200,169,106,.22);
-  transition:background .22s, border-color .22s;
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 10px 13px; border-radius: 12px;
+  background: rgba(200,169,106,.12); border: 1px solid rgba(200,169,106,.22);
+  transition: background .22s, border-color .22s;
 }
-.oc:hover .oc-note { background:rgba(200,169,106,.2); border-color:rgba(200,169,106,.38); }
-.oc-note-icon { font-size:.88rem; flex-shrink:0; margin-top:1px; }
-.oc-note-txt { font-size:.64rem; color:var(--ink2); line-height:1.45; }
-.oc-note-txt b { color:var(--goldd); font-weight:700; }
+.oc:hover .oc-note { background: rgba(200,169,106,.2); border-color: rgba(200,169,106,.38); }
+.oc-note-icon { font-size: .9rem; flex-shrink: 0; margin-top: 1px; }
+.oc-note-txt  { font-size: .64rem; color: var(--ink2); line-height: 1.46; }
+.oc-note-txt b { color: var(--goldd); font-weight: 700; }
 
 /* Gold divider */
-.oc-div { height:1px; background:rgba(200,169,106,.25); margin-bottom:12px; position:relative; overflow:hidden; }
+.oc-div {
+  height: 1px; background: rgba(200,169,106,.28);
+  position: relative; overflow: hidden;
+}
 .oc-div::after {
-  content:''; position:absolute; top:0; left:0; height:100%; width:0%;
-  background:linear-gradient(90deg,var(--c),var(--gold)); transition:width .56s var(--ea);
+  content: ''; position: absolute; top: 0; left: 0;
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg,var(--c),var(--gold));
+  transition: width .56s var(--ea);
 }
-.oc:hover .oc-div::after { width:100%; }
+.oc:hover .oc-div::after { width: 100%; }
 
-.oc-foot { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.oc-pw { display:flex; flex-direction:column; gap:2px; }
+/* Footer */
+.oc-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; }
+.oc-pw   { display: flex; flex-direction: column; gap: 3px; }
 .oc-price {
-  font-family:var(--ffs); font-size:clamp(1.18rem,2vw,1.36rem);
-  font-weight:600; color:var(--ink); letter-spacing:-.01em; line-height:1;
+  font-family: var(--ffs);
+  font-size: clamp(1.22rem, 2vw, 1.44rem);
+  font-weight: 600; color: var(--ink);
+  letter-spacing: -.01em; line-height: 1;
 }
-.oc-price-cur { font-family:var(--ff); font-size:.68rem; font-weight:700; color:var(--g); margin-left:3px; }
-.oc-ship { font-size:.56rem; font-weight:700; color:#2E7D32; }
+.oc-price-cur { font-family: var(--ff); font-size: .67rem; font-weight: 700; color: var(--g); margin-left: 3px; }
+.oc-ship { font-size: .57rem; font-weight: 700; color: #2E7D32; }
 
 .oc-add {
-  width:42px; height:42px; border-radius:50%; border:none; flex-shrink:0;
-  background:linear-gradient(135deg,var(--c),var(--cd));
-  color:white; display:flex; align-items:center; justify-content:center;
-  cursor:pointer; transition:transform .22s var(--sp), box-shadow .22s;
-  box-shadow:0 4px 18px rgba(239,119,106,.42); position:relative; overflow:hidden;
+  width: 46px; height: 46px; border-radius: 50%; border: none; flex-shrink: 0;
+  background: linear-gradient(135deg,var(--c),var(--cd));
+  color: white; display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform .24s var(--sp), box-shadow .24s;
+  box-shadow: 0 4px 18px rgba(239,119,106,.4);
+  position: relative; overflow: hidden;
 }
-.oc-add:hover { transform:scale(1.18) rotate(90deg); box-shadow:0 8px 28px rgba(239,119,106,.56); }
-.oc-add:active { transform:scale(.95) rotate(90deg); }
-.oc-add.ok { background:linear-gradient(135deg,#2E7D32,#1B5E20); box-shadow:0 4px 14px rgba(46,125,50,.35); animation:kPop .4s var(--sp) both; }
-.oc-add svg { pointer-events:none; }
-.oc-oos { font-size:.63rem; font-weight:600; color:var(--g); font-style:italic; }
+.oc-add:hover  { transform: scale(1.16) rotate(90deg); box-shadow: 0 8px 28px rgba(239,119,106,.56); }
+.oc-add:active { transform: scale(.94) rotate(90deg); }
+.oc-add.ok { background: linear-gradient(135deg,#2E7D32,#1B5E20); box-shadow: 0 4px 14px rgba(46,125,50,.35); animation: kPop .4s var(--sp) both; }
+.oc-add svg { pointer-events: none; }
+.oc-oos { font-size: .63rem; font-weight: 600; color: var(--g); font-style: italic; }
 
-/* ── Responsive ── */
-@media(max-width:640px){
-  .pc,.oc { border-radius:18px; }
-  .pc-body,.oc-body { padding:10px 12px 14px; }
-  .pc-name { font-size:.98rem; }
-  .oc-name { font-size:1rem; }
-  .pc-price,.oc-price { font-size:1.08rem; }
-  .pc-add,.oc-add { width:36px; height:36px; }
-  .pc-desc,.oc-desc { -webkit-line-clamp:1; }
-  .oc-note { display:none; }
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════ */
+
+/* Tablet */
+@media(max-width: 900px){
+  .pc-body, .oc-body { padding: 16px 18px 18px; gap: 9px; }
+  .pc-add, .oc-add { width: 42px; height: 42px; }
 }
-@media(max-width:480px){
-  .pc,.oc { border-radius:14px; }
-  .pc-img-wrap,.oc-img-wrap { aspect-ratio:4/5; }
-  .pc-body,.oc-body { padding:8px 10px 12px; }
-  .pc-meta { margin-bottom:5px; }
-  .pc-cat-pill { font-size:.5rem; padding:3px 8px; }
-  .pc-stars,.oc-stars { display:none; }
-  .pc-name { font-size:.88rem; line-height:1.2; margin-bottom:4px; }
-  .oc-name { font-size:.9rem; line-height:1.2; }
-  .pc-desc,.oc-desc { display:none; }
-  .oc-note { display:none; }
-  .pc-div,.oc-div { margin-bottom:8px; }
-  .pc-price,.oc-price { font-size:.98rem; }
-  .pc-cur,.oc-price-cur { font-size:.6rem; }
-  .pc-ship,.oc-ship { display:none; }
-  .pc-add,.oc-add { width:32px; height:32px; }
+
+/* Large mobile / small tablet */
+@media(max-width: 640px){
+  .pc, .oc { border-radius: 18px; }
+  .pc-body, .oc-body { padding: 13px 15px 15px; gap: 8px; }
+  .pc-name, .oc-name { font-size: 1rem; }
+  .pc-price, .oc-price { font-size: 1.08rem; }
+  .pc-add, .oc-add { width: 38px; height: 38px; }
+  .oc-note { display: none; }
+  .pc-desc, .oc-desc { -webkit-line-clamp: 1; }
+}
+
+/* Mobile — 2 cards per row */
+@media(max-width: 480px){
+  .pc, .oc {
+    border-radius: 15px;
+  }
+  .pc-img-wrap, .oc-img-wrap {
+    aspect-ratio: 3/4;
+  }
+  .pc-body, .oc-body {
+    padding: 10px 11px 13px;
+    gap: 6px;
+  }
+
+  /* Hide quick-add panel (no hover on touch) */
+  .pc-qa, .oc-qa { display: none; }
+
+  /* Always show wishlist on touch screens */
+  .pc-wish, .oc-wish {
+    opacity: 1;
+    transform: none;
+    width: 32px; height: 32px;
+    top: 10px; right: 10px;
+  }
+
+  /* Shrink badges */
+  .pc-bgs { top: 10px; left: 10px; gap: 4px; }
+  .pc-b   { font-size: .5rem; padding: 4px 9px; }
+  .oc-orig-bdg { font-size: .5rem; padding: 4px 10px; top: 10px; left: 10px; }
+  .oc-best-bdg, .oc-low-bdg { font-size: .5rem; padding: 4px 9px; top: 10px; right: 10px; }
+
+  /* Category pill */
+  .pc-cat-pill { font-size: .5rem; padding: 3px 9px; letter-spacing: .1em; }
+
+  /* Stars: hide on very small cards */
+  .pc-stars, .oc-stars { display: none; }
+
+  /* Name: compact serif */
+  .pc-name, .oc-name {
+    font-size: .88rem;
+    line-height: 1.22;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Description: hide */
+  .pc-desc, .oc-desc { display: none; }
+  .oc-note { display: none; }
+
+  /* Price */
+  .pc-price, .oc-price { font-size: .96rem; }
+  .pc-cur, .oc-price-cur { font-size: .58rem; }
+
+  /* Shipping label: hide */
+  .pc-ship, .oc-ship { display: none; }
+
+  /* Add button: smaller, still usable */
+  .pc-add, .oc-add { width: 34px; height: 34px; }
+  .pc-add svg, .oc-add svg { width: 15px; height: 15px; }
+  .pc-oos, .oc-oos { font-size: .58rem; }
+
+  /* Divider: tighter */
+  .pc-div, .oc-div { margin: 0; }
+}
+
+/* Very small phones */
+@media(max-width: 360px){
+  .pc-body, .oc-body { padding: 8px 9px 10px; }
+  .pc-name, .oc-name { font-size: .82rem; }
+  .pc-price, .oc-price { font-size: .9rem; }
+  .pc-add, .oc-add { width: 30px; height: 30px; }
+  .pc-add svg, .oc-add svg { width: 13px; height: 13px; }
 }
 `;
 
 function injectStyles() {
   if (typeof document === "undefined") return;
-  if (!document.getElementById("nahid-pc-v8")) {
+  if (!document.getElementById("nahid-pc-v9")) {
     const s = document.createElement("style");
-    s.id = "nahid-pc-v8"; s.textContent = CSS;
+    s.id = "nahid-pc-v9"; s.textContent = CSS;
     document.head.appendChild(s);
   }
 }
 
-/* ── Ripple helper ── */
 function addRipple(e, el) {
   const r = el.getBoundingClientRect();
   const span = document.createElement("span");
@@ -473,22 +599,21 @@ function addRipple(e, el) {
   setTimeout(() => span.remove(), 550);
 }
 
-/* ══════════════════════════════════════════
+/* ══════════════════════════════════════════════════
    STANDARD CARD
-══════════════════════════════════════════ */
+══════════════════════════════════════════════════ */
 function StandardCard({ product, addToCart }) {
   const [added, setAdded] = useState(false);
   const { toggle, isWished } = useWishlist();
-  const wished = isWished(product.id);
-  const qRef = useRef(null);
+  const wished  = isWished(product.id);
+  const qRef    = useRef(null);
 
   const price    = parseFloat(product.price) || 0;
   const isOut    = product.stock === 0;
   const isLow    = product.stock > 0 && product.stock < 5;
   const isNew    = !!product.is_new;
   const isBest   = !!product.is_bestseller;
-  const isOrig   = product.product_type === "Original" || product.category === "Originals";
-  const freeShip = isOrig || price >= 160;
+  const freeShip = product.product_type === "Original" || product.category === "Originals" || price >= 160;
 
   const handleAdd = (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -506,27 +631,30 @@ function StandardCard({ product, addToCart }) {
         <div className="pc-ovl" />
 
         <div className="pc-bgs">
-          {isBest && <span className="pc-b pb-best"><span className="bd-dot"/>🔥 Best-Seller</span>}
-          {isNew && !isBest && <span className="pc-b pb-new"><span className="bd-dot"/>Nouveau</span>}
-          {isLow && <span className="pc-b pb-low"><span className="bd-dot"/>Dernières pièces</span>}
+          {isBest && <span className="pc-b pb-best"><span className="bd-dot" />🔥 Best-Seller</span>}
+          {isNew && !isBest && <span className="pc-b pb-new"><span className="bd-dot" />Nouveau</span>}
+          {isLow && <span className="pc-b pb-low"><span className="bd-dot" />Dernières pièces</span>}
           {isOut && <span className="pc-b pb-out">Épuisé</span>}
         </div>
 
-        <button className={`pc-wish${wished ? " wsh" : ""}`}
+        <button
+          className={`pc-wish${wished ? " wsh" : ""}`}
           onClick={e => { e.preventDefault(); e.stopPropagation(); toggle(product); }}
-          aria-label="Favoris">
+          aria-label="Favoris"
+        >
           <svg width="15" height="15" viewBox="0 0 24 24" fill={wished ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </button>
 
         {!isOut && (
           <div className="pc-qa">
             <button ref={qRef} className={`pc-qbtn${added ? " qadd" : ""}`} onClick={handleAdd}>
-              {added
-                ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline className="pc-chk" points="20 6 9 17 4 12"/></svg>Ajouté !</>
-                : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Ajouter au panier</>
-              }
+              {added ? (
+                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline className="pc-chk" points="20 6 9 17 4 12" /></svg>Ajouté !</>
+              ) : (
+                <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>Ajouter au panier</>
+              )}
             </button>
           </div>
         )}
@@ -543,37 +671,45 @@ function StandardCard({ product, addToCart }) {
         </div>
 
         <Link to={`/product/${product.id}`} className="pc-name">{product.name}</Link>
+
         {product.description && <p className="pc-desc">{product.description}</p>}
+
         <div className="pc-div" />
 
         <div className="pc-foot">
           <div className="pc-pw">
-            <span className="pc-price">{Math.round(price).toLocaleString("fr-MA")}<span className="pc-cur">MAD</span></span>
-            <span className={`pc-ship${freeShip ? " pc-ship-free" : ""}`}>{freeShip ? "✓ Livraison gratuite" : "Livraison dès 160 MAD"}</span>
+            <span className="pc-price">
+              {Math.round(price).toLocaleString("fr-MA")}<span className="pc-cur">MAD</span>
+            </span>
+            <span className={`pc-ship${freeShip ? " pc-ship-free" : ""}`}>
+              {freeShip ? "✓ Livraison gratuite" : "Livraison dès 160 MAD"}
+            </span>
           </div>
-          {!isOut
-            ? <button className={`pc-add${added ? " ok" : ""}`} onClick={handleAdd} aria-label="Ajouter">
-                {added
-                  ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                }
-              </button>
-            : <span className="pc-oos">Épuisé</span>
-          }
+          {!isOut ? (
+            <button className={`pc-add${added ? " ok" : ""}`} onClick={handleAdd} aria-label="Ajouter">
+              {added ? (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              ) : (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              )}
+            </button>
+          ) : (
+            <span className="pc-oos">Épuisé</span>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-/* ══════════════════════════════════════════
+/* ══════════════════════════════════════════════════
    ORIGINAL CARD — warm cream + gold
-══════════════════════════════════════════ */
+══════════════════════════════════════════════════ */
 function OriginalCard({ product, addToCart }) {
   const [added, setAdded] = useState(false);
   const { toggle, isWished } = useWishlist();
-  const wished = isWished(product.id);
-  const qRef = useRef(null);
+  const wished   = isWished(product.id);
+  const qRef     = useRef(null);
 
   const price    = parseFloat(product.price) || 0;
   const isOut    = product.stock === 0;
@@ -595,45 +731,42 @@ function OriginalCard({ product, addToCart }) {
   return (
     <div className="oc">
       <Link to={`/product/${product.id}`} className="oc-img-wrap">
-        {/* Decorative orbs */}
         <div className="oc-orb oc-orb-1" />
         <div className="oc-orb oc-orb-2" />
 
         <img className="oc-img" src={product.image_url} alt={product.name} loading="lazy" />
         <div className="oc-ovl" />
 
-        {/* ✦ Original badge always visible */}
-        <span className="oc-orig-bdg"><span className="oc-orig-dot"/>✦ Nahid Original</span>
+        <span className="oc-orig-bdg"><span className="oc-orig-dot" />✦ Nahid Original</span>
 
-        {/* Secondary */}
         {isBest && !isOut && <span className="oc-best-bdg">🔥 Best-Seller</span>}
         {isLow && !isBest && !isOut && <span className="oc-low-bdg">Dernières pièces</span>}
 
-        {/* Category at bottom */}
         {product.category && (
           <div className="oc-img-foot">
-            <span className="oc-img-cat"><span className="oc-img-cat-dot"/>{product.category}</span>
+            <span className="oc-img-cat"><span className="oc-img-cat-dot" />{product.category}</span>
           </div>
         )}
 
-        {/* Wishlist — offset if secondary badge */}
         <button
           className={`oc-wish${wished ? " wsh" : ""}`}
-          style={{ top: (isBest || isLow) && !isOut ? 54 : 13 }}
+          style={{ top: (isBest || isLow) && !isOut ? 54 : 14 }}
           onClick={e => { e.preventDefault(); e.stopPropagation(); toggle(product); }}
-          aria-label="Favoris">
+          aria-label="Favoris"
+        >
           <svg width="15" height="15" viewBox="0 0 24 24" fill={wished ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
         </button>
 
         {!isOut && (
           <div className="oc-qa">
             <button ref={qRef} className={`oc-qbtn${added ? " qadd" : ""}`} onClick={handleAdd}>
-              {added
-                ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline className="pc-chk" points="20 6 9 17 4 12"/></svg>Ajouté !</>
-                : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>Ajouter au panier</>
-              }
+              {added ? (
+                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline className="pc-chk" points="20 6 9 17 4 12" /></svg>Ajouté !</>
+              ) : (
+                <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" /><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" /></svg>Ajouter au panier</>
+              )}
             </button>
           </div>
         )}
@@ -655,27 +788,31 @@ function OriginalCard({ product, addToCart }) {
 
         <div className="oc-foot">
           <div className="oc-pw">
-            <span className="oc-price">{Math.round(price).toLocaleString("fr-MA")}<span className="oc-price-cur">MAD</span></span>
+            <span className="oc-price">
+              {Math.round(price).toLocaleString("fr-MA")}<span className="oc-price-cur">MAD</span>
+            </span>
             <span className="oc-ship">✓ Livraison gratuite</span>
           </div>
-          {!isOut
-            ? <button className={`oc-add${added ? " ok" : ""}`} onClick={handleAdd} aria-label="Ajouter">
-                {added
-                  ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                }
-              </button>
-            : <span className="oc-oos">Épuisé</span>
-          }
+          {!isOut ? (
+            <button className={`oc-add${added ? " ok" : ""}`} onClick={handleAdd} aria-label="Ajouter">
+              {added ? (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              ) : (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+              )}
+            </button>
+          ) : (
+            <span className="oc-oos">Épuisé</span>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-/* ══════════════════════════════════════════
-   EXPORT — auto-detect
-══════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   EXPORT
+══════════════════════════════════════════════════ */
 const ProductCard = ({ product, addToCart }) => {
   injectStyles();
   const isOriginal = product.product_type === "Original" || product.category === "Originals";

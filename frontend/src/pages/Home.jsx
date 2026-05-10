@@ -7,7 +7,6 @@ import BundleBuilder from "../components/BundleBuilder.jsx";
 import ReviewsSection from "../components/ReviewsSection";
 import CategorySection from "../components/CategorySection";
 
-import PackOffersSection from "../components/PackOffersSection";
 
 /* ═══════════════════════════════════════════════════════════
    GLOBAL CSS
@@ -513,11 +512,11 @@ button { font-family: var(--sans); cursor: pointer; border: none; background: no
 
 .products-grid {
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
-  gap:24px;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:28px;
 }
 .skeleton {
-  height:400px;border-radius:22px;
+  height:460px;border-radius:24px;
   background:linear-gradient(90deg,#ece9e4 25%,#f5f2ee 50%,#ece9e4 75%);
   background-size:200% 100%;
   animation:shimmer 1.5s infinite;
@@ -1062,7 +1061,6 @@ export default function Home({ addToCart }) {
         </div>
       </section>
 
-      <PackOffersSection />
 
       {/* ── BUNDLE BUILDER ── */}
       <BundleBuilder products={products} addToCart={addToCart} />

@@ -110,10 +110,26 @@ const CSS = `
   flex-shrink:0; margin-right:12px;
 }
 .nb-logo-img {
-  height:40px; width:auto; max-width:140px; object-fit:contain;
-  display:block; transition:opacity .2s, transform .3s var(--sp);
+  height:54px; width:auto; max-width:180px; object-fit:contain;
+  display:block;
+  transition:opacity .25s, transform .35s var(--sp), filter .35s;
+  animation:logoReveal .75s var(--ex) both, logoFloat 5s ease-in-out 1s infinite;
 }
-.nb-logo:hover .nb-logo-img { opacity:.85; transform:scale(1.02); }
+.nb-logo:hover .nb-logo-img {
+  opacity:.88; transform:scale(1.05);
+  filter:drop-shadow(0 6px 14px rgba(239,119,106,.45));
+}
+.nb-dr-logo-img {
+  animation:logoReveal .6s var(--ex) both;
+}
+@keyframes logoReveal {
+  from { opacity:0; transform:translateY(-10px) scale(.88); }
+  to   { opacity:1; transform:translateY(0)     scale(1);   }
+}
+@keyframes logoFloat {
+  0%,100% { transform:translateY(0);    }
+  50%      { transform:translateY(-4px); }
+}
 
 /* ── Pill nav ── */
 .nb-pills { display:flex; align-items:center; gap:4px; flex-shrink:0; }
@@ -304,7 +320,7 @@ const CSS = `
   background:#fafafa;
 }
 .nb-dr-logo { display:flex; align-items:center; text-decoration:none; }
-.nb-dr-logo-img { height:34px; width:auto; object-fit:contain; }
+.nb-dr-logo-img { height:44px; width:auto; object-fit:contain; }
 .nb-xbtn {
   width:32px; height:32px; border-radius:50%;
   border:1.5px solid var(--b); background:none; cursor:pointer;
@@ -386,10 +402,11 @@ const CSS = `
   .nb-s-wrap { display:none!important; }
   .nb-right  { display:none!important; }
   .nb-mob    { display:flex!important; }
+  .nb-logo-img { height:66px; max-width:210px; }
 }
 @media(max-width:600px){
-  :root { --h:58px; }
-  .nb-logo-img { height:32px; }
+  :root { --h:66px; }
+  .nb-logo-img { height:54px; max-width:180px; }
   .nb-ann { height:28px; }
   .nb-ann-item { font-size:.56rem; padding:0 20px; }
 }
