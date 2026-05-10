@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import { getCachedProducts, setCachedProducts } from "../utils/productCache";
 import ProductCard from "../components/ProductCard";
-import BundleBuilder from "../components/BundleBuilder.jsx";
 import ReviewsSection from "../components/ReviewsSection";
 import CategorySection from "../components/CategorySection";
 
@@ -834,7 +833,7 @@ export default function Home({ addToCart }) {
 
   const filtered = activeCategory === "Tous"
     ? products
-    : products.filter(p => p.category === activeCategory);
+    : products.filter(p => p.gender === activeCategory);
 
   const scrollToCollection = (cat) => {
     if (cat) setActiveCategory(cat);
@@ -1061,9 +1060,6 @@ export default function Home({ addToCart }) {
         </div>
       </section>
 
-
-      {/* ── BUNDLE BUILDER ── */}
-      <BundleBuilder products={products} addToCart={addToCart} />
 
       {/* ── REVIEWS ── */}
       <ReviewsSection />
