@@ -5,6 +5,7 @@ import axios from "axios";
 import { WishlistProvider } from "./context/WishlistContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import Navbar from "./components/Navbar";
+import WhatsAppButton from "./components/WhatsAppButton";
 
 const Home            = lazy(() => import("./pages/Home"));
 const Cart            = lazy(() => import("./pages/Cart"));
@@ -97,6 +98,7 @@ function App() {
             isAdminLoggedIn={isAdminLoggedIn}
             setIsAdminLoggedIn={setIsAdminLoggedIn}
           />
+          <WhatsAppButton />
           <Suspense fallback={null}>
             <Routes>
               <Route path="/"                    element={<Home addToCart={addToCart} />} />
