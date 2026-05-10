@@ -692,29 +692,31 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
 
                     {/* ── Gallery slots ── */}
                     <div className="a-media-lbl" style={{ marginTop: 20 }}>Galerie — 4 images supplémentaires</div>
-                    <div className="a-gallery-grid">
+                    <div className="a-gallery-url-list">
                       {[0, 1, 2, 3].map(idx => (
-                        <label key={idx} className={`a-gallery-slot${formData.gallery_images?.[idx] ? " a-gallery-filled" : ""}`}>
-                          <input type="file" accept="image/*" hidden disabled={uploadingSlot !== null}
-                            onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload(f, idx); e.target.value = ""; }} />
-                          {uploadingSlot === idx ? (
-                            <div className="a-gallery-loading"><span className="a-spin a-spin-dark" /></div>
-                          ) : formData.gallery_images?.[idx] ? (
-                            <>
-                              <img src={formData.gallery_images[idx]} alt={`Photo ${idx + 1}`} className="a-gallery-img"
-                                onError={e => { e.target.style.display = "none"; }} />
-                              <button type="button" className="a-gallery-remove"
-                                onClick={e => { e.preventDefault(); setFormData(f => { const g = [...f.gallery_images]; g[idx] = ""; return { ...f, gallery_images: g }; }); }}>
-                                ✕
-                              </button>
-                            </>
-                          ) : (
-                            <div className="a-gallery-empty-slot">
-                              <span className="a-gallery-plus">+</span>
-                              <span className="a-gallery-num">Photo {idx + 1}</span>
-                            </div>
+                        <div key={idx} className="a-gallery-url-row">
+                          {formData.gallery_images?.[idx] && (
+                            <img src={formData.gallery_images[idx]} alt={`Photo ${idx + 1}`} className="a-gallery-url-thumb"
+                              onError={e => { e.target.style.display = "none"; }} />
                           )}
-                        </label>
+                          <input
+                            className="af-input a-gallery-url-in"
+                            type="text"
+                            placeholder={`URL photo ${idx + 1} (https://…)`}
+                            value={formData.gallery_images?.[idx] || ""}
+                            onChange={e => setFormData(f => {
+                              const g = [...(f.gallery_images || ["", "", "", ""])];
+                              g[idx] = e.target.value;
+                              return { ...f, gallery_images: g };
+                            })}
+                          />
+                          {formData.gallery_images?.[idx] && (
+                            <button type="button" className="a-gallery-url-clear"
+                              onClick={() => setFormData(f => { const g = [...f.gallery_images]; g[idx] = ""; return { ...f, gallery_images: g }; })}>
+                              ✕
+                            </button>
+                          )}
+                        </div>
                       ))}
                     </div>
 
@@ -1458,37 +1460,24 @@ button, input, select, textarea { font-family: var(--ff); }
 .a-media-or         { font-size: 11px; color: var(--g2); font-weight: 500; flex-shrink: 0; }
 .a-media-url-in     { flex: 1; min-width: 150px; font-size: 12px !important; padding: 8px 12px !important; border-radius: 10px !important; }
 
-.a-gallery-grid {
-  display: grid; grid-template-columns: repeat(4,1fr); gap: 12px;
+.a-gallery-url-list { display: flex; flex-direction: column; gap: 10px; }
+.a-gallery-url-row  { display: flex; align-items: center; gap: 10px; }
+.a-gallery-url-thumb {
+  width: 42px; height: 42px; border-radius: 10px; object-fit: cover; flex-shrink: 0;
+  border: 1px solid var(--bd2);
 }
-.a-gallery-slot {
-  position: relative; aspect-ratio: 1; border-radius: 14px;
-  border: 2px dashed var(--bd2); background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; overflow: hidden;
-  transition: border-color .2s, background .2s, transform .2s var(--sp);
+.a-gallery-url-in   { flex: 1; font-size: 12px !important; padding: 8px 12px !important; border-radius: 10px !important; }
+.a-gallery-url-clear {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: var(--bg); border: 1px solid var(--bd2); color: var(--g2);
+  font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
 }
-.a-gallery-slot:hover  { border-color: var(--c); background: var(--cl); transform: translateY(-3px); }
-.a-gallery-filled      { border-style: solid; border-color: transparent; }
-.a-gallery-empty-slot  { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.a-gallery-plus        { font-size: 24px; color: var(--g2); font-weight: 300; line-height: 1; }
-.a-gallery-num         { font-size: 9px; font-weight: 700; color: var(--g2); letter-spacing: .08em; text-transform: uppercase; }
-.a-gallery-img         { width: 100%; height: 100%; object-fit: cover; }
-.a-gallery-loading     { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-.a-gallery-remove {
-  position: absolute; top: 5px; right: 5px; z-index: 2;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: rgba(0,0,0,.55); color: white; border: none;
-  cursor: pointer; font-size: 10px;
-  display: flex; align-items: center; justify-content: center;
-  transition: background .15s;
-}
-.a-gallery-remove:hover { background: #EF4444; }
+.a-gallery-url-clear:hover { background: #EF4444; color: white; border-color: #EF4444; }
 .a-spin-dark { border-color: rgba(0,0,0,.1); border-top-color: var(--c); }
 
 @media (max-width: 640px) {
   .a-media-main-zone  { flex-direction: column; }
-  .a-gallery-grid     { grid-template-columns: repeat(2,1fr); }
   .a-media-actions    { flex-direction: column; align-items: flex-start; }
   .a-media-url-in     { width: 100%; }
 }
