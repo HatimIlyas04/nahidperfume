@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FiChevronLeft, FiShoppingBag, FiStar, FiChevronDown, FiPhone } from "react-icons/fi";
@@ -722,14 +722,12 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
   const [selectedSize,   setSelectedSize]   = useState(0);
   const [quantity,       setQuantity]       = useState(1);
   const [added,          setAdded]          = useState(false);
-  const [showSticky,     setShowSticky]     = useState(false);
   const [reveal,         setReveal]         = useState(false);
   const [imgLoaded,      setImgLoaded]      = useState(false);
   const [openFaq,        setOpenFaq]        = useState(null);
   const [activeImage,    setActiveImage]    = useState(null);
   const [imgAnim,        setImgAnim]        = useState(false);
   const [relatedProds,   setRelatedProds]   = useState([]);
-  const heroRef = useRef(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -753,13 +751,6 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
       .catch(() => {});
   }, [product]);
 
-  useEffect(() => {
-    const fn = () => {
-      if (heroRef.current) setShowSticky(window.scrollY > heroRef.current.offsetHeight + 60);
-    };
-    window.addEventListener("scroll", fn, { passive: true });
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
 
   /* ── Gallery images ── */
   const galleryUrls = useMemo(() => {
@@ -856,7 +847,7 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
         {/* ══════════════════════════════════════
             HERO GRID
             ══════════════════════════════════════ */}
-        <div className="pd-grid container" ref={heroRef}>
+        <div className="pd-grid container">
 
           {/* ── LEFT: Gallery ── */}
           <div className="pd-img-col">
@@ -1201,14 +1192,6 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
             ))}
           </div>
 
-          <div className="pd-contact-bar">
-            <a href={`https://wa.me/${WHATSAPP_NUM}`} target="_blank" rel="noopener noreferrer" className="pd-contact-pill pd-contact-wa">
-              💬 WhatsApp : +212 636 572 200
-            </a>
-            <a href="https://instagram.com/nahid.perfumes" target="_blank" rel="noopener noreferrer" className="pd-contact-pill pd-contact-ig">
-              📸 Instagram : @nahid.perfumes
-            </a>
-          </div>
         </div>
 
         {/* ══════════════════════════════════════
@@ -1233,30 +1216,6 @@ const ProductDetails = ({ addToCart, onCartOpen }) => {
             </div>
           </div>
         )}
-
-        {/* ══════════════════════════════════════
-            STICKY BAR
-            ══════════════════════════════════════ */}
-        <div className={`pd-sticky${showSticky ? " pd-sticky-visible" : ""}`}>
-          <div className="pd-sticky-content">
-            <div className="pd-sticky-info">
-              <p className="pd-sticky-name">{product.name}</p>
-              <p className="pd-sticky-price">{fmt(currentPrice)} MAD · {SIZES_OPTS[selectedSize].label}</p>
-            </div>
-            <div className="pd-sticky-btns">
-              <button
-                className={`pd-sticky-btn${added ? " pd-sticky-added" : ""}`}
-                onClick={handleAddToCart}
-                disabled={product.stock === 0}
-              >
-                {added ? "✓ Ajouté !" : "Ajouter au panier"}
-              </button>
-              <a href={waUrl} target="_blank" rel="noopener noreferrer" className="pd-sticky-wa">
-                💬 WhatsApp
-              </a>
-            </div>
-          </div>
-        </div>
 
       </div>{/* /pd-page */}
 
