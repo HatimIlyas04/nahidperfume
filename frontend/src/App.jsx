@@ -19,6 +19,7 @@ const CollectionUnisex= lazy(() => import("./pages/CollectionUnisex"));
 const OriginalsPage   = lazy(() => import("./pages/OriginalsPage"));
 const Catalogue       = lazy(() => import("./pages/Catalogue"));
 const Wishlist        = lazy(() => import("./pages/Wishlist"));
+const Reviews         = lazy(() => import("./pages/Reviews"));
 
 axios.defaults.baseURL = "https://nahidperfume-backend.onrender.com";
 
@@ -112,6 +113,7 @@ function App() {
               <Route path="/cart"                element={<Cart cart={cart} removeFromCart={removeFromCart} updateQuantity={updateQuantity} />} />
               <Route path="/checkout"            element={<Checkout cart={cart} clearCart={clearCart} />} />
               <Route path="/wishlist"            element={<Wishlist addToCart={addToCart} />} />
+              <Route path="/reviews"             element={<Reviews />} />
               <Route path="/admin"               element={<Admin isAdminLoggedIn={isAdminLoggedIn} setIsAdminLoggedIn={setIsAdminLoggedIn} />} />
             </Routes>
           </Suspense>

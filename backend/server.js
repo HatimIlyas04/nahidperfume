@@ -47,6 +47,26 @@ async function ensureSchema() {
     }
 }
 
+async function ensureReviewsTable() {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS reviews (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                first_name  VARCHAR(100) NOT NULL,
+                last_name   VARCHAR(100) NOT NULL,
+                avatar      VARCHAR(50)  NOT NULL DEFAULT 'bloom',
+                message     TEXT         NOT NULL,
+                rating      TINYINT      NOT NULL DEFAULT 5,
+                is_approved TINYINT      NOT NULL DEFAULT 0,
+                created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log('✅ Table reviews vérifiée/créée');
+    } catch (err) {
+        console.error('❌ Erreur ensureReviewsTable:', err.message);
+    }
+}
+
 async function ensureAdmin() {
     try {
         await pool.query(`
@@ -71,7 +91,7 @@ async function ensureAdmin() {
 }
 
 pool.getConnection()
-    .then(conn => { conn.release(); console.log('✅ Connecté à MySQL (pool)'); ensureAdmin(); ensureSchema(); })
+    .then(conn => { conn.release(); console.log('✅ Connecté à MySQL (pool)'); ensureAdmin(); ensureSchema(); ensureReviewsTable(); })
     .catch(err => { console.error('❌ Erreur DB:', err.message); process.exit(1); });
 
 // ============================================
@@ -504,6 +524,112 @@ app.post('/api/orders', async (req, res) => {
         res.status(500).json({ error: err.message });
     } finally {
         conn.release();
+    }
+});
+
+// ============================================
+// ROUTES AVIS (REVIEWS)
+// ============================================
+
+const VALID_AVATARS = ['bloom', 'amber', 'oud', 'mystique', 'rose', 'soleil', 'marine', 'nature'];
+
+// POST /api/reviews — submit a new review (pending approval)
+app.post('/api/reviews', async (req, res) => {
+    console.log('[POST /api/reviews] body:', JSON.stringify(req.body));
+    const { first_name, last_name, avatar, message, rating } = req.body;
+
+    if (!first_name?.trim() || !last_name?.trim() || !message?.trim()) {
+        return res.status(400).json({ error: 'Prénom, nom et message sont requis' });
+    }
+    if (message.trim().length < 10) {
+        return res.status(400).json({ error: 'Le message doit contenir au moins 10 caractères' });
+    }
+    const parsedRating = parseInt(rating);
+    if (isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+        return res.status(400).json({ error: 'La note doit être entre 1 et 5' });
+    }
+    const safeAvatar = VALID_AVATARS.includes(avatar) ? avatar : 'bloom';
+    try {
+        const [result] = await pool.query(
+            'INSERT INTO reviews (first_name, last_name, avatar, message, rating, is_approved) VALUES (?, ?, ?, ?, ?, 0)',
+            [first_name.trim().substring(0, 100), last_name.trim().substring(0, 100), safeAvatar, message.trim().substring(0, 2000), parsedRating]
+        );
+        console.log('[POST /api/reviews] insertId:', result.insertId);
+        res.status(201).json({ success: true, message: 'Avis soumis avec succès, en attente de validation' });
+    } catch (err) {
+        console.error('[POST /api/reviews] SQL ERROR:', err.message, '| code:', err.code);
+        res.status(500).json({ error: 'Erreur serveur lors de l\'enregistrement de l\'avis' });
+    }
+});
+
+// GET /api/reviews — public: approved reviews only
+app.get('/api/reviews', async (req, res) => {
+    console.log('[GET /api/reviews] fetching approved reviews');
+    try {
+        const [rows] = await pool.query('SELECT * FROM reviews WHERE is_approved = 1 ORDER BY created_at DESC');
+        console.log('[GET /api/reviews] count:', rows.length);
+        res.json(rows);
+    } catch (err) {
+        console.error('[GET /api/reviews] SQL ERROR:', err.message, '| code:', err.code);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/admin/reviews — admin: all reviews
+app.get('/api/admin/reviews', authAdmin, async (req, res) => {
+    console.log('[GET /api/admin/reviews] admin:', req.adminUsername);
+    try {
+        const [rows] = await pool.query('SELECT * FROM reviews ORDER BY is_approved ASC, created_at DESC');
+        console.log('[GET /api/admin/reviews] count:', rows.length);
+        res.json(rows);
+    } catch (err) {
+        console.error('[GET /api/admin/reviews] SQL ERROR:', err.message, '| code:', err.code);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PUT /api/admin/reviews/:id/approve
+app.put('/api/admin/reviews/:id/approve', authAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
+    console.log('[PUT /api/admin/reviews/:id/approve] id:', id);
+    try {
+        const [result] = await pool.query('UPDATE reviews SET is_approved = 1 WHERE id = ?', [id]);
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Avis non trouvé' });
+        res.json({ success: true, message: 'Avis approuvé' });
+    } catch (err) {
+        console.error('[PUT approve] SQL ERROR:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// PUT /api/admin/reviews/:id/reject
+app.put('/api/admin/reviews/:id/reject', authAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
+    console.log('[PUT /api/admin/reviews/:id/reject] id:', id);
+    try {
+        const [result] = await pool.query('UPDATE reviews SET is_approved = 0 WHERE id = ?', [id]);
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Avis non trouvé' });
+        res.json({ success: true, message: 'Avis rejeté' });
+    } catch (err) {
+        console.error('[PUT reject] SQL ERROR:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE /api/admin/reviews/:id
+app.delete('/api/admin/reviews/:id', authAdmin, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ error: 'ID invalide' });
+    console.log('[DELETE /api/admin/reviews/:id] id:', id);
+    try {
+        const [result] = await pool.query('DELETE FROM reviews WHERE id = ?', [id]);
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Avis non trouvé' });
+        res.json({ success: true, message: 'Avis supprimé' });
+    } catch (err) {
+        console.error('[DELETE review] SQL ERROR:', err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 

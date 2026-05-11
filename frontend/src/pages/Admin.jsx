@@ -26,10 +26,22 @@ const NAV = [
   { id: "dashboard", label: "Vue d'ensemble", icon: "⬡" },
   { id: "products",  label: "Produits",        icon: "✦" },
   { id: "orders",    label: "Commandes",        icon: "◫" },
+  { id: "reviews",   label: "Avis clients",     icon: "★" },
   { id: "customers", label: "Clients",          icon: "◉" },
   { id: "delivery",  label: "Livraison",        icon: "◎" },
   { id: "settings",  label: "Paramètres",       icon: "◬" },
 ];
+
+const REVIEW_AVATARS = {
+  bloom:    { icon: "🌸", bg: "linear-gradient(135deg,#FECDD3,#FB7185)" },
+  amber:    { icon: "🔮", bg: "linear-gradient(135deg,#FDE68A,#FBBF24)" },
+  oud:      { icon: "🌿", bg: "linear-gradient(135deg,#A7F3D0,#10B981)" },
+  mystique: { icon: "✦",  bg: "linear-gradient(135deg,#DDD6FE,#7C3AED)" },
+  rose:     { icon: "🌹", bg: "linear-gradient(135deg,#FECDD3,#E11D48)" },
+  soleil:   { icon: "☀️", bg: "linear-gradient(135deg,#FEF08A,#EAB308)" },
+  marine:   { icon: "💎", bg: "linear-gradient(135deg,#BAE6FD,#0284C7)" },
+  nature:   { icon: "🌲", bg: "linear-gradient(135deg,#BBF7D0,#059669)" },
+};
 
 /* ── EMPTY_FORM: scent_notes REMOVED — uses top/middle/base_notes only ── */
 const EMPTY_FORM = {
@@ -76,6 +88,8 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
   const [showForm,       setShowForm]       = useState(false);
   const [uploadingSlot,  setUploadingSlot]  = useState(null);
   const [filterCat,      setFilterCat]      = useState("Tous");
+  const [reviews,        setReviews]        = useState([]);
+  const [reviewFilter,   setReviewFilter]   = useState("all");
   const itemsPerPage = 8;
 
   const token      = localStorage.getItem("adminToken");
@@ -89,20 +103,29 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
   const fetchData = async () => {
     const t = localStorage.getItem("adminToken");
     if (!t) return;
-    try {
-      const h = { headers: { Authorization: `Bearer ${t}` } };
-      const [p, o, s] = await Promise.all([
-        axios.get("/api/products"),
-        axios.get("/api/orders", h),
-        axios.get("/api/admin/stats", h),
-      ]);
-      setProducts(p.data);
-      setOrders(o.data);
-      setStats(s.data);
-      setCustomers([...new Map(o.data.map(ord => [ord.customer_email, ord])).values()]);
-    } catch (err) {
-      if (err.response?.status === 401) handleLogout();
+    const h = { headers: { Authorization: `Bearer ${t}` } };
+
+    // allSettled: one failing request never kills the others
+    const [p, o, s, rv] = await Promise.allSettled([
+      axios.get("/api/products"),
+      axios.get("/api/orders", h),
+      axios.get("/api/admin/stats", h),
+      axios.get("/api/admin/reviews", h),
+    ]);
+
+    if (p.status  === "fulfilled") setProducts(p.value.data);
+    if (o.status  === "fulfilled") {
+      setOrders(o.value.data);
+      setCustomers([...new Map(o.value.data.map(ord => [ord.customer_email, ord])).values()]);
     }
+    if (s.status  === "fulfilled") setStats(s.value.data);
+    if (rv.status === "fulfilled") setReviews(rv.value.data);
+
+    // logout only on explicit 401
+    const unauthorized = [o, s, rv].find(
+      r => r.status === "rejected" && r.reason?.response?.status === 401
+    );
+    if (unauthorized) handleLogout();
   };
 
   useEffect(() => { if (isLoggedIn && token) fetchData(); }, [isLoggedIn]);
@@ -392,6 +415,9 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
                 <span className="a-nav-txt">{item.label}</span>
                 {item.id === "orders" && orders.filter(o => o.status === "pending").length > 0 && (
                   <span className="a-nav-badge">{orders.filter(o => o.status === "pending").length}</span>
+                )}
+                {item.id === "reviews" && reviews.filter(r => !r.is_approved).length > 0 && (
+                  <span className="a-nav-badge">{reviews.filter(r => !r.is_approved).length}</span>
                 )}
               </button>
             ))}
@@ -899,6 +925,121 @@ const Admin = ({ isAdminLoggedIn, setIsAdminLoggedIn }) => {
                     ];
                   })}
                 />
+              </div>
+            </>)}
+
+            {/* ════════ REVIEWS ════════ */}
+            {activePage === "reviews" && (<>
+              <div className="a-page-head">
+                <div>
+                  <h1 className="a-page-title">Avis clients</h1>
+                  <p className="a-page-sub">{reviews.filter(r => !r.is_approved).length} en attente de modération</p>
+                </div>
+              </div>
+
+              {/* Filter tabs */}
+              <div className="a-cat-tabs" style={{ marginBottom: 20 }}>
+                {[
+                  { id: "all",     label: `Tous (${reviews.length})` },
+                  { id: "pending", label: `En attente (${reviews.filter(r => !r.is_approved).length})` },
+                  { id: "approved",label: `Approuvés (${reviews.filter(r => r.is_approved).length})` },
+                ].map(f => (
+                  <button key={f.id} className={`a-cat-tab${reviewFilter === f.id ? " a-cat-tab-active" : ""}`} onClick={() => setReviewFilter(f.id)}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="a-card">
+                <div className="a-tbl-wrap">
+                  {reviews.filter(r => reviewFilter === "all" ? true : reviewFilter === "pending" ? !r.is_approved : r.is_approved).length === 0 ? (
+                    <div className="a-empty"><div style={{ fontSize: 36, marginBottom: 10, opacity: .4 }}>★</div><p>Aucun avis dans cette catégorie</p></div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                      {reviews
+                        .filter(r => reviewFilter === "all" ? true : reviewFilter === "pending" ? !r.is_approved : r.is_approved)
+                        .map((r, ri) => {
+                          const av = REVIEW_AVATARS[r.avatar] || REVIEW_AVATARS.bloom;
+                          return (
+                            <div key={r.id} style={{
+                              display: "flex", alignItems: "flex-start", gap: 16, padding: "20px 22px",
+                              borderBottom: "1px solid #F2EFEB", animation: `rowIn .3s cubic-bezier(.16,1,.3,1) ${ri*.03}s both`,
+                              transition: "background .14s",
+                            }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#FDFAF8"}
+                              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                            >
+                              {/* Avatar */}
+                              <div style={{ width: 46, height: 46, borderRadius: "50%", flexShrink: 0, background: av.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
+                                {av.icon}
+                              </div>
+
+                              {/* Content */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
+                                  <span className="a-fw">{r.first_name} {r.last_name}</span>
+                                  <div style={{ display: "flex", gap: 2 }}>
+                                    {[1,2,3,4,5].map(n => (
+                                      <span key={n} style={{ fontSize: 13, color: n <= r.rating ? "#EF776A" : "#DDD" }}>★</span>
+                                    ))}
+                                  </div>
+                                  <span style={{ fontSize: 11, color: "var(--g2)", marginLeft: "auto" }}>
+                                    {new Date(r.created_at).toLocaleDateString("fr-FR")}
+                                  </span>
+                                </div>
+                                <p style={{ fontSize: 13.5, color: "#3A3632", lineHeight: 1.65, marginBottom: 10 }}>{r.message}</p>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span className={`a-chip ${r.is_approved ? "a-chip-coral" : "a-chip-gray"}`}>
+                                    {r.is_approved ? "✓ Approuvé" : "⏳ En attente"}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Actions */}
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+                                {!r.is_approved ? (
+                                  <button className="a-ic-btn a-ic-edit" title="Approuver" style={{ width: "auto", padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700 }}
+                                    onClick={async () => {
+                                      try {
+                                        await axios.put(`/api/admin/reviews/${r.id}/approve`, {}, authHdr());
+                                        notify("Avis approuvé !");
+                                        fetchData();
+                                      } catch { notify("Erreur", "error"); }
+                                    }}>
+                                    ✓ Approuver
+                                  </button>
+                                ) : (
+                                  <button className="a-ic-btn" title="Rejeter" style={{ width: "auto", padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "#FFF7ED", color: "#C2410C" }}
+                                    onClick={async () => {
+                                      try {
+                                        await axios.put(`/api/admin/reviews/${r.id}/reject`, {}, authHdr());
+                                        notify("Avis rejeté");
+                                        fetchData();
+                                      } catch { notify("Erreur", "error"); }
+                                    }}>
+                                    ✕ Rejeter
+                                  </button>
+                                )}
+                                <button className="a-ic-btn a-ic-del" title="Supprimer"
+                                  onClick={async () => {
+                                    const res = await Swal.fire({ title: "Supprimer cet avis ?", icon: "warning", iconColor: "#EF776A", showCancelButton: true, confirmButtonText: "Supprimer", cancelButtonText: "Annuler", confirmButtonColor: "#EF776A", cancelButtonColor: "#E9E7E5", reverseButtons: true, backdrop: "rgba(28,26,22,.55)" });
+                                    if (!res.isConfirmed) return;
+                                    try {
+                                      await axios.delete(`/api/admin/reviews/${r.id}`, authHdr());
+                                      notify("Avis supprimé");
+                                      fetchData();
+                                    } catch { notify("Erreur", "error"); }
+                                  }}>
+                                  🗑
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      }
+                    </div>
+                  )}
+                </div>
               </div>
             </>)}
 
