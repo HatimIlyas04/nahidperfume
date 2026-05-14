@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 
 dotenv.config();
 
@@ -12,7 +13,24 @@ const uploadRouter = require('./routes/upload');
 
 const app = express();
 app.use(compression());
-app.use(cors());
+
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean)
+    .concat(['http://localhost:3000', 'http://localhost:5173']);
+
+app.use(cors({
+    origin: (origin, cb) => {
+        if (!origin || allowedOrigins.some(o => origin === o || origin.endsWith('.vercel.app'))) {
+            cb(null, true);
+        } else {
+            cb(null, true); // permissive — tighten once Vercel URL is stable
+        }
+    },
+    credentials: true,
+}));
+
 app.use(express.json());
 
 // ============================================
@@ -90,9 +108,25 @@ async function ensureAdmin() {
     }
 }
 
-pool.getConnection()
-    .then(conn => { conn.release(); console.log('✅ Connecté à MySQL (pool)'); ensureAdmin(); ensureSchema(); ensureReviewsTable(); })
-    .catch(err => { console.error('❌ Erreur DB:', err.message); process.exit(1); });
+async function initDB(retries = 5, delay = 5000) {
+    for (let i = 1; i <= retries; i++) {
+        try {
+            const conn = await pool.getConnection();
+            conn.release();
+            console.log('✅ Connecté à MySQL (pool)');
+            await ensureAdmin();
+            await ensureSchema();
+            await ensureReviewsTable();
+            return;
+        } catch (err) {
+            console.error(`❌ Erreur DB (tentative ${i}/${retries}):`, err.message);
+            if (i < retries) await new Promise(r => setTimeout(r, delay));
+        }
+    }
+    console.error('❌ Impossible de se connecter après plusieurs tentatives. Arrêt.');
+    process.exit(1);
+}
+initDB();
 
 // ============================================
 // MIDDLEWARE AUTH ADMIN
@@ -376,7 +410,15 @@ app.delete('/api/products/:id', authAdmin, async (req, res) => {
 // ROUTES ADMIN AUTH
 // ============================================
 
-app.post('/api/admin/login', async (req, res) => {
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: 'Trop de tentatives. Réessayez dans 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.post('/api/admin/login', loginLimiter, async (req, res) => {
     const { username, password } = req.body;
     console.log(`[LOGIN] Tentative pour username: "${username}"`);
     if (!username || !password) return res.status(400).json({ error: 'Username et password requis' });
