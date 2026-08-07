@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import { FiSearch } from "react-icons/fi";
-import { packsApi } from "../services/api";
-import { useCart } from "../context/CartContext";
+import { packsApi, wishlistApi } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import PackCard from "../components/PackCard";
 import NahidFooter from "../components/NahidFooter";
@@ -44,20 +43,20 @@ function injectCSS() {
 
 export default function PacksListing() {
   injectCSS();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { addToCart } = useCart();
   const { t } = useLanguage();
   const [packs, setPacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState(searchParams.get("search") || "");
   const [sort, setSort] = useState("default");
+  const [wishedIds, setWishedIds] = useState(() => new Set());
 
   useEffect(() => {
     packsApi.list()
       .then(setPacks)
       .catch(() => Swal.fire({ icon: "error", title: t("packsPage.errorTitle"), text: t("packsPage.errorText") }))
       .finally(() => setLoading(false));
+    wishlistApi.get().then((w) => setWishedIds(new Set(w.packs.map((p) => p.id)))).catch(() => {});
   }, [t]);
 
   const visible = useMemo(() => {
@@ -73,21 +72,25 @@ export default function PacksListing() {
     return list;
   }, [packs, query, sort]);
 
-  const handleAddToCart = useCallback((pack) => {
-    addToCart({
-      cartItemId: `ready_${pack.id}`,
-      item_type: "ready_pack",
-      pack_id: pack.id,
-      title: pack.title,
-      image: pack.cover_image,
-      price: Number(pack.price),
-      quantity: 1,
-      perfumes: (pack.perfumes || []).map((p) => ({ perfume_id: p.perfume_id, name: p.name, image_url: p.image_url })),
+  const handleToggleWishlist = useCallback(async (pack) => {
+    const wished = wishedIds.has(pack.id);
+    setWishedIds((prev) => {
+      const next = new Set(prev);
+      wished ? next.delete(pack.id) : next.add(pack.id);
+      return next;
     });
-    Swal.fire({ icon: "success", title: t("packsPage.addedToCart"), timer: 1400, showConfirmButton: false });
-  }, [addToCart, t]);
-
-  const handleCustomize = useCallback((pack) => navigate(`/packs/${pack.id}?customize=1`), [navigate]);
+    try {
+      if (wished) await wishlistApi.removePack(pack.id);
+      else await wishlistApi.addPack(pack.id);
+    } catch {
+      setWishedIds((prev) => {
+        const next = new Set(prev);
+        wished ? next.add(pack.id) : next.delete(pack.id);
+        return next;
+      });
+      Swal.fire({ icon: "error", title: t("packDetails.errorTitle"), text: t("packDetails.wishlistError") });
+    }
+  }, [wishedIds, t]);
 
   return (
     <>
@@ -121,9 +124,9 @@ export default function PacksListing() {
             <PackCard
               key={pack.id}
               pack={pack}
-              onAddToCart={handleAddToCart}
-              onCustomize={handleCustomize}
               priority={i < 4}
+              isWished={wishedIds.has(pack.id)}
+              onToggleWishlist={handleToggleWishlist}
             />
           ))}
         </div>

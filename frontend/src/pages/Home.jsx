@@ -1,12 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
   FiArrowRight, FiPackage, FiSliders, FiTruck, FiShield, FiHeart,
   FiMail, FiCheckCircle, FiPlay,
 } from "react-icons/fi";
-import { packsApi, faqApi, bannersApi } from "../services/api";
-import { useCart } from "../context/CartContext";
+import { packsApi, faqApi, bannersApi, wishlistApi } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import PackCard from "../components/PackCard";
@@ -110,8 +109,6 @@ const WHY_ICONS = [
 
 export default function Home() {
   injectCSS();
-  const navigate = useNavigate();
-  const { addToCart } = useCart();
   const { t } = useLanguage();
   const [packs, setPacks] = useState([]);
   const [packsLoading, setPacksLoading] = useState(true);
@@ -119,36 +116,37 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState(null);
   const [email, setEmail] = useState("");
   const [ugcItems, setUgcItems] = useState([]);
+  const [wishedIds, setWishedIds] = useState(() => new Set());
 
   useEffect(() => {
     packsApi.list().then(setPacks).catch(() => setPacks([])).finally(() => setPacksLoading(false));
     faqApi.listActive().then((data) => setFaqs(data.slice(0, 6))).catch(() => setFaqs([]));
     bannersApi.listActive("ugc_gallery").then(setUgcItems).catch(() => setUgcItems([]));
+    wishlistApi.get().then((w) => setWishedIds(new Set(w.packs.map((p) => p.id)))).catch(() => {});
   }, []);
 
   const bestsellers = packs.slice(0, 8);
   const whyItems = t("home.whyItems");
 
-  // Stable references so PackCard (wrapped in React.memo) can actually skip
-  // re-rendering when Home re-renders for unrelated reasons (e.g. cart
-  // count changing elsewhere) — an inline arrow or a plain function
-  // redeclared every render would give memo() a "new" prop every time and
-  // silently defeat it.
-  const handleAddToCart = useCallback((pack) => {
-    addToCart({
-      cartItemId: `ready_${pack.id}`,
-      item_type: "ready_pack",
-      pack_id: pack.id,
-      title: pack.title,
-      image: pack.cover_image,
-      price: Number(pack.price),
-      quantity: 1,
-      perfumes: (pack.perfumes || []).map((p) => ({ perfume_id: p.perfume_id, name: p.name, image_url: p.image_url })),
+  const handleToggleWishlist = useCallback(async (pack) => {
+    const wished = wishedIds.has(pack.id);
+    setWishedIds((prev) => {
+      const next = new Set(prev);
+      wished ? next.delete(pack.id) : next.add(pack.id);
+      return next;
     });
-    Swal.fire({ icon: "success", title: t("home.addedToCart"), timer: 1400, showConfirmButton: false });
-  }, [addToCart, t]);
-
-  const handleCustomize = useCallback((pack) => navigate(`/packs/${pack.id}?customize=1`), [navigate]);
+    try {
+      if (wished) await wishlistApi.removePack(pack.id);
+      else await wishlistApi.addPack(pack.id);
+    } catch {
+      setWishedIds((prev) => {
+        const next = new Set(prev);
+        wished ? next.add(pack.id) : next.delete(pack.id);
+        return next;
+      });
+      Swal.fire({ icon: "error", title: t("packDetails.errorTitle"), text: t("packDetails.wishlistError") });
+    }
+  }, [wishedIds, t]);
 
   const handleNewsletter = (e) => {
     e.preventDefault();
@@ -181,7 +179,13 @@ export default function Home() {
         <section style={{ paddingBottom: "var(--section-gap)" }}>
           <div className="home-packs-grid">
             {bestsellers.map((pack, i) => (
-              <PackCard key={pack.id} pack={pack} onAddToCart={handleAddToCart} onCustomize={handleCustomize} priority={i < 4} />
+              <PackCard
+                key={pack.id}
+                pack={pack}
+                priority={i < 4}
+                isWished={wishedIds.has(pack.id)}
+                onToggleWishlist={handleToggleWishlist}
+              />
             ))}
           </div>
           {packs.length > 8 && (
