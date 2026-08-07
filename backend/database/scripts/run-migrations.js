@@ -41,6 +41,7 @@ const ORDER = [
   '019_pack_upsell_offer.sql',
   '020_cro_settings.sql',
   '021_pack_badge.sql',
+  '022_customers_sort_index.sql',
   'data-migration.sql',
 ];
 

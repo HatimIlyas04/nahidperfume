@@ -179,30 +179,40 @@ async function createOrder(payload) {
     await conn.query('UPDATE orders SET customer_id = ? WHERE id = ?', [customer.id, orderId]);
 
     return ordersRepo.findById(orderId, conn);
-  }).then(async (order) => {
-    // Post-commit side effects: never let these fail the order itself.
-    try {
-      await notificationService.notifyAdmins({
-        type: 'new_order',
-        title: `Nouvelle commande ${order.order_number}`,
-        body: `${order.customer_name} — ${order.total_amount} MAD`,
-        link: `/admin/orders/${order.id}`,
-        relatedId: order.id,
-      });
-      const items = await orderItemsRepo.findByOrderId(order.id);
-      const orderWithItems = { ...order, items };
-      await whatsappService.sendAdminOrderAlert(orderWithItems);
-      await emailService.sendAdminOrderNotification(orderWithItems);
-      await emailService.sendOrderConfirmation(orderWithItems);
-    } catch (err) {
+  }).then((order) => {
+    // Fire-and-forget: the order is already committed at this point, and
+    // none of notifyAdmins/WhatsApp/email affects what the customer needs
+    // back. Previously these were awaited in sequence before responding,
+    // adding the combined latency of a DB write + 3 outbound API calls to
+    // every checkout's response time for zero benefit to the customer.
+    notifyOrderCreated(order).catch((err) => {
       // eslint-disable-next-line no-console
       console.error('[orderService] post-order notification failed', err.message);
-    }
+    });
     // Short-lived token scoping the Thank You page's one-click upsell to
     // exactly this order — nothing else lets a client mutate an order total.
     const upsellToken = jwt.sign({ orderId: order.id, purpose: 'upsell' }, env.jwtSecret, { expiresIn: '30m' });
     return { ...order, upsell_token: upsellToken };
   });
+}
+
+/** Runs every post-order notification channel concurrently — one channel
+ *  failing (e.g. email misconfigured) must not stop the others from sending. */
+async function notifyOrderCreated(order) {
+  const items = await orderItemsRepo.findByOrderId(order.id);
+  const orderWithItems = { ...order, items };
+  await Promise.allSettled([
+    notificationService.notifyAdmins({
+      type: 'new_order',
+      title: `Nouvelle commande ${order.order_number}`,
+      body: `${order.customer_name} — ${order.total_amount} MAD`,
+      link: `/admin/orders/${order.id}`,
+      relatedId: order.id,
+    }),
+    whatsappService.sendAdminOrderAlert(orderWithItems),
+    emailService.sendAdminOrderNotification(orderWithItems),
+    emailService.sendOrderConfirmation(orderWithItems),
+  ]);
 }
 
 /** Verifies the Thank You page's upsell token scopes to this exact order. */
@@ -268,9 +278,8 @@ async function applyUpsell(orderId, token) {
 
 async function listOrders(filters) {
   const { rows, total } = await ordersRepo.findAll(filters);
-  const withItems = await Promise.all(
-    rows.map(async (order) => ({ ...order, items: await orderItemsRepo.findByOrderId(order.id) }))
-  );
+  const itemsByOrderId = await orderItemsRepo.findByOrderIds(rows.map((o) => o.id));
+  const withItems = rows.map((order) => ({ ...order, items: itemsByOrderId.get(order.id) || [] }));
   return { rows: withItems, total };
 }
 

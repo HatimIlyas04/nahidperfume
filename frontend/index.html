@@ -6,6 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#EF776A" />
 
+    <!-- Opens the connection (DNS + TLS) to the backend and image CDN
+         before any JS runs, instead of waiting for the first fetch() to
+         start that handshake — shaves the connection-setup time off the
+         very first API/image request, which matters most right after a
+         cold Render start. -->
+    <link rel="preconnect" href="https://nahidperfume-backend.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://nahidperfume-backend.onrender.com" />
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+    <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+
     <title>Nahid Perfumes — Packs de Parfums Curés | Maroc</title>
     <meta name="description" content="Nahid Perfumes crée des packs de 4 parfums curés avec soin. Choisissez un pack prêt-à-offrir ou composez le vôtre sur mesure. Livraison partout au Maroc, paiement à la livraison." />
     <link rel="canonical" href="https://www.nahidperfumes.com/" />

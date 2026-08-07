@@ -38,7 +38,14 @@ export default function OrdersPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [search, statusFilter]);
+  useEffect(() => {
+    // Debounced: typing in the search box previously fired one request per
+    // keystroke. statusFilter changes (a <select>, not free text) still
+    // fire immediately since there's no rapid-keystroke concern there.
+    const timer = setTimeout(load, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, statusFilter]);
 
   const handleStatusChange = async (id, status) => {
     await adminOrdersApi.updateStatus(id, status);
@@ -92,11 +99,11 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      <div className="adm-table-wrap">
+      <div className="adm-table-wrap" style={{ opacity: loading && orders.length > 0 ? 0.55 : 1, transition: "opacity 0.15s" }}>
         <table className="adm-table">
           <thead><tr><th>N°</th><th>Client</th><th>Téléphone</th><th>Total</th><th>Statut</th><th>Date</th><th></th></tr></thead>
           <tbody>
-            {loading ? (
+            {loading && orders.length === 0 ? (
               <tr><td colSpan={7} style={{ textAlign: "center", padding: "30px" }}>Chargement...</td></tr>
             ) : orders.length === 0 ? (
               <tr><td colSpan={7} className="adm-empty">Aucune commande</td></tr>

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import { FiEye, FiSliders, FiShoppingBag } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
@@ -104,7 +105,13 @@ function injectCSS() {
   }
 }
 
-export default function PackCard({ pack, onAddToCart, onCustomize, badge }) {
+// Grids render 4-8+ of these at once; memoized so a parent re-render
+// (e.g. cart count changing elsewhere) doesn't re-render every card unless
+// its own props actually changed — see Home.jsx/PacksListing.jsx for the
+// matching useCallback on the handlers passed in, which is required for
+// memo() here to actually do anything (a new inline function every render
+// would defeat it silently).
+function PackCard({ pack, onAddToCart, onCustomize, badge }) {
   injectCSS();
   const { t } = useLanguage();
   const perfumes = pack.perfumes || [];
@@ -167,3 +174,5 @@ export default function PackCard({ pack, onAddToCart, onCustomize, badge }) {
     </div>
   );
 }
+
+export default memo(PackCard);

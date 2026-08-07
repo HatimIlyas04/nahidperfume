@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import { FiSearch } from "react-icons/fi";
@@ -67,7 +67,7 @@ export default function PacksListing() {
     return list;
   }, [packs, query, sort]);
 
-  const handleAddToCart = (pack) => {
+  const handleAddToCart = useCallback((pack) => {
     addToCart({
       cartItemId: `ready_${pack.id}`,
       item_type: "ready_pack",
@@ -79,7 +79,9 @@ export default function PacksListing() {
       perfumes: (pack.perfumes || []).map((p) => ({ perfume_id: p.perfume_id, name: p.name, image_url: p.image_url })),
     });
     Swal.fire({ icon: "success", title: t("packsPage.addedToCart"), timer: 1400, showConfirmButton: false });
-  };
+  }, [addToCart, t]);
+
+  const handleCustomize = useCallback((pack) => navigate(`/packs/${pack.id}?customize=1`), [navigate]);
 
   return (
     <>
@@ -114,7 +116,7 @@ export default function PacksListing() {
               key={pack.id}
               pack={pack}
               onAddToCart={handleAddToCart}
-              onCustomize={(p) => navigate(`/packs/${p.id}?customize=1`)}
+              onCustomize={handleCustomize}
             />
           ))}
         </div>

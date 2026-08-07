@@ -59,25 +59,28 @@ async function markWhatsappNotified(id, conn = pool) {
 }
 
 async function getStats(conn = pool) {
-  const [[totals]] = await conn.query(
-    `SELECT
-       COUNT(*) AS totalOrders,
-       COALESCE(SUM(total_amount), 0) AS totalRevenue,
-       COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) AS pendingOrders,
-       COALESCE(SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END), 0) AS ordersToday,
-       COALESCE(SUM(CASE WHEN DATE(created_at) = CURDATE() THEN total_amount ELSE 0 END), 0) AS revenueToday
-     FROM orders`
-  );
-  const [byStatus] = await conn.query(
-    `SELECT status, COUNT(*) AS count FROM orders GROUP BY status`
-  );
-  const [revenueByDay] = await conn.query(
-    `SELECT DATE(created_at) AS date, COUNT(*) AS orders, SUM(total_amount) AS revenue
-     FROM orders
-     WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-     GROUP BY DATE(created_at)
-     ORDER BY date ASC`
-  );
+  // Three independent aggregates over the same table — safe to fire
+  // concurrently (each pool.query() call checks out its own connection),
+  // unlike queries inside a transaction which must share one connection.
+  const [[[totals]], [byStatus], [revenueByDay]] = await Promise.all([
+    conn.query(
+      `SELECT
+         COUNT(*) AS totalOrders,
+         COALESCE(SUM(total_amount), 0) AS totalRevenue,
+         COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) AS pendingOrders,
+         COALESCE(SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END), 0) AS ordersToday,
+         COALESCE(SUM(CASE WHEN DATE(created_at) = CURDATE() THEN total_amount ELSE 0 END), 0) AS revenueToday
+       FROM orders`
+    ),
+    conn.query(`SELECT status, COUNT(*) AS count FROM orders GROUP BY status`),
+    conn.query(
+      `SELECT DATE(created_at) AS date, COUNT(*) AS orders, SUM(total_amount) AS revenue
+       FROM orders
+       WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+       GROUP BY DATE(created_at)
+       ORDER BY date ASC`
+    ),
+  ]);
   return { totals, byStatus, revenueByDay };
 }
 

@@ -4,8 +4,10 @@ const { toInt, toBool } = require('../utils/validators');
 
 async function list(req, res) {
   const unreadOnly = toBool(req.query.unread);
-  const notifications = await notificationsRepo.findAll({ unreadOnly });
-  const unreadCount = await notificationsRepo.countUnread();
+  const [notifications, unreadCount] = await Promise.all([
+    notificationsRepo.findAll({ unreadOnly }),
+    notificationsRepo.countUnread(),
+  ]);
   return success(res, { notifications, unreadCount });
 }
 

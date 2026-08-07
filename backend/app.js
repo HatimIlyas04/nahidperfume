@@ -10,6 +10,7 @@ const errorHandler = require('./middleware/errorHandler');
 const asyncHandler = require('./middleware/asyncHandler');
 const { globalLimiter } = require('./middleware/rateLimiters');
 const cachePublic = require('./middleware/cachePublic');
+const responseTime = require('./middleware/responseTime');
 
 const perfumesRoutes = require('./routes/perfumes.routes');
 const packsRoutes = require('./routes/packs.routes');
@@ -33,6 +34,7 @@ const uploadRouter = require('./routes/upload');
 const app = express();
 
 app.set('trust proxy', 1);
+app.use(responseTime);
 app.use(helmet());
 app.use(compression());
 

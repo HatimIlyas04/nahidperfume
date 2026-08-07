@@ -21,6 +21,33 @@ async function findByOrderId(orderId, conn = pool) {
   }));
 }
 
+/**
+ * Batches item (+ perfume snapshot) lookups for a whole page of orders into
+ * exactly 2 queries total, instead of 2 per order — used by the admin
+ * orders list, which previously fired findByOrderId() once per row.
+ */
+async function findByOrderIds(orderIds, conn = pool) {
+  const byOrderId = new Map(orderIds.map((id) => [id, []]));
+  if (!orderIds.length) return byOrderId;
+
+  const [items] = await conn.query('SELECT * FROM order_items WHERE order_id IN (?)', [orderIds]);
+  if (!items.length) return byOrderId;
+
+  const itemIds = items.map((i) => i.id);
+  const [perfumeRows] = await conn.query(
+    `SELECT * FROM order_item_perfumes WHERE order_item_id IN (?) ORDER BY position ASC`,
+    [itemIds]
+  );
+
+  for (const item of items) {
+    byOrderId.get(item.order_id).push({
+      ...item,
+      perfumes: perfumeRows.filter((p) => p.order_item_id === item.id),
+    });
+  }
+  return byOrderId;
+}
+
 async function addPerfumeSnapshots(orderItemId, perfumes, conn = pool) {
   const rows = perfumes.map((p, index) => [
     orderItemId,
@@ -53,4 +80,4 @@ async function findTopPerfumes(limit = 10, conn = pool) {
   return rows;
 }
 
-module.exports = { create, findByOrderId, addPerfumeSnapshots, findTopPerfumes };
+module.exports = { create, findByOrderId, findByOrderIds, addPerfumeSnapshots, findTopPerfumes };

@@ -8,11 +8,16 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    adminCustomersApi.list({ search: search || undefined })
-      .then((r) => { setCustomers(r.rows); setTotal(r.total); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    // Debounced so typing a name doesn't fire one request per keystroke —
+    // matches the pattern already used for the storefront's Navbar search.
+    const timer = setTimeout(() => {
+      setLoading(true);
+      adminCustomersApi.list({ search: search || undefined })
+        .then((r) => { setCustomers(r.rows); setTotal(r.total); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
   }, [search]);
 
   return (
@@ -21,11 +26,11 @@ export default function CustomersPage() {
         <h1>Clients ({total})</h1>
         <input className="adm-search-input" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
-      <div className="adm-table-wrap">
+      <div className="adm-table-wrap" style={{ opacity: loading && customers.length > 0 ? 0.55 : 1, transition: "opacity 0.15s" }}>
         <table className="adm-table">
           <thead><tr><th>Nom</th><th>Téléphone</th><th>Email</th><th>Commandes</th><th>Total dépensé</th></tr></thead>
           <tbody>
-            {loading ? (
+            {loading && customers.length === 0 ? (
               <tr><td colSpan={5} style={{ textAlign: "center", padding: "30px" }}>Chargement...</td></tr>
             ) : customers.length === 0 ? (
               <tr><td colSpan={5} className="adm-empty">Aucun client pour le moment</td></tr>

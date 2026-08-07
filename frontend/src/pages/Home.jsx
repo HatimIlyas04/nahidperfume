@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
@@ -124,7 +124,12 @@ export default function Home() {
   const bestsellers = packs.slice(0, 8);
   const whyItems = t("home.whyItems");
 
-  const handleAddToCart = (pack) => {
+  // Stable references so PackCard (wrapped in React.memo) can actually skip
+  // re-rendering when Home re-renders for unrelated reasons (e.g. cart
+  // count changing elsewhere) — an inline arrow or a plain function
+  // redeclared every render would give memo() a "new" prop every time and
+  // silently defeat it.
+  const handleAddToCart = useCallback((pack) => {
     addToCart({
       cartItemId: `ready_${pack.id}`,
       item_type: "ready_pack",
@@ -136,7 +141,9 @@ export default function Home() {
       perfumes: (pack.perfumes || []).map((p) => ({ perfume_id: p.perfume_id, name: p.name, image_url: p.image_url })),
     });
     Swal.fire({ icon: "success", title: t("home.addedToCart"), timer: 1400, showConfirmButton: false });
-  };
+  }, [addToCart, t]);
+
+  const handleCustomize = useCallback((pack) => navigate(`/packs/${pack.id}?customize=1`), [navigate]);
 
   const handleNewsletter = (e) => {
     e.preventDefault();
@@ -169,7 +176,7 @@ export default function Home() {
         <section style={{ paddingBottom: "var(--section-gap)" }}>
           <div className="home-packs-grid">
             {bestsellers.map((pack) => (
-              <PackCard key={pack.id} pack={pack} onAddToCart={handleAddToCart} onCustomize={(p) => navigate(`/packs/${p.id}?customize=1`)} />
+              <PackCard key={pack.id} pack={pack} onAddToCart={handleAddToCart} onCustomize={handleCustomize} />
             ))}
           </div>
           {packs.length > 8 && (
