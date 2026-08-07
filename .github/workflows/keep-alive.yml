@@ -1,18 +1,34 @@
 name: Keep backend awake
 
 # Render's free tier sleeps the service after ~15 minutes of no traffic,
-# causing a ~30s cold-start hang for whoever visits next. Pinging it every
-# 10 minutes, around the clock, keeps it warm without paying for a
+# causing a ~25s cold-start hang for whoever visits next. Pinging it every
+# 5 minutes, around the clock, keeps it warm without paying for an
 # always-on instance. GitHub's own client-side keep-alive ping only runs
 # while a browser tab is open, so it can't cover overnight/low-traffic gaps.
+#
+# GitHub Actions' `schedule` trigger is a best-effort queue, not a real
+# cron daemon -- on low-activity repos it can silently slip 30-60+ minutes
+# past its nominal interval (observed firsthand: a run scheduled every 10
+# min actually landed 43 min after the previous one), which is long enough
+# for Render to sleep the instance anyway. Running every 5 min instead of
+# 10 buys more chances to land inside the 15-min window despite the slip,
+# but a free external uptime monitor (UptimeRobot, cron-job.org) that hits
+# this same URL on its own reliable schedule is the sturdier fix and is
+# recommended as a second, independent pinger alongside this workflow.
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping backend health endpoint
-        run: curl -sf --max-time 60 https://nahidperfume-backend.onrender.com/api/ping
+      # /api/health (not /api/ping) deliberately -- it runs a real `SELECT 1`,
+      # which keeps a connection in the backend's DB pool warm too. /api/ping
+      # alone kept the Node process awake but let every pooled DB connection
+      # expire (60s idle timeout), so real visitors still paid a fresh
+      # MySQL-connect-to-Aiven cost on their first request even on an
+      # otherwise-warm dyno.
+      - name: Ping backend health endpoint (keeps DB pool warm too)
+        run: curl -sf --max-time 60 https://nahidperfume-backend.onrender.com/api/health

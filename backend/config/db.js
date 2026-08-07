@@ -15,7 +15,15 @@ const pool = mysql.createPool({
   // Aiven MySQL plan.
   connectionLimit: 5,
   maxIdle: 2,
-  idleTimeout: 60000,
+  // Was 60s, which meant every pooled connection got recycled between
+  // almost any two requests -- so even a warm Render dyno paid a fresh
+  // MySQL-connect-to-Aiven round trip (TLS handshake + auth) on nearly
+  // every first query of a burst, adding real, measured latency on top of
+  // Render's own cold start. 4 minutes keeps a connection alive comfortably
+  // within the keep-alive ping interval (now every 5 min, see
+  // .github/workflows/keep-alive.yml) without outliving a typical managed
+  // MySQL server-side wait_timeout.
+  idleTimeout: 240000,
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
