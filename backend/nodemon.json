@@ -1,0 +1,13 @@
+{
+  "watch": ["app.js", "server.js", "config", "controllers", "db", "middleware", "routes", "services", "utils"],
+  "ext": "js,json",
+  "ignore": [
+    "database/backups/**",
+    "database/migrations/**",
+    "database/seeds/**",
+    "database/scripts/**",
+    "*.log",
+    "node_modules/**"
+  ],
+  "delay": 600
+}

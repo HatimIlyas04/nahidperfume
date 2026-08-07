@@ -25,21 +25,19 @@ export function LanguageProvider({ children }) {
       if (!document.getElementById("nahid-arabic-style")) {
         const style = document.createElement("style");
         style.id = "nahid-arabic-style";
+        // Applied broadly (not a per-class list) so every current and future
+        // page automatically gets the Arabic-appropriate typeface — a
+        // per-component class list silently misses new pages otherwise.
         style.textContent = `
-          [lang="ar"] body,
-          [lang="ar"] .nb-root,
-          [lang="ar"] .nb-ann,
-          [lang="ar"] .co-page {
+          [dir="rtl"] body, [dir="rtl"] input, [dir="rtl"] textarea, [dir="rtl"] select, [dir="rtl"] button {
             font-family: 'Cairo', 'DM Sans', sans-serif;
           }
-          [lang="ar"] .co-title,
-          [lang="ar"] .co-success-title,
-          [lang="ar"] .co-empty-title,
-          [lang="ar"] .co-sum-head-title,
-          [lang="ar"] .co-tot-grand-val {
+          [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5 {
             font-family: 'Cairo', Georgia, serif;
             letter-spacing: 0;
           }
+          [dir="rtl"] .adm-shell { direction: ltr; }
+          [dir="rtl"] .adm-shell [lang="ar"], [dir="rtl"] .adm-shell { unicode-bidi: normal; }
         `;
         document.head.appendChild(style);
       }

@@ -404,10 +404,23 @@ const FOOTER_CSS = `
 .nf-credit-link {
   color: var(--nf-gold);
   text-decoration: none;
-  font-weight: 600;
-  transition: color 0.2s;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  position: relative;
+  transition: color 0.3s ease, letter-spacing 0.3s ease, text-shadow 0.3s ease;
 }
-.nf-credit-link:hover { color: rgba(201,169,110,0.7); }
+.nf-credit-link::after {
+  content: '';
+  position: absolute; left: 0; bottom: -2px; width: 0; height: 1px;
+  background: var(--nf-gold);
+  transition: width 0.35s cubic-bezier(0.16,1,0.3,1);
+}
+.nf-credit-link:hover {
+  color: #F0DDA8;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 12px rgba(201,169,110,0.5);
+}
+.nf-credit-link:hover::after { width: 100%; }
 
 .nf-bottom-right {
   display: flex;
@@ -636,8 +649,8 @@ const NahidFooter = () => {
             <span className="nf-credit">
               <span className="nf-credit-heart">♥</span>
               Créé par{' '}
-              <a href="https://www.instagram.com/ilyas_hatim_10/" target="_blank" rel="noopener" className="nf-credit-link">
-                Hatim Ilyas Viti
+              <a href="https://www.instagram.com/viti.fy?igsh=amYwaHIzMnhlYTZh&utm_source=qr" target="_blank" rel="noopener noreferrer" className="nf-credit-link">
+                VITIFY
               </a>
             </span>
           </div>

@@ -48,13 +48,13 @@ export default function Reviews() {
     if (!validate()) return;
     setSending(true);
     try {
-      await axios.post("/api/reviews", form);
+      await axios.post("/api/feedbacks", form);
       setDone(true);
     } catch (err) {
       const msg = err.response?.data?.error
         || (err.response ? `Erreur ${err.response.status}` : "Impossible de joindre le serveur");
       Toast.fire({ icon: "error", title: msg });
-      console.error("[POST /api/reviews]", err.response?.status, err.response?.data);
+      console.error("[POST /api/feedbacks]", err.response?.status, err.response?.data);
     } finally {
       setSending(false);
     }

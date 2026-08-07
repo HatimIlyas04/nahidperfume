@@ -45,7 +45,7 @@ const ReviewsSection = () => {
   const perPage = 3;
 
   useEffect(() => {
-    axios.get("/api/reviews")
+    axios.get("/api/feedbacks")
       .then(r => setReviews(r.data.length > 0 ? r.data : FALLBACK))
       .catch(() => setReviews(FALLBACK))
       .finally(() => setLoading(false));
