@@ -9,6 +9,14 @@ const { pool } = require('./config/db');
 const httpServer = http.createServer(app);
 socketService.init(httpServer);
 
+// Render (and most reverse proxies) sit in front of this server with their
+// own idle-connection timeout. If our keep-alive timeout is shorter than
+// theirs, the proxy can forward a request on a socket we've already begun
+// closing, producing an intermittent 502. Keeping ours comfortably longer
+// avoids that race — a well-known gotcha for Node behind any LB/proxy.
+httpServer.keepAliveTimeout = 65000;
+httpServer.headersTimeout = 66000;
+
 httpServer.listen(env.port, () => {
   // eslint-disable-next-line no-console
   console.log(`[server] Nahid Perfumes API listening on port ${env.port} (${env.nodeEnv})`);

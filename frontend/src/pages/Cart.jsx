@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import { FiTrash2, FiShoppingBag, FiArrowRight, FiTag } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
+import { cldResize } from "../utils/cloudinary";
 import { couponsApi } from "../services/api";
 import NahidFooter from "../components/NahidFooter";
 
@@ -111,14 +112,14 @@ export default function Cart() {
             {cart.map((item) => (
               <div className="ct-item" key={item.cartItemId}>
                 <div className="ct-item-img">
-                  <img src={item.image || "/nahid1.png"} alt={item.title} loading="lazy" />
+                  <img src={cldResize(item.image, 200) || "/nahid1.png"} alt={item.title} loading="lazy" />
                 </div>
                 <div className="ct-item-info">
                   <div className="ct-item-title">{item.title}</div>
                   <div className="ct-item-type">{TYPE_LABEL[item.item_type]}</div>
                   <div className="ct-item-perfumes">
                     {item.perfumes.map((p, i) => (
-                      <img key={i} src={p.image_url || "/nahid1.png"} alt={p.name} title={p.name} loading="lazy" />
+                      <img key={i} src={cldResize(p.image_url, 60) || "/nahid1.png"} alt={p.name} title={p.name} loading="lazy" />
                     ))}
                   </div>
                 </div>

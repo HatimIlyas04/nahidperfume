@@ -12,7 +12,11 @@ async function create(req, res) {
 
 async function track(req, res) {
   const orderNumber = requireString(req.query.order_number, 'order_number', { maxLength: 20 });
-  const phone = requireString(req.query.phone, 'phone', { maxLength: 20 });
+  const rawPhone = requireString(req.query.phone, 'phone', { maxLength: 20 });
+  // Matches the normalization applied to the phone at checkout (createOrder),
+  // so "06 12 34 56 78" typed while tracking still matches the cleaned
+  // digits stored for the order.
+  const phone = rawPhone.replace(/[\s.-]/g, '');
   const order = await orderService.trackOrder(orderNumber, phone);
   return success(res, order);
 }

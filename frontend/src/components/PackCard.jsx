@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { FiEye, FiSliders, FiShoppingBag } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
+import { cldResize } from "../utils/cloudinary";
 
 const CSS = `
 .pack-card {
@@ -116,7 +117,7 @@ export default function PackCard({ pack, onAddToCart, onCustomize, badge }) {
   return (
     <div className="pack-card">
       <Link to={`/packs/${pack.id}`} className="pack-card-media">
-        <img src={pack.cover_image || "/nahid1.png"} alt={pack.title} loading="lazy" />
+        <img src={cldResize(pack.cover_image, 400) || "/nahid1.png"} alt={pack.title} loading="lazy" />
         {badgeLabel && <span className="pack-card-badge">{badgeLabel}</span>}
         <div className="pack-card-quick" onClick={(e) => e.preventDefault()}>
           <button
@@ -140,7 +141,7 @@ export default function PackCard({ pack, onAddToCart, onCustomize, badge }) {
           <div className="pack-card-thumbs">
             {perfumes.slice(0, 4).map((p) => (
               <div className="pack-card-thumb" key={p.perfume_id || p.id}>
-                <img src={p.image_url} alt={p.name} loading="lazy" />
+                <img src={cldResize(p.image_url, 80)} alt={p.name} loading="lazy" />
               </div>
             ))}
           </div>

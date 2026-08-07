@@ -12,6 +12,81 @@ api.interceptors.request.use((config) => {
 
 const unwrap = (res) => res.data.data;
 
+// ── Resilience layer: survives a sleeping Render free-tier backend ─────
+// Generous enough for a cold container (measured ~26s in production) to
+// finish waking up within the first attempt. Writes (POST/PUT/DELETE) get
+// this same generous single-attempt timeout but are never auto-retried —
+// retrying a non-idempotent request (e.g. checkout) risks a duplicate order.
+const FIRST_ATTEMPT_TIMEOUT = 40000;
+// A retry only happens after the first attempt already failed, so by then
+// the backend has very likely finished waking up — short timeouts are fine.
+const RETRY_TIMEOUT = 8000;
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY = 1000;
+
+api.defaults.timeout = FIRST_ATTEMPT_TIMEOUT;
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Retries GET-only, and only on network errors/timeouts or 5xx — never on 4xx (those won't fix themselves). */
+async function withRetry(requestFn) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await requestFn(attempt === 0 ? FIRST_ATTEMPT_TIMEOUT : RETRY_TIMEOUT);
+    } catch (err) {
+      const status = err.response?.status;
+      const isRetryable = !err.response || status >= 500;
+      if (!isRetryable || attempt >= MAX_RETRIES) throw err;
+      await wait(RETRY_BASE_DELAY * 2 ** attempt);
+    }
+  }
+}
+
+// Public, infrequently-changing endpoints — safe to dedupe/short-cache
+// client-side on top of the backend's own Cache-Control headers.
+const CACHEABLE_PREFIXES = [
+  "/api/packs", "/api/perfumes", "/api/faq", "/api/testimonials",
+  "/api/banners", "/api/homepage-sections", "/api/settings", "/api/custom-pack-settings",
+];
+const CACHE_TTL_MS = 30000;
+const responseCache = new Map(); // key -> { response, expiresAt }
+const inFlightRequests = new Map(); // key -> Promise (dedupes concurrent identical calls)
+
+function isCacheableUrl(url) {
+  return CACHEABLE_PREFIXES.some((p) => url.startsWith(p));
+}
+function requestKey(url, config) {
+  return `${url}?${JSON.stringify(config?.params || {})}`;
+}
+
+const rawGet = api.get.bind(api);
+
+/**
+ * Drop-in replacement for axios `.get()`: retries transient failures with
+ * backoff, dedupes concurrent identical requests, and short-caches
+ * cacheable public endpoints — all transparent to existing call sites.
+ */
+api.get = function resilientGet(url, config = {}) {
+  const cacheable = isCacheableUrl(url);
+  const key = requestKey(url, config);
+
+  if (cacheable) {
+    const cached = responseCache.get(key);
+    if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.response);
+    if (inFlightRequests.has(key)) return inFlightRequests.get(key);
+  }
+
+  const promise = withRetry((timeout) => rawGet(url, { ...config, timeout }))
+    .then((res) => {
+      if (cacheable) responseCache.set(key, { response: res, expiresAt: Date.now() + CACHE_TTL_MS });
+      return res;
+    })
+    .finally(() => inFlightRequests.delete(key));
+
+  if (cacheable) inFlightRequests.set(key, promise);
+  return promise;
+};
+
 /** Stable per-browser identity for wishlist, with no login system. */
 export function getDeviceToken() {
   let token = localStorage.getItem("nahid_device_token");

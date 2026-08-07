@@ -63,11 +63,19 @@ app.use(
   })
 );
 
+// Ultra-light liveness probe for uptime monitors (UptimeRobot, Better
+// Stack) and the keep-alive cron: registered before the rate limiter and
+// body parser so it's never rate-limited or slowed down by them, touches
+// no DB/auth/session/business logic, and always answers in well under
+// 50ms even while the rest of the app is under load or the DB is slow.
+app.get('/api/ping', (req, res) => res.json({ status: 'ok' }));
+
 app.use(express.json({ limit: '2mb' }));
 app.use('/api', globalLimiter);
 
 // ── Infra ──────────────────────────────────────────────────
-app.get('/api/ping', (req, res) => res.json({ ok: true }));
+// Deeper check that DOES touch the DB — for diagnosing DB connectivity,
+// not for uptime monitors (use /api/ping for those).
 app.get(
   '/api/health',
   asyncHandler(async (req, res) => {

@@ -3,6 +3,7 @@ import { FiSearch, FiCheck, FiPackage, FiTruck, FiHome, FiX } from "react-icons/
 import { ordersApi } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import NahidFooter from "../components/NahidFooter";
+import SEO from "../components/SEO";
 
 const CSS = `
 .ot-wrap { max-width: 720px; margin: 0 auto; padding: 60px 32px 100px; }
@@ -72,6 +73,11 @@ export default function OrderTracking() {
 
   return (
     <>
+      <SEO
+        title={t("orderTrackingPage.title")}
+        description={t("orderTrackingPage.subtitle")}
+        path="/track-order"
+      />
       <div className="ot-wrap">
         <h1 className="ot-title">{t("orderTrackingPage.title")}</h1>
         <p className="ot-sub">{t("orderTrackingPage.subtitle")}</p>

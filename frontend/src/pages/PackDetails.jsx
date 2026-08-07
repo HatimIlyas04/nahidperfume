@@ -5,6 +5,7 @@ import { FiHeart, FiShare2, FiSliders, FiShoppingBag, FiRefreshCw, FiArrowLeft }
 import { packsApi, perfumesApi, wishlistApi } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
+import { cldResize } from "../utils/cloudinary";
 import PerfumeModal from "../components/PerfumeModal";
 import ReplacePerfumeModal from "../components/ReplacePerfumeModal";
 import NahidFooter from "../components/NahidFooter";
@@ -194,7 +195,7 @@ export default function PackDetails() {
 
         <div className="pd-hero">
           <div className="pd-media">
-            <img src={pack.cover_image || "/nahid1.png"} alt={pack.title} />
+            <img src={cldResize(pack.cover_image, 700) || "/nahid1.png"} alt={pack.title} />
           </div>
           <div className="pd-info">
             <h1 className="pd-title">{pack.title}</h1>
@@ -235,7 +236,7 @@ export default function PackDetails() {
                 <div className={`pd-perfume-card${changed ? " changed" : ""}`} key={slot.position}>
                   {changed && <span className="pd-changed-tag">{t("packDetails.changedTag")}</span>}
                   <button className="pd-perfume-img-btn" onClick={() => setPreviewPerfume(slot)}>
-                    <img src={slot.image_url || "/nahid1.png"} alt={slot.name} loading="lazy" />
+                    <img src={cldResize(slot.image_url, 300) || "/nahid1.png"} alt={slot.name} loading="lazy" />
                   </button>
                   <div className="pd-perfume-body">
                     <div className="pd-perfume-name">{slot.name}</div>

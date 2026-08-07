@@ -319,18 +319,22 @@ export default function Navbar({ isAdminLoggedIn, setIsAdminLoggedIn }) {
 
   useEffect(() => {
     if (!query || query.length < 2) { setLiveResults([]); return; }
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`${axios.defaults.baseURL}/api/packs`);
+        const res = await fetch(`${axios.defaults.baseURL}/api/packs`, { signal: controller.signal });
         const { data } = await res.json();
         const q = query.trim().toLowerCase();
         const matches = (Array.isArray(data) ? data : []).filter((p) => p.title.toLowerCase().includes(q));
         setLiveResults(matches.slice(0, 5));
-      } catch { setLiveResults([]); }
+      } catch (err) { if (err.name !== "AbortError") setLiveResults([]); }
       finally { setSearching(false); }
     }, 280);
-    return () => clearTimeout(timer);
+    // Cancels both the pending debounce and any in-flight fetch from a
+    // previous keystroke, so a slow older response can never overwrite
+    // fresher results (the classic search-race-condition bug).
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [query]);
 
   const handleLogout = () => {

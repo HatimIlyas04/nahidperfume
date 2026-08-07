@@ -13,7 +13,7 @@ const whatsappService = require('./whatsappService');
 const emailService = require('./emailService');
 const settingsRepo = require('../db/settingsRepo');
 const AppError = require('../utils/AppError');
-const { requireString, toInt } = require('../utils/validators');
+const { requireString, requireMoroccanPhone, toInt } = require('../utils/validators');
 
 const VALID_STATUSES = ['pending', 'confirmed', 'preparing', 'shipping', 'delivered', 'cancelled'];
 
@@ -97,7 +97,7 @@ async function computeShipping(subtotal) {
 async function createOrder(payload) {
   const customerInput = payload.customer || {};
   const name = requireString(customerInput.name, 'Customer name', { maxLength: 255 });
-  const phone = requireString(customerInput.phone, 'Phone number', { maxLength: 20, minLength: 6 });
+  const phone = requireMoroccanPhone(customerInput.phone);
   const address = requireString(customerInput.address, 'Address', { maxLength: 2000 });
   const city = customerInput.city ? requireString(customerInput.city, 'City', { maxLength: 100 }) : null;
   const email = customerInput.email ? requireString(customerInput.email, 'Email', { maxLength: 255 }) : null;

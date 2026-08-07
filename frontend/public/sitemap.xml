@@ -5,5 +5,7 @@
   <url><loc>https://www.nahidperfumes.com/build-your-pack</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://www.nahidperfumes.com/notre-histoire</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://www.nahidperfumes.com/reviews</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://www.nahidperfumes.com/faq</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
+  <url><loc>https://www.nahidperfumes.com/contact</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
   <url><loc>https://www.nahidperfumes.com/track-order</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
 </urlset>

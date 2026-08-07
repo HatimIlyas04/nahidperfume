@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FiX, FiSearch, FiCheck } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
+import { cldResize } from "../utils/cloudinary";
 
 const CSS = `
 .rp-modal-overlay {
@@ -93,7 +94,7 @@ export default function ReplacePerfumeModal({ perfumes, excludeIds = [], current
               className={`rp-item${p.id === currentPerfumeId ? " selected" : ""}`}
               onClick={() => onSelect(p)}
             >
-              <img className="rp-item-img" src={p.image_url || "/nahid1.png"} alt={p.name} loading="lazy" />
+              <img className="rp-item-img" src={cldResize(p.image_url, 100) || "/nahid1.png"} alt={p.name} loading="lazy" />
               <div>
                 <div className="rp-item-name">{p.name}</div>
                 <div className="rp-item-cat">{p.category}{p.gender ? ` · ${p.gender}` : ""}</div>

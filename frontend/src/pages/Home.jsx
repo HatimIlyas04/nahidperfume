@@ -8,6 +8,7 @@ import {
 import { packsApi, faqApi, bannersApi } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
+import { cldResize } from "../utils/cloudinary";
 import PackCard from "../components/PackCard";
 import ReviewsSection from "../components/ReviewsSection";
 import TrustBadges from "../components/TrustBadges";
@@ -226,7 +227,7 @@ export default function Home() {
           <div className="home-ugc-grid">
             {ugcItems.map((item) => (
               <a className="home-ugc-item" href={item.link_url || "#"} key={item.id} target={item.link_url ? "_blank" : undefined} rel="noreferrer">
-                <img src={item.image_url} alt={item.title || "Nahid Perfumes"} loading="lazy" />
+                <img src={cldResize(item.image_url, 400)} alt={item.title || "Nahid Perfumes"} loading="lazy" />
                 {item.link_url && <div className="home-ugc-overlay"><FiPlay size={22} /></div>}
               </a>
             ))}

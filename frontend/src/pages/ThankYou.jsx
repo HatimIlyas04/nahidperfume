@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import { FiCheck, FiPlus, FiArrowRight } from "react-icons/fi";
 import { packsApi, ordersApi } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
+import { cldResize } from "../utils/cloudinary";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
 
@@ -90,7 +91,7 @@ export default function ThankYou() {
           <div className="ty-upsell">
             <span className="ty-upsell-badge">{t("thankYou.upsellBadge")}</span>
             <div className="ty-upsell-inner">
-              <img className="ty-upsell-img" src={offer.cover_image || "/nahid1.png"} alt={offer.title} />
+              <img className="ty-upsell-img" src={cldResize(offer.cover_image, 200) || "/nahid1.png"} alt={offer.title} />
               <div>
                 <div className="ty-upsell-title">{t("thankYou.upsellAddTitle")} {offer.title}</div>
                 <div style={{ fontSize: "0.8rem", color: "var(--text-light)" }}>{t("thankYou.upsellOnly")}</div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import NahidFooter from "../components/NahidFooter";
+import SEO from "../components/SEO";
 
 export const AVATARS = [
   { id: "bloom",    icon: "🌸", bg: "linear-gradient(135deg,#FECDD3,#FB7185)", label: "Bloom"    },
@@ -62,6 +63,11 @@ export default function Reviews() {
 
   return (
     <>
+      <SEO
+        title="Avis Clients"
+        description="Découvrez les avis de nos clients sur les packs de parfums Nahid Perfumes et partagez votre propre expérience."
+        path="/reviews"
+      />
       <style>{CSS}</style>
 
       {/* ── HERO ── */}

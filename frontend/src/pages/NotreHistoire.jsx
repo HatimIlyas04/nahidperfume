@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import SEO from "../components/SEO";
 import NahidFooter from "../components/NahidFooter";
 
 /* ─── Inject CSS once ─────────────────────────────────── */
@@ -1044,6 +1045,11 @@ const NotreHistoire = () => {
 
   return (
     <div className="nh-page">
+      <SEO
+        title="Notre Histoire"
+        description="Découvrez l'histoire de Nahid Perfumes : ingrédients nobles, création artisanale, et une passion pour la haute parfumerie inspirée du Maroc, du Golfe et de la France."
+        path="/notre-histoire"
+      />
 
       {/* ══════════════════════════════════════
           HERO

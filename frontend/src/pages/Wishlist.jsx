@@ -5,8 +5,10 @@ import { FiHeart, FiX, FiShoppingBag } from "react-icons/fi";
 import { wishlistApi } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
+import { cldResize } from "../utils/cloudinary";
 import PerfumeModal from "../components/PerfumeModal";
 import NahidFooter from "../components/NahidFooter";
+import SEO from "../components/SEO";
 
 const CSS = `
 .wl-wrap { max-width: var(--container-max); margin: 0 auto; padding: 48px 32px 100px; }
@@ -75,6 +77,7 @@ export default function Wishlist() {
 
   return (
     <>
+      <SEO title="Mes Favoris" path="/wishlist" noindex />
       <div className="wl-wrap">
         <h1 className="wl-title">{t("wishlistPage.title")}</h1>
         <p className="wl-sub">{t("wishlistPage.subtitle")}</p>
@@ -97,7 +100,7 @@ export default function Wishlist() {
                     <div className="wl-card" key={pack.id}>
                       <button className="wl-card-remove" onClick={() => removePack(pack.id)}><FiX size={14} /></button>
                       <Link to={`/packs/${pack.id}`} className="wl-card-img">
-                        <img src={pack.cover_image || "/nahid1.png"} alt={pack.title} loading="lazy" />
+                        <img src={cldResize(pack.cover_image, 300) || "/nahid1.png"} alt={pack.title} loading="lazy" />
                       </Link>
                       <div className="wl-card-body">
                         <div className="wl-card-name">{pack.title}</div>
@@ -123,7 +126,7 @@ export default function Wishlist() {
                     <div className="wl-card" key={perfume.id}>
                       <button className="wl-card-remove" onClick={() => removePerfume(perfume.id)}><FiX size={14} /></button>
                       <div className="wl-card-img" onClick={() => setPreviewPerfume(perfume)}>
-                        <img src={perfume.image_url || "/nahid1.png"} alt={perfume.name} loading="lazy" />
+                        <img src={cldResize(perfume.image_url, 300) || "/nahid1.png"} alt={perfume.name} loading="lazy" />
                       </div>
                       <div className="wl-card-body">
                         <div className="wl-card-name">{perfume.name}</div>

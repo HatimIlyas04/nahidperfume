@@ -13,6 +13,8 @@ const CSS = `
 .fp-a { padding: 0 0 22px; color: var(--text-light); font-size: 0.9rem; line-height: 1.65; max-width: 680px; }
 .fp-plus { font-size: 1.4rem; color: var(--primary); transition: transform 0.25s; flex-shrink: 0; margin-left: 16px; }
 .fp-item.open .fp-plus { transform: rotate(45deg); }
+.fp-skel { height: 58px; border-radius: 10px; margin: 6px 0; background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: fp-skel-pulse 1.4s infinite; }
+@keyframes fp-skel-pulse { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 `;
 
 function injectCSS() {
@@ -29,10 +31,11 @@ export default function Faq() {
   injectCSS();
   const { t } = useLanguage();
   const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(null);
 
   useEffect(() => {
-    faqApi.listActive().then(setFaqs).catch(() => setFaqs([]));
+    faqApi.listActive().then(setFaqs).catch(() => setFaqs([])).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -42,7 +45,11 @@ export default function Faq() {
         <h1 className="fp-title">{t("faqPage.title")}</h1>
         <p className="fp-sub">{t("faqPage.subtitle")}</p>
 
-        {faqs.length === 0 ? (
+        {loading ? (
+          <>
+            {[0, 1, 2, 3].map((i) => <div className="fp-skel" key={i} />)}
+          </>
+        ) : faqs.length === 0 ? (
           <p style={{ textAlign: "center", color: "var(--text-muted)" }}>{t("faqPage.empty")}</p>
         ) : (
           faqs.map((f) => (

@@ -9,11 +9,18 @@ const pool = mysql.createPool({
   database: env.db.name,
   ssl: { rejectUnauthorized: false },
   waitForConnections: true,
-  connectionLimit: 10,
+  // A single Render free-tier instance (512MB RAM, one process) never needs
+  // 10 concurrent DB connections — 5 comfortably covers this app's request
+  // volume while staying well under the connection cap of a shared/free
+  // Aiven MySQL plan.
+  connectionLimit: 5,
+  maxIdle: 2,
+  idleTimeout: 60000,
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
 });
+
 
 /**
  * Runs `fn` with a single connection wrapped in a transaction.
