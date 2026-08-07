@@ -8,6 +8,7 @@ import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar";
 import WhatsAppButton from "./components/WhatsAppButton";
 import PageLoader from "./components/PageLoader";
+import { API_BASE_URL } from "./services/api";
 
 const Home            = lazy(() => import("./pages/Home"));
 const PacksListing    = lazy(() => import("./pages/PacksListing"));
@@ -24,12 +25,14 @@ const Contact         = lazy(() => import("./pages/Contact"));
 const Faq              = lazy(() => import("./pages/Faq"));
 const ThankYou         = lazy(() => import("./pages/ThankYou"));
 
-axios.defaults.baseURL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? "http://localhost:5000" : "https://nahidperfume-backend.onrender.com");
+// Kept for any other code that reads the global default directly — the
+// single source of truth is API_BASE_URL in services/api.js, computed
+// independently of module import order (see the comment there for why
+// that independence matters).
+axios.defaults.baseURL = API_BASE_URL;
 
 // Keep backend awake (ping every 14 min)
-setInterval(() => axios.get("/api/ping").catch(() => {}), 14 * 60 * 1000);
+setInterval(() => axios.get(`${API_BASE_URL}/api/ping`).catch(() => {}), 14 * 60 * 1000);
 
 function StorefrontChrome({ children }) {
   const location = useLocation();

@@ -7,8 +7,7 @@ import {
   FiStar, FiHelpCircle, FiTag, FiHome, FiSettings, FiShield, FiFileText,
   FiBell, FiMoon, FiSun, FiLogOut, FiMenu, FiX,
 } from "react-icons/fi";
-import axios from "axios";
-import { adminNotificationsApi } from "../../services/api";
+import { adminNotificationsApi, API_BASE_URL } from "../../services/api";
 import { playNotificationSound } from "../utils/notifSound";
 
 const NAV = [
@@ -56,7 +55,7 @@ export default function AdminLayout({ admin, onLogout, children }) {
     const token = localStorage.getItem("adminToken");
     if (!token) return undefined;
 
-    const socket = io(axios.defaults.baseURL, { auth: { token }, transports: ["websocket", "polling"] });
+    const socket = io(API_BASE_URL, { auth: { token }, transports: ["websocket", "polling"] });
 
     socket.on("new_notification", (notification) => {
       setNotifData((d) => ({

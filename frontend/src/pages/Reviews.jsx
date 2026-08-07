@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import Swal from "sweetalert2";
+import { feedbacksApi } from "../services/api";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
 
@@ -49,7 +49,7 @@ export default function Reviews() {
     if (!validate()) return;
     setSending(true);
     try {
-      await axios.post("/api/feedbacks", form);
+      await feedbacksApi.submit(form);
       setDone(true);
     } catch (err) {
       const msg = err.response?.data?.error

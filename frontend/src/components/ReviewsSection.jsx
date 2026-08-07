@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiStar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import axios from "axios";
+import { feedbacksApi } from "../services/api";
 import { AVATARS } from "../pages/Reviews";
 
 const FALLBACK = [
@@ -45,8 +45,8 @@ const ReviewsSection = () => {
   const perPage = 3;
 
   useEffect(() => {
-    axios.get("/api/feedbacks")
-      .then(r => setReviews(r.data.length > 0 ? r.data : FALLBACK))
+    feedbacksApi.listApproved()
+      .then(data => setReviews(Array.isArray(data) && data.length > 0 ? data : FALLBACK))
       .catch(() => setReviews(FALLBACK))
       .finally(() => setLoading(false));
   }, []);

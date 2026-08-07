@@ -1,10 +1,9 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import axios from "axios";
 import { useWishlist } from "../context/WishlistContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useCart } from "../context/CartContext";
-import { settingsApi } from "../services/api";
+import { settingsApi, API_BASE_URL } from "../services/api";
 import LanguageSelector from "./LanguageSelector";
 import CountdownTimer from "./CountdownTimer";
 import {
@@ -323,7 +322,7 @@ export default function Navbar({ isAdminLoggedIn, setIsAdminLoggedIn }) {
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`${axios.defaults.baseURL}/api/packs`, { signal: controller.signal });
+        const res = await fetch(`${API_BASE_URL}/api/packs`, { signal: controller.signal });
         const { data } = await res.json();
         const q = query.trim().toLowerCase();
         const matches = (Array.isArray(data) ? data : []).filter((p) => p.title.toLowerCase().includes(q));

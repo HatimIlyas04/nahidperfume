@@ -1,7 +1,21 @@
 import axios from "axios";
 
+// Computed here, independently of any other module — this must NOT depend
+// on axios.defaults.baseURL having already been set elsewhere (e.g. by
+// App.jsx). ES modules evaluate all of a module's imports before running
+// its own body, so whichever module happens to import this file first
+// (transitively, however deep) determines this value. That previously broke
+// in production: Navbar.jsx (rendered eagerly, outside the lazy/Suspense
+// boundary) imports this module, so this file evaluated — and froze
+// baseURL:"" via axios.create() — before App.jsx's own body ever ran.
+// Vite's dev-only proxy (server.proxy['/api'] in vite.config.js) masked it
+// completely in local dev, since relative "/api/..." calls still resolved.
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "http://localhost:5000" : "https://nahidperfume-backend.onrender.com");
+
 export const api = axios.create({
-  baseURL: axios.defaults.baseURL || "",
+  baseURL: API_BASE_URL,
 });
 
 api.interceptors.request.use((config) => {
