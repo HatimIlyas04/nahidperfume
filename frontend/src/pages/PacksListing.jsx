@@ -17,12 +17,18 @@ const CSS = `
 .pl-search { display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--border); border-radius: var(--radius-full); padding: 10px 18px; flex: 1; min-width: 220px; }
 .pl-search input { border: none; outline: none; flex: 1; font-size: 0.88rem; }
 .pl-sort { border: 1.5px solid var(--border); border-radius: var(--radius-full); padding: 10px 18px; font-size: 0.82rem; background: white; }
-.pl-grid { max-width: var(--container-max); margin: 0 auto; padding: 28px 32px 100px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+/* Premium catalog grid: a controlled 3/2/1 column layout (not auto-fill),
+   so cards keep a consistent, comfortable size instead of stretching to
+   fill whatever width happens to be available. */
+.pl-grid { max-width: var(--container-max); margin: 0 auto; padding: 28px 32px 100px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+@media (max-width: 1024px) {
+  .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+}
 @media (max-width: 640px) {
-  .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 20px 16px 80px; }
+  .pl-grid { grid-template-columns: 1fr; gap: 16px; padding: 20px 16px 80px; }
 }
 .pl-empty { text-align: center; padding: 80px 20px; color: var(--text-muted); }
-.pl-skel { border-radius: var(--radius-md); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: skel 1.4s infinite; aspect-ratio: 1/1.35; }
+.pl-skel { border-radius: var(--radius-md); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: skel 1.4s infinite; aspect-ratio: 1/1.15; }
 @keyframes skel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 `;
 
@@ -105,7 +111,7 @@ export default function PacksListing() {
 
       {loading ? (
         <div className="pl-grid">
-          {[0, 1, 2, 3].map((i) => <div className="pl-skel" key={i} />)}
+          {[0, 1, 2, 3, 4, 5].map((i) => <div className="pl-skel" key={i} />)}
         </div>
       ) : visible.length === 0 ? (
         <div className="pl-empty">{t("packsPage.empty")}</div>

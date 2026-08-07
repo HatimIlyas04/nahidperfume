@@ -35,11 +35,16 @@ const CSS = `
 .home-section-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); }
 .home-section-title { font-family: var(--font-display); font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 500; margin-top: 8px; }
 .home-section-sub { color: var(--text-light); margin-top: 8px; max-width: 480px; }
-.home-packs-grid { max-width: var(--container-max); margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-@media (max-width: 640px) {
-  .home-packs-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 16px; }
+/* Same controlled 3/2/1 grid as the packs listing page — a fixed column
+   count keeps cards a consistent, premium size instead of stretching. */
+.home-packs-grid { max-width: var(--container-max); margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+@media (max-width: 1024px) {
+  .home-packs-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
 }
-.home-pack-skel { border-radius: var(--radius-md); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: home-skel 1.4s infinite; aspect-ratio: 1/1.35; }
+@media (max-width: 640px) {
+  .home-packs-grid { grid-template-columns: 1fr; gap: 16px; padding: 0 16px; }
+}
+.home-pack-skel { border-radius: var(--radius-md); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: home-skel 1.4s infinite; aspect-ratio: 1/1.15; }
 @keyframes home-skel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
 .home-cta-band {
@@ -169,7 +174,7 @@ export default function Home() {
       {packsLoading ? (
         <section style={{ paddingBottom: "var(--section-gap)" }}>
           <div className="home-packs-grid">
-            {[0, 1, 2, 3].map((i) => <div className="home-pack-skel" key={i} />)}
+            {[0, 1, 2, 3, 4, 5].map((i) => <div className="home-pack-skel" key={i} />)}
           </div>
         </section>
       ) : bestsellers.length > 0 ? (

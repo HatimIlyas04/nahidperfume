@@ -18,7 +18,7 @@ const CSS = `
   animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1);
 }
 .pf-modal-close {
-  position: absolute; top: 16px; right: 16px; z-index: 2;
+  position: absolute; top: 16px; inset-inline-end: 16px; z-index: 2;
   width: 36px; height: 36px; border-radius: 50%;
   background: rgba(255,255,255,0.9); border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;

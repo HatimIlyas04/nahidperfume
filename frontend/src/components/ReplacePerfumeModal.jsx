@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FiX, FiSearch, FiCheck } from "react-icons/fi";
+import { FiX, FiSearch, FiCheck, FiArrowRight } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 
@@ -18,23 +18,36 @@ const CSS = `
 }
 .rp-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 22px 26px 14px; }
 .rp-modal-title { font-family: var(--font-display); font-size: 1.3rem; font-weight: 500; color: var(--secondary); }
-.rp-modal-close { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--gray-100); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--secondary); transition: background 0.2s; }
+.rp-modal-close { width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--gray-100); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--secondary); transition: background 0.2s; flex-shrink: 0; }
 .rp-modal-close:hover { background: var(--primary); color: white; }
+
+/* "Current -> new" framing so it's unambiguous this replaces one perfume
+   inside the pack, not a standalone purchase. */
+.rp-current { display: flex; align-items: center; gap: 12px; margin: 0 26px 16px; padding: 12px 14px; background: var(--background); border-radius: var(--radius-md); }
+.rp-current-thumb { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: var(--white); border: 1.5px solid var(--border-light); flex-shrink: 0; }
+.rp-current-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.rp-current-text { min-width: 0; }
+.rp-current-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.rp-current-name { font-size: 0.85rem; font-weight: 600; color: var(--secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-current-arrow { color: var(--text-muted); flex-shrink: 0; }
+[dir="rtl"] .rp-current-arrow { transform: scaleX(-1); }
+
 .rp-modal-search { padding: 0 26px 14px; }
+.rp-choose-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-light); margin-bottom: 10px; }
 .rp-modal-search-inner { display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--border); border-radius: var(--radius-full); padding: 10px 16px; }
-.rp-modal-search-inner input { border: none; outline: none; flex: 1; font-size: 0.86rem; font-family: var(--font-body); }
+.rp-modal-search-inner input { border: none; outline: none; flex: 1; font-size: 0.86rem; font-family: var(--font-body); background: none; }
 .rp-modal-list { overflow-y: auto; padding: 4px 20px 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .rp-item {
   display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: var(--radius-md);
   border: 1.5px solid var(--border-light); cursor: pointer; transition: border-color 0.2s, background 0.2s;
-  text-align: left; background: none;
+  text-align: start; background: none;
 }
 .rp-item:hover { border-color: var(--primary); background: var(--primary-light); }
 .rp-item.selected { border-color: var(--primary); background: var(--primary-light); }
 .rp-item-img { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; background: var(--gray-100); flex-shrink: 0; }
 .rp-item-name { font-size: 0.83rem; font-weight: 600; color: var(--secondary); line-height: 1.25; }
 .rp-item-cat { font-size: 0.68rem; color: var(--text-muted); }
-.rp-item-check { margin-left: auto; color: var(--primary); flex-shrink: 0; }
+.rp-item-check { margin-inline-start: auto; color: var(--primary); flex-shrink: 0; }
 .rp-empty { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem; grid-column: 1 / -1; }
 `;
 
@@ -48,8 +61,9 @@ function injectCSS() {
   }
 }
 
-/** perfumes: full catalog; excludeIds: perfumes already in the pack (can't pick a duplicate) */
-export default function ReplacePerfumeModal({ perfumes, excludeIds = [], currentPerfumeId, onSelect, onClose }) {
+/** perfumes: full catalog; excludeIds: perfumes already in the pack (can't pick a duplicate);
+ *  currentPerfume: the slot's current perfume object, shown as "current -> new" context. */
+export default function ReplacePerfumeModal({ perfumes, excludeIds = [], currentPerfume, currentPerfumeId, onSelect, onClose }) {
   injectCSS();
   const { t } = useLanguage();
   const [query, setQuery] = useState("");
@@ -75,7 +89,22 @@ export default function ReplacePerfumeModal({ perfumes, excludeIds = [], current
           <h3 className="rp-modal-title">{t("replaceModal.title")}</h3>
           <button className="rp-modal-close" onClick={onClose} aria-label={t("replaceModal.close")}><FiX size={16} /></button>
         </div>
+
+        {currentPerfume && (
+          <div className="rp-current">
+            <div className="rp-current-thumb">
+              <img src={cldResize(currentPerfume.image_url, 90) || "/nahid1.png"} alt={currentPerfume.name} />
+            </div>
+            <div className="rp-current-text">
+              <div className="rp-current-label">{t("replaceModal.currentLabel")}</div>
+              <div className="rp-current-name">{currentPerfume.name}</div>
+            </div>
+            <FiArrowRight className="rp-current-arrow" size={16} />
+          </div>
+        )}
+
         <div className="rp-modal-search">
+          <div className="rp-choose-label">{t("replaceModal.chooseNewLabel")}</div>
           <div className="rp-modal-search-inner">
             <FiSearch size={14} color="var(--text-muted)" />
             <input
