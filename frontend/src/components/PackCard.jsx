@@ -111,7 +111,7 @@ function injectCSS() {
 // matching useCallback on the handlers passed in, which is required for
 // memo() here to actually do anything (a new inline function every render
 // would defeat it silently).
-function PackCard({ pack, onAddToCart, onCustomize, badge }) {
+function PackCard({ pack, onAddToCart, onCustomize, badge, priority = false }) {
   injectCSS();
   const { t } = useLanguage();
   const perfumes = pack.perfumes || [];
@@ -124,7 +124,14 @@ function PackCard({ pack, onAddToCart, onCustomize, badge }) {
   return (
     <div className="pack-card">
       <Link to={`/packs/${pack.id}`} className="pack-card-media">
-        <img src={cldResize(pack.cover_image, 400) || "/nahid1.png"} alt={pack.title} loading="lazy" />
+        <img
+          src={cldResize(pack.cover_image, 400) || "/nahid1.png"}
+          alt={pack.title}
+          loading={priority ? "eager" : "lazy"}
+          fetchpriority={priority ? "high" : "auto"}
+          width="400"
+          height="400"
+        />
         {badgeLabel && <span className="pack-card-badge">{badgeLabel}</span>}
         <div className="pack-card-quick" onClick={(e) => e.preventDefault()}>
           <button

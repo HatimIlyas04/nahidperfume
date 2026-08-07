@@ -1,21 +1,17 @@
 const { pool } = require('../config/db');
 
-async function findByPackId(packId, conn = pool) {
-  const [rows] = await conn.query(
-    `SELECT pp.pack_id, pp.perfume_id, pp.position, p.*
-     FROM pack_perfumes pp
-     JOIN perfumes p ON p.id = pp.perfume_id
-     WHERE pp.pack_id = ?
-     ORDER BY pp.position ASC`,
-    [packId]
-  );
-  return rows;
-}
+// The pack LIST view (homepage + admin packs table) only ever renders a
+// perfume thumbnail + name per slot — never ingredients/notes/concentration/
+// etc. Selecting p.* there means every pack in the public homepage payload
+// carries the full perfume record (incl. long TEXT note fields) for no
+// reason. The single-pack DETAIL view (PackDetails page, replace-perfume
+// modal) genuinely needs the full record, so that path keeps p.*.
+const LEAN_PERFUME_FIELDS = 'p.id, p.name, p.image_url';
 
-async function findByPackIds(packIds, conn = pool) {
+async function findByPackIds(packIds, { lean = false } = {}, conn = pool) {
   if (!packIds.length) return [];
   const [rows] = await conn.query(
-    `SELECT pp.pack_id, pp.perfume_id, pp.position, p.*
+    `SELECT pp.pack_id, pp.perfume_id, pp.position, ${lean ? LEAN_PERFUME_FIELDS : 'p.*'}
      FROM pack_perfumes pp
      JOIN perfumes p ON p.id = pp.perfume_id
      WHERE pp.pack_id IN (?)
@@ -31,4 +27,4 @@ async function replaceForPack(packId, perfumeIds, conn = pool) {
   await conn.query('INSERT INTO pack_perfumes (pack_id, perfume_id, position) VALUES ?', [rows]);
 }
 
-module.exports = { findByPackId, findByPackIds, replaceForPack };
+module.exports = { findByPackIds, replaceForPack };

@@ -107,9 +107,16 @@ const CACHEABLE_PREFIXES = [
   "/api/packs", "/api/perfumes", "/api/faq", "/api/testimonials",
   "/api/banners", "/api/homepage-sections", "/api/settings", "/api/custom-pack-settings",
 ];
-const CACHE_TTL_MS = 30000;
-const responseCache = new Map(); // key -> { response, expiresAt }
+// Within FRESH_TTL: return the cache, no network call at all.
+// Between FRESH_TTL and STALE_TTL: stale-while-revalidate — return the
+// cached value immediately (this call never waits on the network), and
+// kick off a background refetch that updates the cache for next time.
+// Past STALE_TTL: the data is too old to show at all; fetch normally.
+const FRESH_TTL_MS = 30000;
+const STALE_TTL_MS = 5 * 60 * 1000;
+const responseCache = new Map(); // key -> { response, cachedAt }
 const inFlightRequests = new Map(); // key -> Promise (dedupes concurrent identical calls)
+const revalidating = new Set(); // keys with a background refetch already in flight
 
 function isCacheableUrl(url) {
   return CACHEABLE_PREFIXES.some((p) => url.startsWith(p));
@@ -120,10 +127,19 @@ function requestKey(url, config) {
 
 const rawGet = api.get.bind(api);
 
+function revalidateInBackground(key, url, config) {
+  if (revalidating.has(key)) return;
+  revalidating.add(key);
+  withRetry((timeout) => rawGet(url, { ...config, timeout }))
+    .then((res) => responseCache.set(key, { response: res, cachedAt: Date.now() }))
+    .catch(() => {}) // the stale value already served this call; a failed background refresh isn't user-visible
+    .finally(() => revalidating.delete(key));
+}
+
 /**
  * Drop-in replacement for axios `.get()`: retries transient failures with
- * backoff, dedupes concurrent identical requests, and short-caches
- * cacheable public endpoints — all transparent to existing call sites.
+ * backoff, dedupes concurrent identical requests, and stale-while-revalidate
+ * caches cacheable public endpoints — all transparent to existing call sites.
  */
 api.get = function resilientGet(url, config = {}) {
   const cacheable = isCacheableUrl(url);
@@ -131,13 +147,20 @@ api.get = function resilientGet(url, config = {}) {
 
   if (cacheable) {
     const cached = responseCache.get(key);
-    if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.response);
+    if (cached) {
+      const age = Date.now() - cached.cachedAt;
+      if (age < FRESH_TTL_MS) return Promise.resolve(cached.response);
+      if (age < STALE_TTL_MS) {
+        revalidateInBackground(key, url, config);
+        return Promise.resolve(cached.response);
+      }
+    }
     if (inFlightRequests.has(key)) return inFlightRequests.get(key);
   }
 
   const promise = withRetry((timeout) => rawGet(url, { ...config, timeout }))
     .then((res) => {
-      if (cacheable) responseCache.set(key, { response: res, expiresAt: Date.now() + CACHE_TTL_MS });
+      if (cacheable) responseCache.set(key, { response: res, cachedAt: Date.now() });
       return res;
     })
     .finally(() => inFlightRequests.delete(key));

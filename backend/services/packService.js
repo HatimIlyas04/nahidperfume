@@ -23,24 +23,29 @@ async function validatePerfumeIds(perfumeIds) {
   return perfumes;
 }
 
-async function attachPerfumes(packs, conn = pool) {
+async function attachPerfumes(packs, { lean = false } = {}, conn = pool) {
   if (!packs.length) return packs;
-  const rows = await packPerfumesRepo.findByPackIds(packs.map((p) => p.id), conn);
+  const rows = await packPerfumesRepo.findByPackIds(packs.map((p) => p.id), { lean }, conn);
   return packs.map((pack) => ({
     ...pack,
     perfumes: rows.filter((r) => r.pack_id === pack.id).sort((a, b) => a.position - b.position),
   }));
 }
 
+// List views (homepage, packs listing, admin packs table) only ever render
+// a thumbnail + name per perfume slot — lean avoids shipping every
+// perfume's full record (ingredients/notes/concentration/etc.) for every
+// pack on the page. The single-pack detail view below needs the full
+// record (perfume modal, replace-a-perfume), so it stays non-lean.
 async function listPacks({ isActive } = {}) {
   const packs = await packsRepo.findAll({ isActive });
-  return attachPerfumes(packs);
+  return attachPerfumes(packs, { lean: true });
 }
 
 async function getPack(id, conn = pool) {
   const pack = await packsRepo.findById(id, conn);
   if (!pack) throw new AppError('Pack not found', 404);
-  const [withPerfumes] = await attachPerfumes([pack], conn);
+  const [withPerfumes] = await attachPerfumes([pack], { lean: false }, conn);
   return withPerfumes;
 }
 

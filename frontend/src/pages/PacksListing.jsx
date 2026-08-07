@@ -111,12 +111,13 @@ export default function PacksListing() {
         <div className="pl-empty">{t("packsPage.empty")}</div>
       ) : (
         <div className="pl-grid">
-          {visible.map((pack) => (
+          {visible.map((pack, i) => (
             <PackCard
               key={pack.id}
               pack={pack}
               onAddToCart={handleAddToCart}
               onCustomize={handleCustomize}
+              priority={i < 4}
             />
           ))}
         </div>

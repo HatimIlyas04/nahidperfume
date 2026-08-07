@@ -175,8 +175,8 @@ export default function Home() {
       ) : bestsellers.length > 0 ? (
         <section style={{ paddingBottom: "var(--section-gap)" }}>
           <div className="home-packs-grid">
-            {bestsellers.map((pack) => (
-              <PackCard key={pack.id} pack={pack} onAddToCart={handleAddToCart} onCustomize={handleCustomize} />
+            {bestsellers.map((pack, i) => (
+              <PackCard key={pack.id} pack={pack} onAddToCart={handleAddToCart} onCustomize={handleCustomize} priority={i < 4} />
             ))}
           </div>
           {packs.length > 8 && (
