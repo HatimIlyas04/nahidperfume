@@ -1,5 +1,41 @@
 import axios from "axios";
 
+const FALLBACK_API_URL = import.meta.env.DEV
+  ? "http://localhost:5000"
+  : "https://nahidperfume-backend.onrender.com";
+
+/**
+ * Validates and normalizes a candidate base URL, rejecting anything that
+ * isn't a clean absolute http(s) URL. This exists because VITE_API_URL is
+ * an environment variable set outside this codebase (in the Vercel
+ * dashboard) — a human can paste the wrong thing into that field, and
+ * nothing in this repo would catch it at build time. It already happened:
+ * VITE_API_URL was set to a pasted Markdown link — literally the string
+ * "[https://nahidperfume-backend.onrender.com](https://nahidperfume-backend.onrender.com)"
+ * — which `import.meta.env.VITE_API_URL || fallback` has no way to
+ * distinguish from a real URL, since it's non-empty. Every request then
+ * silently built on that garbage baseURL, and because it doesn't start
+ * with "http"/"https" as its first characters, the browser resolved it as
+ * a *relative* path against the current page instead of an absolute URL —
+ * i.e. https://www.nahidperfumes.com/[https://...](https://...)/api/packs
+ * — a same-origin request Vercel has no route for, so it 404'd. `new
+ * URL()` throws on this shape (it requires a valid scheme at the very
+ * start), which is exactly the validation needed here.
+ */
+function sanitizeApiBaseUrl(candidate) {
+  if (typeof candidate !== "string") return null;
+  const trimmed = candidate.trim();
+  if (!trimmed) return null;
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+  return trimmed.replace(/\/+$/, "");
+}
+
 // Computed here, independently of any other module — this must NOT depend
 // on axios.defaults.baseURL having already been set elsewhere (e.g. by
 // App.jsx). ES modules evaluate all of a module's imports before running
@@ -10,9 +46,18 @@ import axios from "axios";
 // baseURL:"" via axios.create() — before App.jsx's own body ever ran.
 // Vite's dev-only proxy (server.proxy['/api'] in vite.config.js) masked it
 // completely in local dev, since relative "/api/..." calls still resolved.
-export const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? "http://localhost:5000" : "https://nahidperfume-backend.onrender.com");
+export const API_BASE_URL = sanitizeApiBaseUrl(import.meta.env.VITE_API_URL) || FALLBACK_API_URL;
+
+if (import.meta.env.VITE_API_URL && !sanitizeApiBaseUrl(import.meta.env.VITE_API_URL)) {
+  // Loud on purpose: a malformed VITE_API_URL is exactly the kind of bug
+  // that silently 404s every single request with no obvious cause in the
+  // UI. This must not fail silently a second time.
+  console.error(
+    `[api] VITE_API_URL is set but is not a valid URL: ${JSON.stringify(import.meta.env.VITE_API_URL)}. ` +
+    `Falling back to ${FALLBACK_API_URL}. Fix the VITE_API_URL environment variable in the Vercel dashboard ` +
+    `— it must be a plain URL like "https://nahidperfume-backend.onrender.com", not Markdown or any other formatting.`
+  );
+}
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
