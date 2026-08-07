@@ -36,6 +36,13 @@ app.set('trust proxy', 1);
 app.use(helmet());
 app.use(compression());
 
+// Hardcoded alongside env.allowedOrigins (not instead of) so a missing/stale
+// ALLOWED_ORIGINS env var on the host can never take the production site down.
+const PRODUCTION_ORIGINS = [
+  'https://nahidperfumes.com',
+  'https://www.nahidperfumes.com',
+];
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -43,11 +50,14 @@ app.use(
       if (!origin) return callback(null, true);
       const isAllowed =
         env.allowedOrigins.includes(origin) ||
+        PRODUCTION_ORIGINS.includes(origin) ||
         origin === 'http://localhost:3000' ||
         origin === 'http://localhost:5173' ||
         origin.endsWith('.vercel.app');
-      if (isAllowed) return callback(null, true);
-      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      // Reject via `false`, not a thrown Error — an Error here is caught by
+      // the error handler and returned as a 500, which breaks CORS entirely
+      // (no CORS headers at all) instead of just declining this one origin.
+      callback(null, isAllowed);
     },
     credentials: true,
   })
