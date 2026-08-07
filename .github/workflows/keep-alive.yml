@@ -1,0 +1,18 @@
+name: Keep backend awake
+
+# Render's free tier sleeps the service after ~15 minutes of no traffic,
+# causing a ~30s cold-start hang for whoever visits next. Pinging it every
+# 10 minutes, around the clock, keeps it warm without paying for a
+# always-on instance. GitHub's own client-side keep-alive ping only runs
+# while a browser tab is open, so it can't cover overnight/low-traffic gaps.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health endpoint
+        run: curl -sf --max-time 60 https://nahidperfume-backend.onrender.com/api/ping

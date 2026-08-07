@@ -38,6 +38,8 @@ const CSS = `
 @media (max-width: 640px) {
   .home-packs-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 16px; }
 }
+.home-pack-skel { border-radius: var(--radius-md); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: home-skel 1.4s infinite; aspect-ratio: 1/1.35; }
+@keyframes home-skel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
 .home-cta-band {
   background: linear-gradient(135deg, var(--secondary) 0%, #2a2a2a 100%);
@@ -106,13 +108,14 @@ export default function Home() {
   const { addToCart } = useCart();
   const { t } = useLanguage();
   const [packs, setPacks] = useState([]);
+  const [packsLoading, setPacksLoading] = useState(true);
   const [faqs, setFaqs] = useState([]);
   const [openFaq, setOpenFaq] = useState(null);
   const [email, setEmail] = useState("");
   const [ugcItems, setUgcItems] = useState([]);
 
   useEffect(() => {
-    packsApi.list().then(setPacks).catch(() => setPacks([]));
+    packsApi.list().then(setPacks).catch(() => setPacks([])).finally(() => setPacksLoading(false));
     faqApi.listActive().then((data) => setFaqs(data.slice(0, 6))).catch(() => setFaqs([]));
     bannersApi.listActive("ugc_gallery").then(setUgcItems).catch(() => setUgcItems([]));
   }, []);
@@ -155,7 +158,13 @@ export default function Home() {
       <h1 className="home-top-title">{t("home.title")}</h1>
       <p className="home-top-sub">{t("home.subtitle")}</p>
 
-      {bestsellers.length > 0 ? (
+      {packsLoading ? (
+        <section style={{ paddingBottom: "var(--section-gap)" }}>
+          <div className="home-packs-grid">
+            {[0, 1, 2, 3].map((i) => <div className="home-pack-skel" key={i} />)}
+          </div>
+        </section>
+      ) : bestsellers.length > 0 ? (
         <section style={{ paddingBottom: "var(--section-gap)" }}>
           <div className="home-packs-grid">
             {bestsellers.map((pack) => (
