@@ -17,18 +17,22 @@ const CSS = `
 .pd-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
 @media (max-width: 900px) { .pd-hero { grid-template-columns: 1fr; gap: 28px; } }
 
-/* Controlled-size image: contain (never crops the bottle), padded and
-   neutral-backed so it reads as a considered product shot rather than a
-   giant cropped photo dominating the page. */
+/* Controlled-size image in a boutique "studio" panel: soft radial light
+   plus a grounding shadow under the bottle, so it reads as a considered
+   product shot rather than a giant cropped photo dominating the page.
+   object-fit: contain preserves the bottle's real proportions. */
 .pd-media {
+  position: relative;
   border-radius: var(--radius-lg); overflow: hidden;
-  aspect-ratio: 4/5; max-height: 520px;
-  background: linear-gradient(180deg, var(--background) 0%, var(--gray-100) 100%);
+  aspect-ratio: 4/5; max-height: 560px;
+  background:
+    radial-gradient(ellipse 55% 30% at 50% 82%, rgba(20,16,14,0.11) 0%, rgba(20,16,14,0) 72%),
+    radial-gradient(ellipse 110% 85% at 50% 6%, #FFFFFF 0%, var(--background) 55%, #F0EDE9 100%);
   border: 1px solid var(--border-light);
-  display: flex; align-items: center; justify-content: center; padding: 32px;
+  display: flex; align-items: center; justify-content: center; padding: 44px;
 }
-.pd-media img { width: 100%; height: 100%; object-fit: contain; }
-@media (max-width: 900px) { .pd-media { max-height: 340px; padding: 20px; } }
+.pd-media img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 20px 24px rgba(20,16,14,0.16)); }
+@media (max-width: 900px) { .pd-media { max-height: 380px; padding: 26px; } }
 
 .pd-info { display: flex; flex-direction: column; }
 .pd-title { font-family: var(--font-display); font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 500; margin-bottom: 8px; }
@@ -73,13 +77,17 @@ const CSS = `
 .pd-customize-toggle.active { background: var(--secondary); border-color: var(--secondary); color: white; }
 .pd-perfumes-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 @media (max-width: 760px) { .pd-perfumes-grid { grid-template-columns: repeat(2, 1fr); } }
-.pd-perfume-card { border-radius: var(--radius-md); border: 1px solid var(--border-light); overflow: hidden; background: white; transition: var(--transition); position: relative; }
+.pd-perfume-card { border-radius: var(--radius-md); border: 1px solid var(--border-light); overflow: hidden; background: white; transition: var(--transition); position: relative; box-shadow: 0 1px 2px rgba(20,16,14,0.04); }
+.pd-perfume-card:hover { box-shadow: 0 14px 24px -12px rgba(20,16,14,0.16); }
 .pd-perfume-card.changed { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(239,119,106,0.12); }
 .pd-perfume-img-btn {
   display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1;
-  background: linear-gradient(180deg, var(--background) 0%, var(--gray-100) 100%); border: none; padding: 14px; cursor: pointer;
+  background:
+    radial-gradient(ellipse 55% 32% at 50% 80%, rgba(20,16,14,0.09) 0%, rgba(20,16,14,0) 72%),
+    radial-gradient(ellipse 110% 85% at 50% 6%, #FFFFFF 0%, var(--background) 55%, #F0EDE9 100%);
+  border: none; padding: 16px; cursor: pointer;
 }
-.pd-perfume-img-btn img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.4s; }
+.pd-perfume-img-btn img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 12px rgba(20,16,14,0.12)); transition: transform 0.4s; }
 .pd-perfume-img-btn:hover img { transform: scale(1.05); }
 .pd-perfume-body { padding: 12px 14px; }
 .pd-perfume-name { font-size: 0.86rem; font-weight: 600; color: var(--secondary); }

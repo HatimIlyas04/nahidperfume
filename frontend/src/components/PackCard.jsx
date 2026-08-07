@@ -7,121 +7,125 @@ import { cldResize } from "../utils/cloudinary";
 const CSS = `
 .pack-card {
   background: var(--white);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  box-shadow: 0 1px 2px rgba(20,16,14,0.04), 0 12px 28px -14px rgba(20,16,14,0.14);
+  transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s ease;
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 .pack-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--border);
+  transform: translateY(-6px);
+  box-shadow: 0 1px 2px rgba(20,16,14,0.05), 0 28px 44px -18px rgba(20,16,14,0.22);
 }
 
-/* Image sits in a bounded, padded area — never fills/dominates the card.
-   object-fit: contain preserves the bottle's real proportions instead of
-   cropping it, and the neutral background keeps the product looking like
-   a considered product shot rather than a stretched thumbnail. */
+/* Image sits in a boutique-style "studio" panel — soft radial light and a
+   grounding shadow under the bottle, so it reads like considered product
+   photography rather than a flat cropped thumbnail. object-fit: contain
+   keeps the bottle's real proportions; it never fills/dominates the card. */
 .pack-card-media {
   position: relative;
-  height: 220px;
-  background: linear-gradient(180deg, var(--background) 0%, var(--gray-100) 100%);
+  height: 236px;
+  background:
+    radial-gradient(ellipse 60% 42% at 50% 78%, rgba(20,16,14,0.10) 0%, rgba(20,16,14,0) 72%),
+    radial-gradient(ellipse 120% 90% at 50% 8%, #FFFFFF 0%, var(--background) 55%, #F0EDE9 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px;
+  padding: 26px;
 }
 .pack-card-media img {
   width: 100%; height: 100%; object-fit: contain;
-  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 14px 18px rgba(20,16,14,0.14));
+  transition: transform 0.55s cubic-bezier(0.16,1,0.3,1);
 }
-.pack-card:hover .pack-card-media img { transform: scale(1.04); }
+.pack-card:hover .pack-card-media img { transform: scale(1.045) translateY(-2px); }
 
 .pack-card-badge {
-  position: absolute; top: 12px; inset-inline-start: 12px;
+  position: absolute; top: 14px; inset-inline-start: 14px;
   background: var(--secondary); color: white;
-  padding: 4px 11px; border-radius: var(--radius-full);
-  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: var(--radius-full);
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  box-shadow: 0 4px 10px rgba(20,16,14,0.18);
 }
 .pack-card-save {
-  position: absolute; top: 12px; inset-inline-end: 12px;
-  background: var(--primary-light); color: var(--primary-dark);
-  padding: 4px 10px; border-radius: var(--radius-full);
+  position: absolute; top: 14px; inset-inline-end: 14px;
+  background: var(--primary); color: white;
+  padding: 5px 11px; border-radius: var(--radius-full);
   font-size: 0.6rem; font-weight: 700;
+  box-shadow: 0 4px 10px rgba(239,119,106,0.35);
 }
 .pack-card-quick {
-  position: absolute; bottom: 12px; inset-inline-end: 12px;
+  position: absolute; bottom: 14px; inset-inline-end: 14px;
   opacity: 0; transform: translateY(6px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .pack-card:hover .pack-card-quick, .pack-card:focus-within .pack-card-quick { opacity: 1; transform: translateY(0); }
 .pack-card-quick-btn {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: rgba(255,255,255,0.95); backdrop-filter: blur(6px);
-  border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center;
-  color: var(--secondary); cursor: pointer; box-shadow: var(--shadow-sm);
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255,255,255,0.96); backdrop-filter: blur(6px);
+  border: 1px solid rgba(20,16,14,0.06); display: flex; align-items: center; justify-content: center;
+  color: var(--secondary); cursor: pointer; box-shadow: 0 4px 12px rgba(20,16,14,0.14);
   transition: background 0.15s, color 0.15s, transform 0.15s;
 }
 .pack-card-quick-btn:hover { background: var(--primary); border-color: var(--primary); color: white; transform: scale(1.08); }
 
-.pack-card-body { padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.pack-card-body { padding: 20px 18px 18px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
 .pack-card-title {
-  font-family: var(--font-display); font-size: 1.15rem; font-weight: 500;
-  color: var(--secondary); line-height: 1.25;
+  font-family: var(--font-display); font-size: 1.22rem; font-weight: 500;
+  color: var(--secondary); line-height: 1.25; letter-spacing: -0.01em;
   display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
 }
 .pack-card-desc {
-  font-size: 0.78rem; color: var(--text-light); line-height: 1.5;
+  font-size: 0.79rem; color: var(--text-light); line-height: 1.55;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  min-height: 2.2em;
+  min-height: 2.3em;
 }
 
-/* Compact "what's inside" row — small overlapping circles read as a
-   considered set, not a cluttered list of thumbnails. */
-.pack-card-thumbs { display: flex; align-items: center; gap: 0; margin-top: 2px; }
+/* "What's inside" — a clean, non-overlapping row of soft-square thumbnails
+   reads as a considered set of 4 rather than a cluttered stack. */
+.pack-card-thumbs { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
 .pack-card-thumb {
-  width: 30px; height: 30px; border-radius: 50%; overflow: hidden;
-  border: 2px solid var(--white); background: var(--gray-100); flex-shrink: 0;
-  box-shadow: 0 0 0 1px var(--border-light);
-  margin-inline-start: -8px;
+  width: 32px; height: 32px; border-radius: 9px; overflow: hidden;
+  background: var(--background); border: 1px solid var(--border-light); flex-shrink: 0;
 }
-.pack-card-thumb:first-child { margin-inline-start: 0; }
 .pack-card-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.pack-card-thumbs-label { font-size: 0.68rem; color: var(--text-muted); margin-inline-start: 8px; }
+.pack-card-thumbs-count { font-size: 0.68rem; color: var(--text-muted); margin-inline-start: 2px; white-space: nowrap; }
+
+.pack-card-divider { height: 1px; background: var(--border-light); margin: 2px 0; }
 
 .pack-card-price-row {
-  display: flex; align-items: baseline; gap: 7px; margin-top: auto; padding-top: 10px;
+  display: flex; align-items: baseline; gap: 8px; margin-top: auto; padding-top: 2px;
 }
-.pack-card-price { font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; color: var(--secondary); }
-.pack-card-currency { font-size: 0.68rem; color: var(--text-light); }
-.pack-card-compare { font-size: 0.76rem; color: var(--text-muted); text-decoration: line-through; }
+.pack-card-price { font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; color: var(--primary-dark); }
+.pack-card-currency { font-size: 0.66rem; color: var(--text-light); font-weight: 500; }
+.pack-card-compare { font-size: 0.78rem; color: var(--text-muted); text-decoration: line-through; }
 
-.pack-card-actions { display: flex; gap: 8px; margin-top: 10px; }
+.pack-card-actions { display: flex; gap: 8px; margin-top: 12px; }
 .pack-card-btn-view {
-  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 11px 14px; border-radius: var(--radius-full);
-  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.01em;
-  cursor: pointer; transition: background 0.15s, transform 0.15s; border: none; white-space: nowrap;
-  background: var(--secondary); color: white;
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 12px 14px; border-radius: var(--radius-full);
+  font-size: 0.79rem; font-weight: 600; letter-spacing: 0.01em;
+  cursor: pointer; transition: background 0.2s, box-shadow 0.2s, transform 0.15s; border: none; white-space: nowrap;
+  background: var(--primary); color: white;
+  box-shadow: 0 8px 18px -6px rgba(239,119,106,0.5);
 }
-.pack-card-btn-view:hover { background: var(--primary-dark); transform: translateY(-1px); }
+.pack-card-btn-view:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 10px 22px -6px rgba(239,119,106,0.6); }
 .pack-card-btn-add {
-  width: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   border-radius: var(--radius-full); border: 1.5px solid var(--border); background: white;
   color: var(--secondary); cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
-.pack-card-btn-add:hover { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); }
+.pack-card-btn-add:hover { border-color: var(--secondary); background: var(--secondary); color: white; }
 
 @media (max-width: 480px) {
-  .pack-card-media { height: 168px; padding: 14px; }
-  .pack-card-body { padding: 13px; gap: 6px; }
-  .pack-card-title { font-size: 1rem; }
+  .pack-card-media { height: 192px; padding: 18px; }
+  .pack-card-body { padding: 15px 14px 14px; gap: 7px; }
+  .pack-card-title { font-size: 1.05rem; }
   .pack-card-desc { display: none; }
-  .pack-card-price { font-size: 1.12rem; }
+  .pack-card-price { font-size: 1.2rem; }
 }
 `;
 
@@ -196,8 +200,11 @@ function PackCard({ pack, onAddToCart, onCustomize, badge, priority = false }) {
                 <img src={cldResize(p.image_url, 60)} alt={p.name} loading="lazy" />
               </div>
             ))}
+            <span className="pack-card-thumbs-count">{perfumes.length} {t("packCard.perfumesCount")}</span>
           </div>
         )}
+
+        <div className="pack-card-divider" />
 
         <div className="pack-card-price-row">
           <span className="pack-card-price">{fmt(pack.price)}</span>

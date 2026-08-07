@@ -105,6 +105,7 @@ export const translations = {
       new: "Nouveau",
       limited: "Édition limitée",
       customize: "Personnaliser",
+      perfumesCount: "parfums",
     },
     packDetails: {
       back: "Retour aux packs",
@@ -411,6 +412,7 @@ export const translations = {
       new: "New",
       limited: "Limited Edition",
       customize: "Customize",
+      perfumesCount: "perfumes",
     },
     packDetails: {
       back: "Back to packs",
@@ -717,6 +719,7 @@ export const translations = {
       new: "جديد",
       limited: "إصدار محدود",
       customize: "تخصيص",
+      perfumesCount: "عطور",
     },
     packDetails: {
       back: "العودة إلى الباقات",
