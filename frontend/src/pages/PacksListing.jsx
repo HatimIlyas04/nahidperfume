@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import { FiSearch } from "react-icons/fi";
 import { packsApi, wishlistApi } from "../services/api";
+import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import PackCard from "../components/PackCard";
 import NahidFooter from "../components/NahidFooter";
@@ -19,15 +20,15 @@ const CSS = `
 /* Premium catalog grid: a controlled 3/2/1 column layout (not auto-fill),
    so cards keep a consistent, comfortable size instead of stretching to
    fill whatever width happens to be available. */
-.pl-grid { max-width: var(--container-max); margin: 0 auto; padding: 28px 32px 100px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.pl-grid { max-width: var(--container-max); margin: 0 auto; padding: 28px 32px 100px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
 @media (max-width: 1024px) {
-  .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 22px; }
 }
 @media (max-width: 640px) {
-  .pl-grid { grid-template-columns: 1fr; gap: 16px; padding: 20px 16px 80px; }
+  .pl-grid { grid-template-columns: 1fr; gap: 18px; padding: 20px 16px 80px; }
 }
 .pl-empty { text-align: center; padding: 80px 20px; color: var(--text-muted); }
-.pl-skel { border-radius: var(--radius-md); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: skel 1.4s infinite; aspect-ratio: 1/1.15; }
+.pl-skel { border-radius: var(--radius-xl); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: skel 1.4s infinite; aspect-ratio: 4/6.2; }
 @keyframes skel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 `;
 
@@ -44,6 +45,7 @@ function injectCSS() {
 export default function PacksListing() {
   injectCSS();
   const [searchParams] = useSearchParams();
+  const { addToCart } = useCart();
   const { t } = useLanguage();
   const [packs, setPacks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +94,20 @@ export default function PacksListing() {
     }
   }, [wishedIds, t]);
 
+  const handleAddToCart = useCallback((pack) => {
+    addToCart({
+      cartItemId: `ready_${pack.id}`,
+      item_type: "ready_pack",
+      pack_id: pack.id,
+      title: pack.title,
+      image: pack.cover_image,
+      price: Number(pack.price),
+      quantity: 1,
+      perfumes: (pack.perfumes || []).map((p) => ({ perfume_id: p.perfume_id, name: p.name, image_url: p.image_url })),
+    });
+    Swal.fire({ icon: "success", title: t("packsPage.addedToCart"), timer: 1400, showConfirmButton: false });
+  }, [addToCart, t]);
+
   return (
     <>
       <SEO title="Nos Packs" description="Découvrez tous nos packs de 4 parfums curés, prêts-à-offrir ou personnalisables." path="/packs" />
@@ -127,6 +143,7 @@ export default function PacksListing() {
               priority={i < 4}
               isWished={wishedIds.has(pack.id)}
               onToggleWishlist={handleToggleWishlist}
+              onAddToCart={handleAddToCart}
             />
           ))}
         </div>

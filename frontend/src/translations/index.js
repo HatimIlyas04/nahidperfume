@@ -107,6 +107,8 @@ export const translations = {
       customize: "Personnaliser",
       perfumesCount: "parfums",
       choosePack: "Choisir ce pack",
+      order: "Commander",
+      viewDetails: "Détails du pack",
     },
     packDetails: {
       back: "Retour aux packs",
@@ -415,6 +417,8 @@ export const translations = {
       customize: "Customize",
       perfumesCount: "perfumes",
       choosePack: "Choose this pack",
+      order: "Order now",
+      viewDetails: "Pack details",
     },
     packDetails: {
       back: "Back to packs",
@@ -723,6 +727,8 @@ export const translations = {
       customize: "تخصيص",
       perfumesCount: "عطور",
       choosePack: "اختاري هذا الباك",
+      order: "اطلبي الآن",
+      viewDetails: "تفاصيل الباك",
     },
     packDetails: {
       back: "العودة إلى الباقات",

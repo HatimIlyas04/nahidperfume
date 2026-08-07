@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import { FiHeart, FiArrowRight } from "react-icons/fi";
+import { FiHeart, FiShoppingBag } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 
@@ -8,18 +8,18 @@ const CSS = `
 .pc-card {
   position: relative;
   background: var(--white);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   border: 1px solid var(--border-light);
-  box-shadow: 0 1px 2px rgba(20,16,14,0.04), 0 10px 24px -14px rgba(20,16,14,0.14);
+  box-shadow: 0 1px 2px rgba(20,16,14,0.04), 0 14px 32px -16px rgba(20,16,14,0.16);
   transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s ease;
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 .pc-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 1px 2px rgba(20,16,14,0.05), 0 24px 38px -18px rgba(20,16,14,0.22);
+  transform: translateY(-6px);
+  box-shadow: 0 1px 2px rgba(20,16,14,0.05), 0 28px 44px -18px rgba(20,16,14,0.22);
 }
 
 /* The catalog photography is already a complete, full-bleed studio shot
@@ -66,9 +66,9 @@ const CSS = `
 .pc-wish:hover { transform: scale(1.08); }
 .pc-wish.active { color: var(--primary); }
 
-.pc-body { padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.pc-body { padding: 22px 22px 22px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
 .pc-title {
-  font-family: var(--font-display); font-size: 1.15rem; font-weight: 500;
+  font-family: var(--font-display); font-size: 1.34rem; font-weight: 500;
   color: var(--secondary); line-height: 1.25; letter-spacing: -0.01em;
   display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
 }
@@ -96,36 +96,41 @@ const CSS = `
 }
 .pc-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
 
-.pc-bottom { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-light); }
+.pc-bottom { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border-light); }
 .pc-price-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.pc-price { font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; color: var(--primary-dark); }
-.pc-currency { font-size: 0.64rem; color: var(--text-light); font-weight: 500; }
-.pc-compare { font-size: 0.78rem; color: var(--text-muted); text-decoration: line-through; }
+.pc-price { font-family: var(--font-display); font-size: 1.55rem; font-weight: 600; color: var(--primary-dark); }
+.pc-currency { font-size: 0.66rem; color: var(--text-light); font-weight: 500; }
+.pc-compare { font-size: 0.8rem; color: var(--text-muted); text-decoration: line-through; }
 .pc-save-pill {
-  font-size: 0.64rem; font-weight: 700; color: var(--primary-dark); background: var(--primary-light);
-  padding: 2px 8px; border-radius: var(--radius-full); white-space: nowrap; margin-top: 4px; display: inline-block;
+  font-size: 0.65rem; font-weight: 700; color: var(--primary-dark); background: var(--primary-light);
+  padding: 2px 8px; border-radius: var(--radius-full); white-space: nowrap; margin-top: 5px; display: inline-block;
 }
 
-.pc-cta {
-  margin-top: 12px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 12px 16px; border-radius: var(--radius-full);
-  font-size: 0.82rem; font-weight: 600; letter-spacing: 0.01em;
-  background: var(--primary); color: white; border: none; cursor: pointer;
-  box-shadow: 0 8px 18px -6px rgba(239,119,106,0.5);
-  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+.pc-actions { display: flex; gap: 8px; margin-top: 14px; }
+.pc-btn-order, .pc-btn-details {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 13px 10px; border-radius: var(--radius-full);
+  font-size: 0.8rem; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap;
+  cursor: pointer; transition: background 0.2s, box-shadow 0.2s, transform 0.15s, border-color 0.15s, color 0.15s;
 }
-.pc-cta:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 10px 22px -6px rgba(239,119,106,0.6); }
-.pc-cta svg { transition: transform 0.2s; }
-[dir="rtl"] .pc-cta svg { transform: scaleX(-1); }
-.pc-cta:hover svg { transform: translateX(3px); }
-[dir="rtl"] .pc-cta:hover svg { transform: scaleX(-1) translateX(3px); }
+.pc-btn-order {
+  background: var(--primary); color: white; border: none;
+  box-shadow: 0 8px 18px -6px rgba(239,119,106,0.5);
+}
+.pc-btn-order:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 10px 22px -6px rgba(239,119,106,0.6); }
+.pc-btn-details {
+  background: white; color: var(--secondary); border: 1.5px solid var(--border);
+}
+.pc-btn-details:hover { border-color: var(--secondary); background: var(--secondary); color: white; }
 
 @media (max-width: 480px) {
-  .pc-body { padding: 14px 14px 16px; gap: 6px; }
-  .pc-title { font-size: 1.05rem; }
+  .pc-body { padding: 16px 16px 18px; gap: 7px; }
+  .pc-title { font-size: 1.15rem; }
   .pc-desc { display: none; }
   .pc-perfume-list { display: none; }
-  .pc-price { font-size: 1.2rem; }
+  .pc-price { font-size: 1.3rem; }
+  .pc-actions { gap: 6px; }
+  .pc-btn-order, .pc-btn-details { padding: 12px 6px; font-size: 0.74rem; }
 }
 `;
 
@@ -145,7 +150,7 @@ function injectCSS() {
 // matching useCallback on the handlers passed in, which is required for
 // memo() here to actually do anything (a new inline function every render
 // would defeat it silently).
-function PackCard({ pack, badge, priority = false, isWished = false, onToggleWishlist }) {
+function PackCard({ pack, badge, priority = false, isWished = false, onToggleWishlist, onAddToCart }) {
   injectCSS();
   const { t } = useLanguage();
   const perfumes = pack.perfumes || [];
@@ -211,9 +216,14 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
           {hasDiscount && saveAmount > 0 && (
             <span className="pc-save-pill">{t("packDetails.youSave")} {saveAmount} MAD</span>
           )}
-          <Link to={`/packs/${pack.id}`} className="pc-cta">
-            {t("packCard.choosePack")} <FiArrowRight size={14} />
-          </Link>
+          <div className="pc-actions">
+            <button className="pc-btn-order" onClick={() => onAddToCart?.(pack)}>
+              <FiShoppingBag size={13} /> {t("packCard.order")}
+            </button>
+            <Link to={`/packs/${pack.id}`} className="pc-btn-details">
+              {t("packCard.viewDetails")}
+            </Link>
+          </div>
         </div>
       </div>
     </div>
