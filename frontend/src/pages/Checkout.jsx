@@ -47,15 +47,23 @@ export default function Checkout() {
   injectCSS();
   const location = useLocation();
   const navigate = useNavigate();
-  const { cart, subtotal, clearCart } = useCart();
+  const { cart, subtotal: cartSubtotal, clearCart } = useCart();
   const { t } = useLanguage();
   const [form, setForm] = useState({ name: "", phone: "", city: "", address: "", notes: "" });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const couponCode = location.state?.couponCode;
 
+  // "Commander" on a pack card skips the cart page entirely and lands here
+  // with a single item in router state -- an isolated one-item order that
+  // doesn't touch (or get mixed into) whatever is already in the persisted
+  // cart, and isn't cleared from it on submit either.
+  const buyNowItem = location.state?.buyNowItem;
+  const effectiveCart = buyNowItem ? [buyNowItem] : cart;
+  const subtotal = buyNowItem ? buyNowItem.price * buyNowItem.quantity : cartSubtotal;
+
   const SHIPPING_FLAT = 30;
-  const shipping = cart.length === 0 ? 0 : SHIPPING_FLAT;
+  const shipping = effectiveCart.length === 0 ? 0 : SHIPPING_FLAT;
   const total = subtotal + shipping;
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -84,11 +92,11 @@ export default function Checkout() {
           city: form.city.trim(),
           deviceToken: getDeviceToken(),
         },
-        items: cartToOrderItems(cart),
+        items: cartToOrderItems(effectiveCart),
         coupon_code: couponCode || undefined,
         recaptcha_token: recaptchaToken || undefined,
       });
-      clearCart();
+      if (!buyNowItem) clearCart();
       navigate("/thank-you", { state: { order } });
     } catch (err) {
       Swal.fire({
@@ -101,7 +109,7 @@ export default function Checkout() {
     }
   };
 
-  if (cart.length === 0) {
+  if (effectiveCart.length === 0) {
     return (
       <>
         <div className="co-confirm">
@@ -172,7 +180,7 @@ export default function Checkout() {
 
           <aside className="co-summary">
             <h3>{t("checkout.summaryTitle")}</h3>
-            {cart.map((item) => (
+            {effectiveCart.map((item) => (
               <div className="co-summary-item" key={item.cartItemId}>
                 <span>{item.title} × {item.quantity}</span>
                 <strong>{Math.round(item.price * item.quantity)} MAD</strong>

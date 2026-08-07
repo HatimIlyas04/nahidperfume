@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { Link } from "react-router-dom";
-import { FiHeart, FiShoppingBag } from "react-icons/fi";
+import { Link, useNavigate } from "react-router-dom";
+import { FiHeart, FiShoppingBag, FiCreditCard } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 
@@ -106,31 +106,48 @@ const CSS = `
   padding: 2px 8px; border-radius: var(--radius-full); white-space: nowrap; margin-top: 5px; display: inline-block;
 }
 
-.pc-actions { display: flex; gap: 8px; margin-top: 14px; }
-.pc-btn-order, .pc-btn-details {
-  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 13px 10px; border-radius: var(--radius-full);
-  font-size: 0.8rem; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap;
-  cursor: pointer; transition: background 0.2s, box-shadow 0.2s, transform 0.15s, border-color 0.15s, color 0.15s;
-}
-.pc-btn-order {
-  background: var(--primary); color: white; border: none;
+/* Three distinct actions: "Commander" is a direct buy-now (skips the cart
+   page entirely, see Checkout.jsx buyNowItem), the bag icon quick-adds to
+   the persisted cart for later, and "Détails du pack" opens the PDP. Two
+   rows keeps each tap target legible even on the narrow 2-up mobile grid. */
+.pc-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.pc-btn-buy {
+  width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 13px 14px; border-radius: var(--radius-full);
+  font-size: 0.82rem; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap;
+  background: var(--primary); color: white; border: none; cursor: pointer;
   box-shadow: 0 8px 18px -6px rgba(239,119,106,0.5);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
 }
-.pc-btn-order:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 10px 22px -6px rgba(239,119,106,0.6); }
+.pc-btn-buy:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 10px 22px -6px rgba(239,119,106,0.6); }
+
+.pc-actions-row2 { display: flex; gap: 8px; }
+.pc-btn-icon {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: var(--radius-full);
+  border: 1.5px solid var(--border); background: white; color: var(--secondary);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.pc-btn-icon:hover { border-color: var(--secondary); background: var(--secondary); color: white; }
 .pc-btn-details {
+  flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 10px; border-radius: var(--radius-full);
+  font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   background: white; color: var(--secondary); border: 1.5px solid var(--border);
+  cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 .pc-btn-details:hover { border-color: var(--secondary); background: var(--secondary); color: white; }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .pc-body { padding: 16px 16px 18px; gap: 7px; }
-  .pc-title { font-size: 1.15rem; }
+  .pc-title { font-size: 1.1rem; }
   .pc-desc { display: none; }
   .pc-perfume-list { display: none; }
-  .pc-price { font-size: 1.3rem; }
-  .pc-actions { gap: 6px; }
-  .pc-btn-order, .pc-btn-details { padding: 12px 6px; font-size: 0.74rem; }
+  .pc-price { font-size: 1.25rem; }
+  .pc-actions { gap: 6px; margin-top: 12px; }
+  .pc-btn-buy { padding: 11px 10px; font-size: 0.76rem; }
+  .pc-btn-icon { width: 38px; height: 38px; }
+  .pc-btn-details { font-size: 0.72rem; padding: 0 6px; }
 }
 `;
 
@@ -153,6 +170,7 @@ function injectCSS() {
 function PackCard({ pack, badge, priority = false, isWished = false, onToggleWishlist, onAddToCart }) {
   injectCSS();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const perfumes = pack.perfumes || [];
   const fmt = (n) => Math.round(Number(n)).toLocaleString("fr-MA");
   const BADGE_KEYS = { best_seller: "packCard.bestSeller", new: "packCard.new", limited: "packCard.limited" };
@@ -162,6 +180,23 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
 
   const hasDiscount = pack.compare_at_price && Number(pack.compare_at_price) > Number(pack.price);
   const saveAmount = hasDiscount ? Math.round(Number(pack.compare_at_price) - Number(pack.price)) : 0;
+
+  const handleBuyNow = () => {
+    navigate("/checkout", {
+      state: {
+        buyNowItem: {
+          cartItemId: `ready_${pack.id}_buynow_${Date.now()}`,
+          item_type: "ready_pack",
+          pack_id: pack.id,
+          title: pack.title,
+          image: pack.cover_image,
+          price: Number(pack.price),
+          quantity: 1,
+          perfumes: perfumes.map((p) => ({ perfume_id: p.perfume_id || p.id, name: p.name, image_url: p.image_url })),
+        },
+      },
+    });
+  };
 
   return (
     <div className="pc-card">
@@ -217,12 +252,22 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
             <span className="pc-save-pill">{t("packDetails.youSave")} {saveAmount} MAD</span>
           )}
           <div className="pc-actions">
-            <button className="pc-btn-order" onClick={() => onAddToCart?.(pack)}>
-              <FiShoppingBag size={13} /> {t("packCard.order")}
+            <button className="pc-btn-buy" onClick={handleBuyNow}>
+              <FiCreditCard size={14} /> {t("packCard.order")}
             </button>
-            <Link to={`/packs/${pack.id}`} className="pc-btn-details">
-              {t("packCard.viewDetails")}
-            </Link>
+            <div className="pc-actions-row2">
+              <button
+                className="pc-btn-icon"
+                onClick={() => onAddToCart?.(pack)}
+                aria-label={t("packCard.addToCart")}
+                title={t("packCard.addToCart")}
+              >
+                <FiShoppingBag size={16} />
+              </button>
+              <Link to={`/packs/${pack.id}`} className="pc-btn-details">
+                {t("packCard.viewDetails")}
+              </Link>
+            </div>
           </div>
         </div>
       </div>

@@ -42,7 +42,7 @@ const CSS = `
   .home-packs-grid { grid-template-columns: repeat(2, 1fr); gap: 22px; }
 }
 @media (max-width: 640px) {
-  .home-packs-grid { grid-template-columns: 1fr; gap: 18px; padding: 0 16px; }
+  .home-packs-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 16px; }
 }
 .home-pack-skel { border-radius: var(--radius-xl); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: home-skel 1.4s infinite; aspect-ratio: 4/6.2; }
 @keyframes home-skel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }

@@ -25,7 +25,7 @@ const CSS = `
   .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 22px; }
 }
 @media (max-width: 640px) {
-  .pl-grid { grid-template-columns: 1fr; gap: 18px; padding: 20px 16px 80px; }
+  .pl-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 20px 16px 80px; }
 }
 .pl-empty { text-align: center; padding: 80px 20px; color: var(--text-muted); }
 .pl-skel { border-radius: var(--radius-xl); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: skel 1.4s infinite; aspect-ratio: 4/6.2; }
