@@ -5,7 +5,9 @@ const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(() => {
-    return localStorage.getItem("nahid_lang") || "fr";
+    // Arabic is the storefront default; a returning visitor's explicit
+    // choice (saved on first switch) always wins over that default.
+    return localStorage.getItem("nahid_lang") || "ar";
   });
 
   useEffect(() => {

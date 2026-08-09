@@ -247,7 +247,7 @@ export default function Home() {
           navigating away; the cart/checkout flow below remains untouched. */}
       {(packsLoading || bestsellers.length > 0) && (
         <section style={{ paddingBottom: "var(--section-gap)" }}>
-          <HomeOrderForm pack={displayedPack} ref={orderFormRef} />
+          <HomeOrderForm pack={displayedPack} packs={bestsellers} onSelectPack={setSelectedPack} ref={orderFormRef} />
         </section>
       )}
 

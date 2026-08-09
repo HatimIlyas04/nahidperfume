@@ -89,10 +89,11 @@ const CSS = `
   }
 `;
 
+// Arabic first -- it's the storefront's default language.
 const LANGUAGES = [
+  { code: "ar", flag: "🇸🇦", name: "العربية",   sub: "Arabic",  rtl: true  },
   { code: "fr", flag: "🇫🇷", name: "Français",  sub: "French",  rtl: false },
   { code: "en", flag: "🇬🇧", name: "English",   sub: "English", rtl: false },
-  { code: "ar", flag: "🇸🇦", name: "العربية",   sub: "Arabic",  rtl: true  },
 ];
 
 export default function LanguageSelector() {

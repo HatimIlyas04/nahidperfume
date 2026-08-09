@@ -227,7 +227,7 @@ const FOOTER_CSS = `
   color: rgba(255,255,255,0.27);
   text-decoration: none;
   margin-bottom: 14px;
-  transition: color 0.2s, padding-left 0.25s;
+  transition: color 0.2s, padding-inline-start 0.25s;
   position: relative;
 }
 .nf-link::before {
@@ -239,9 +239,10 @@ const FOOTER_CSS = `
   transition: opacity 0.2s, transform 0.2s;
   line-height: 1;
 }
+[dir="rtl"] .nf-link::before { content: '‹'; transform: translateX(5px); }
 .nf-link:hover {
   color: rgba(255,255,255,0.82);
-  padding-left: 5px;
+  padding-inline-start: 5px;
 }
 .nf-link:hover::before {
   opacity: 1;
