@@ -16,33 +16,30 @@ export function LanguageProvider({ children }) {
     document.documentElement.setAttribute("dir",  isRTL ? "rtl" : "ltr");
     document.documentElement.setAttribute("lang", lang);
 
-    if (isRTL) {
-      if (!document.getElementById("nahid-cairo-font")) {
-        const link = document.createElement("link");
-        link.id   = "nahid-cairo-font";
-        link.rel  = "stylesheet";
-        link.href = "https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap";
-        document.head.appendChild(link);
-      }
-      if (!document.getElementById("nahid-arabic-style")) {
-        const style = document.createElement("style");
-        style.id = "nahid-arabic-style";
-        // Applied broadly (not a per-class list) so every current and future
-        // page automatically gets the Arabic-appropriate typeface — a
-        // per-component class list silently misses new pages otherwise.
-        style.textContent = `
-          [dir="rtl"] body, [dir="rtl"] input, [dir="rtl"] textarea, [dir="rtl"] select, [dir="rtl"] button {
-            font-family: 'Cairo', 'DM Sans', sans-serif;
-          }
-          [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5 {
-            font-family: 'Cairo', Georgia, serif;
-            letter-spacing: 0;
-          }
-          [dir="rtl"] .adm-shell { direction: ltr; }
-          [dir="rtl"] .adm-shell [lang="ar"], [dir="rtl"] .adm-shell { unicode-bidi: normal; }
-        `;
-        document.head.appendChild(style);
-      }
+    // Tajawal/Cairo are preloaded statically in index.html (Arabic is the
+    // default language now, so the browser's preload scanner must find
+    // them immediately, not after this JS-only effect runs). Only the
+    // font-family/typography rules for [dir="rtl"] are injected here.
+    if (!document.getElementById("nahid-arabic-style")) {
+      const style = document.createElement("style");
+      style.id = "nahid-arabic-style";
+      // Applied broadly (not a per-class list) so every current and future
+      // page automatically gets the Arabic-appropriate typeface — a
+      // per-component class list silently misses new pages otherwise.
+      style.textContent = `
+        [dir="rtl"] body, [dir="rtl"] input, [dir="rtl"] textarea, [dir="rtl"] select, [dir="rtl"] button {
+          font-family: 'Tajawal', 'Cairo', Arial, sans-serif;
+        }
+        [dir="rtl"] body { line-height: 1.75; }
+        [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5 {
+          font-family: 'Tajawal', 'Cairo', Arial, sans-serif;
+          letter-spacing: 0;
+          line-height: 1.4;
+        }
+        [dir="rtl"] .adm-shell { direction: ltr; }
+        [dir="rtl"] .adm-shell [lang="ar"], [dir="rtl"] .adm-shell { unicode-bidi: normal; }
+      `;
+      document.head.appendChild(style);
     }
   }, [lang]);
 

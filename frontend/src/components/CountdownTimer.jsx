@@ -11,7 +11,7 @@ const CSS = `
 .cd-units { display: flex; gap: 8px; }
 .cd-unit { background: var(--primary); border-radius: 8px; padding: 3px 9px; font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; min-width: 34px; text-align: center; }
 
-.cd-compact { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 0 16px 0 12px; }
+.cd-compact { display: flex; align-items: center; gap: 6px; flex-shrink: 0; padding-block: 0; padding-inline-start: 12px; padding-inline-end: 16px; }
 .cd-compact-label { font-size: 0.59rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.88); white-space: nowrap; }
 .cd-compact-units { display: flex; gap: 4px; }
 .cd-compact-unit { background: rgba(0,0,0,0.18); border-radius: 5px; padding: 1px 6px; font-weight: 700; font-size: 0.68rem; min-width: 26px; text-align: center; color: white; }

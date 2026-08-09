@@ -16,8 +16,10 @@ const CSS = `
 .ty-order-num { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; color: var(--primary); margin: 16px 0; }
 .ty-total { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 40px; }
 
-.ty-upsell { background: white; border: 2px solid var(--primary); border-radius: var(--radius-xl); padding: 28px; margin-top: 20px; text-align: left; box-shadow: var(--shadow-lg); animation: fadeUp 0.7s ease 0.2s both; position: relative; overflow: hidden; }
-.ty-upsell-badge { position: absolute; top: 0; right: 0; background: var(--primary); color: white; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-bottom-left-radius: 12px; }
+.ty-upsell { background: white; border: 2px solid var(--primary); border-radius: var(--radius-xl); padding: 28px; margin-top: 20px; text-align: start; box-shadow: var(--shadow-lg); animation: fadeUp 0.7s ease 0.2s both; position: relative; overflow: hidden; }
+.ty-upsell-badge { position: absolute; top: 0; inset-inline-end: 0; background: var(--primary); color: white; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 16px; border-end-start-radius: 12px; }
+.ty-continue-arrow { transition: transform 0.15s; }
+[dir="rtl"] .ty-continue-arrow { transform: scaleX(-1); }
 .ty-upsell-inner { display: flex; gap: 18px; align-items: center; }
 .ty-upsell-img { width: 84px; height: 84px; border-radius: var(--radius-md); object-fit: cover; background: var(--gray-100); flex-shrink: 0; }
 .ty-upsell-title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 500; margin-bottom: 4px; }
@@ -111,7 +113,7 @@ export default function ThankYou() {
         )}
 
         <Link to="/packs" className="btn-outline" style={{ marginTop: "32px", display: "inline-flex" }}>
-          {t("thankYou.continueBtn")} <FiArrowRight size={14} />
+          {t("thankYou.continueBtn")} <FiArrowRight size={14} className="ty-continue-arrow" />
         </Link>
       </div>
       <NahidFooter />

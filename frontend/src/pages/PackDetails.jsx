@@ -14,6 +14,8 @@ import SEO from "../components/SEO";
 const CSS = `
 .pd-wrap { max-width: var(--container-max); margin: 0 auto; padding: 32px 32px 0; }
 .pd-back { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--text-light); margin-bottom: 20px; }
+.pd-back-arrow { transition: transform 0.15s; }
+[dir="rtl"] .pd-back-arrow { transform: scaleX(-1); }
 .pd-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
 @media (max-width: 900px) { .pd-hero { grid-template-columns: 1fr; gap: 28px; } }
 
@@ -245,7 +247,7 @@ export default function PackDetails() {
     <>
       <SEO title={pack.title} description={pack.description} path={`/packs/${pack.id}`} image={pack.cover_image} structuredData={structuredData} />
       <div className="pd-wrap">
-        <Link to="/packs" className="pd-back"><FiArrowLeft size={13} /> {t("packDetails.back")}</Link>
+        <Link to="/packs" className="pd-back"><FiArrowLeft size={13} className="pd-back-arrow" /> {t("packDetails.back")}</Link>
 
         <div className="pd-hero">
           <div className="pd-media">

@@ -11,11 +11,16 @@ const WA_CSS = `
   0%   { transform: translateX(90px) scale(0.5); opacity: 0; }
   100% { transform: translateX(0) scale(1); opacity: 1; }
 }
+@keyframes wa-entrance-rtl {
+  0%   { transform: translateX(-90px) scale(0.5); opacity: 0; }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+[dir="rtl"] .wa-fab-wrap { animation-name: wa-entrance-rtl; }
 
 .wa-fab-wrap {
   position: fixed;
   bottom: 28px;
-  right: 24px;
+  inset-inline-end: 24px;
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -44,13 +49,15 @@ const WA_CSS = `
 .wa-fab-tooltip::after {
   content: '';
   position: absolute;
-  right: -7px;
+  inset-inline-end: -7px;
   top: 50%;
   transform: translateY(-50%);
   border-top: 7px solid transparent;
   border-bottom: 7px solid transparent;
-  border-left: 7px solid #161210;
+  border-inline-start: 7px solid #161210;
 }
+
+[dir="rtl"] .wa-fab-tooltip { transform: translateX(-8px); }
 
 .wa-fab-wrap:hover .wa-fab-tooltip {
   opacity: 1;
@@ -88,7 +95,7 @@ const WA_CSS = `
 @media (max-width: 640px) {
   .wa-fab-wrap {
     bottom: 20px;
-    right: 16px;
+    inset-inline-end: 16px;
   }
   .wa-fab-btn {
     width: 54px;

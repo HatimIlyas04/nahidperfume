@@ -25,8 +25,8 @@ const CSS = `
 .ct-item-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 500; color: var(--secondary); }
 .ct-item-type { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--primary); margin: 4px 0 8px; }
 .ct-item-perfumes { display: flex; gap: 5px; }
-.ct-item-perfumes img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; border: 1.5px solid white; box-shadow: 0 0 0 1px var(--border-light); margin-left: -8px; }
-.ct-item-perfumes img:first-child { margin-left: 0; }
+.ct-item-perfumes img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; border: 1.5px solid white; box-shadow: 0 0 0 1px var(--border-light); margin-inline-start: -8px; }
+.ct-item-perfumes img:first-child { margin-inline-start: 0; }
 .ct-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .ct-item-price { font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; }
 .ct-qty { display: flex; align-items: center; border: 1.5px solid var(--border); border-radius: var(--radius-full); overflow: hidden; }
@@ -43,6 +43,8 @@ const CSS = `
 .ct-total-row { display: flex; justify-content: space-between; align-items: baseline; padding-top: 14px; border-top: 1px solid var(--border); margin-top: 6px; }
 .ct-total-label { font-weight: 700; }
 .ct-total-val { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; }
+.ct-checkout-arrow { transition: transform 0.15s; }
+[dir="rtl"] .ct-checkout-arrow { transform: scaleX(-1); }
 `;
 
 function injectCSS() {
@@ -164,7 +166,7 @@ export default function Cart() {
               className="btn-primary" style={{ width: "100%", marginTop: "20px" }}
               onClick={() => navigate("/checkout", { state: { couponCode: coupon?.code } })}
             >
-              <FiShoppingBag size={15} /> {t("cart.checkoutBtn")} <FiArrowRight size={14} />
+              <FiShoppingBag size={15} /> {t("cart.checkoutBtn")} <FiArrowRight size={14} className="ct-checkout-arrow" />
             </button>
           </aside>
         </div>

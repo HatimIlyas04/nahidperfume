@@ -101,6 +101,13 @@ export const translations = {
       successTitle: "Commande enregistrée !",
       successText: "Nous vous contacterons bientôt pour confirmer la livraison.",
     },
+    reviewsSection: {
+      eyebrow: "✦ Témoignages",
+      title: "Ils ont trouvé leur signature",
+      reviewsWord: "avis",
+      ctaSub: "Vous avez essayé un de nos parfums ?",
+      ctaBtn: "Laisser mon avis",
+    },
     packsPage: {
       title: "Nos Packs",
       subtitle: "Chaque pack réunit 4 parfums pensés pour s'harmoniser. Personnalisez-les à volonté ou créez le vôtre.",
@@ -426,6 +433,13 @@ export const translations = {
       successTitle: "Order placed!",
       successText: "We'll contact you shortly to confirm delivery.",
     },
+    reviewsSection: {
+      eyebrow: "✦ Testimonials",
+      title: "They found their signature",
+      reviewsWord: "reviews",
+      ctaSub: "Have you tried one of our perfumes?",
+      ctaBtn: "Leave my review",
+    },
     packsPage: {
       title: "Our Packs",
       subtitle: "Each pack brings together 4 perfumes designed to work in harmony. Customize them freely or build your own.",
@@ -750,6 +764,13 @@ export const translations = {
       confirmBtn: "تأكيد الطلب",
       successTitle: "تم تسجيل طلبك بنجاح",
       successText: "سنتواصل معك قريباً لتأكيد التوصيل.",
+    },
+    reviewsSection: {
+      eyebrow: "✦ آراء عملائنا",
+      title: "وجدوا توقيعهم العطري",
+      reviewsWord: "تقييم",
+      ctaSub: "جربتي أحد عطورنا؟",
+      ctaBtn: "شاركينا رأيك",
     },
     packsPage: {
       title: "باقاتنا",

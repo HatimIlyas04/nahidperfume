@@ -48,7 +48,7 @@ const CSS = `
 .byop-card-img { aspect-ratio: 1; background: var(--gray-100); position: relative; }
 .byop-card-img img { width: 100%; height: 100%; object-fit: cover; }
 .byop-card-check {
-  position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 50%;
+  position: absolute; top: 8px; inset-inline-end: 8px; width: 26px; height: 26px; border-radius: 50%;
   background: white; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
   color: transparent; transition: var(--transition);
 }
@@ -56,7 +56,7 @@ const CSS = `
 .byop-card-info { padding: 10px 12px; }
 .byop-card-name { font-size: 0.82rem; font-weight: 600; color: var(--secondary); line-height: 1.25; }
 .byop-card-cat { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
-.byop-card-view { position: absolute; bottom: 8px; left: 8px; font-size: 0.6rem; background: rgba(255,255,255,0.9); padding: 3px 8px; border-radius: var(--radius-full); color: var(--secondary); font-weight: 700; }
+.byop-card-view { position: absolute; bottom: 8px; inset-inline-start: 8px; font-size: 0.6rem; background: rgba(255,255,255,0.9); padding: 3px 8px; border-radius: var(--radius-full); color: var(--secondary); font-weight: 700; }
 
 .byop-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
 

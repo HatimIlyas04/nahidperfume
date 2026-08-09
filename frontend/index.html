@@ -16,6 +16,26 @@
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
     <link rel="dns-prefetch" href="https://res.cloudinary.com" />
 
+    <!-- Arabic is the default language, so the Arabic typeface must be
+         discoverable by the browser's preload scanner immediately, not
+         injected by JS after React mounts (LanguageContext.jsx used to
+         do that -- fine for an opt-in secondary language, too slow now
+         that most first visits render in Arabic). Loaded as a non-blocking
+         preload (swapped to an active stylesheet on load) instead of a
+         plain <link rel="stylesheet">, which would otherwise be a
+         render-blocking request to a third-party domain on every first
+         paint — exactly the kind of cost this pass is trying to cut. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="preload" as="style"
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;500;600;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;500;600;700&display=swap" />
+    </noscript>
+
     <title>Nahid Perfumes — Packs de Parfums Curés | Maroc</title>
     <meta name="description" content="Nahid Perfumes crée des packs de 4 parfums curés avec soin. Choisissez un pack prêt-à-offrir ou composez le vôtre sur mesure. Livraison partout au Maroc, paiement à la livraison." />
     <link rel="canonical" href="https://www.nahidperfumes.com/" />

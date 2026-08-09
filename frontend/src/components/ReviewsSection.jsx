@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiStar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { feedbacksApi } from "../services/api";
+import { useLanguage } from "../context/LanguageContext";
 import { AVATARS } from "../pages/Reviews";
 
 const FALLBACK = [
@@ -39,6 +40,7 @@ const AvatarBubble = ({ avatarId, name, size = 48 }) => {
 
 const ReviewsSection = () => {
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage]       = useState(0);
@@ -61,12 +63,12 @@ const ReviewsSection = () => {
     <section style={styles.section}>
       <div className="container">
         <div style={styles.header}>
-          <span style={styles.eyebrow}>✦ TÉMOIGNAGES</span>
-          <h2 style={styles.title}>Ils ont trouvé leur signature</h2>
+          <span style={styles.eyebrow}>{t("reviewsSection.eyebrow")}</span>
+          <h2 style={styles.title}>{t("reviewsSection.title")}</h2>
           <div style={styles.aggregate}>
             <Stars count={5} />
             <span style={styles.score}>{avg}</span>
-            <span style={styles.total}>sur {reviews.length} avis</span>
+            <span style={styles.total}>{reviews.length} {t("reviewsSection.reviewsWord")}</span>
           </div>
         </div>
 
@@ -113,9 +115,9 @@ const ReviewsSection = () => {
 
         {/* CTA */}
         <div style={styles.cta}>
-          <p style={styles.ctaSub}>Vous avez essayé un de nos parfums ?</p>
+          <p style={styles.ctaSub}>{t("reviewsSection.ctaSub")}</p>
           <button style={styles.ctaBtn} onClick={() => navigate("/reviews")}>
-            Laisser mon avis <span style={styles.ctaArrow}>→</span>
+            {t("reviewsSection.ctaBtn")} <span style={{ ...styles.ctaArrow, ...(isRTL ? { transform: "scaleX(-1)" } : null) }}>→</span>
           </button>
         </div>
       </div>
@@ -133,7 +135,7 @@ const styles = {
   total:   { fontSize: "0.85rem", color: "#9B9B9B" },
   grid:    { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: "24px", marginBottom: "40px" },
   card:    { backgroundColor: "#FAFAFA", borderRadius: "20px", padding: "32px", border: "1px solid #F0F0F0", display: "flex", flexDirection: "column", gap: "16px", position: "relative", transition: "box-shadow 0.3s ease" },
-  quote:   { fontFamily: "'Cormorant Garamond', serif", fontSize: "4rem", color: "#EF776A", lineHeight: 0.8, opacity: 0.3, position: "absolute", top: "24px", left: "28px", userSelect: "none" },
+  quote:   { fontFamily: "'Cormorant Garamond', serif", fontSize: "4rem", color: "#EF776A", lineHeight: 0.8, opacity: 0.3, position: "absolute", top: "24px", insetInlineStart: "28px", userSelect: "none" },
   comment: { fontSize: "0.9rem", lineHeight: "1.7", color: "#3A3A3A", flex: 1, paddingTop: "20px" },
   cardFooter: { display: "flex", alignItems: "center", gap: "14px", paddingTop: "16px", borderTop: "1px solid #EBEBEB" },
   reviewer: { display: "flex", flexDirection: "column", gap: "4px" },

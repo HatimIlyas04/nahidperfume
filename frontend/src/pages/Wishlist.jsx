@@ -22,7 +22,7 @@ const CSS = `
 .wl-card-img img { width: 100%; height: 100%; object-fit: cover; }
 .wl-card-body { padding: 12px 14px; }
 .wl-card-name { font-size: 0.88rem; font-weight: 600; color: var(--secondary); }
-.wl-card-remove { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.92); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.wl-card-remove { position: absolute; top: 8px; inset-inline-end: 8px; width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.92); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .wl-card-cta { width: 100%; margin-top: 8px; padding: 8px; border-radius: var(--radius-full); border: none; background: var(--primary); color: white; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .wl-empty { text-align: center; padding: 80px 20px; }
 .wl-empty-icon { font-size: 3rem; opacity: 0.25; margin-bottom: 16px; }
