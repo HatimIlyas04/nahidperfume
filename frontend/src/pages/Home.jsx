@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
@@ -10,6 +10,7 @@ import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import PackCard from "../components/PackCard";
+import HomeOrderForm from "../components/HomeOrderForm";
 import ReviewsSection from "../components/ReviewsSection";
 import TrustBadges from "../components/TrustBadges";
 import NahidFooter from "../components/NahidFooter";
@@ -46,6 +47,15 @@ const CSS = `
 }
 .home-pack-skel { border-radius: var(--radius-xl); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: home-skel 1.4s infinite; aspect-ratio: 4/6.2; }
 @keyframes home-skel { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+/* Lightweight placeholders for the FAQ/UGC sections -- both are fed by their
+   own independent fetch, so without this they pop in abruptly once their
+   request resolves instead of reserving their layout space up front. */
+.home-section-skel { border-radius: var(--radius-md); background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: home-skel 1.4s infinite; }
+.home-faq-skel { max-width: 780px; margin: 0 auto; padding: 0 32px; display: flex; flex-direction: column; gap: 12px; }
+.home-faq-skel .home-section-skel { height: 56px; }
+.home-ugc-skel-grid { max-width: var(--container-max); margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+@media (max-width: 900px) { .home-ugc-skel-grid { grid-template-columns: repeat(3, 1fr); } }
+.home-ugc-skel-grid .home-section-skel { aspect-ratio: 1; border-radius: var(--radius-md); }
 
 .home-cta-band {
   background: linear-gradient(135deg, var(--secondary) 0%, #2a2a2a 100%);
@@ -115,20 +125,35 @@ export default function Home() {
   const [packs, setPacks] = useState([]);
   const [packsLoading, setPacksLoading] = useState(true);
   const [faqs, setFaqs] = useState([]);
+  const [faqLoading, setFaqLoading] = useState(true);
   const [openFaq, setOpenFaq] = useState(null);
   const [email, setEmail] = useState("");
   const [ugcItems, setUgcItems] = useState([]);
+  const [ugcLoading, setUgcLoading] = useState(true);
   const [wishedIds, setWishedIds] = useState(() => new Set());
+  const [selectedPack, setSelectedPack] = useState(null);
+  const orderFormRef = useRef(null);
 
   useEffect(() => {
     packsApi.list().then(setPacks).catch(() => setPacks([])).finally(() => setPacksLoading(false));
-    faqApi.listActive().then((data) => setFaqs(data.slice(0, 6))).catch(() => setFaqs([]));
-    bannersApi.listActive("ugc_gallery").then(setUgcItems).catch(() => setUgcItems([]));
+    faqApi.listActive().then((data) => setFaqs(data.slice(0, 6))).catch(() => setFaqs([])).finally(() => setFaqLoading(false));
+    bannersApi.listActive("ugc_gallery").then(setUgcItems).catch(() => setUgcItems([])).finally(() => setUgcLoading(false));
     wishlistApi.get().then((w) => setWishedIds(new Set(w.packs.map((p) => p.id)))).catch(() => {});
   }, []);
 
   const bestsellers = packs.slice(0, 8);
   const whyItems = t("home.whyItems");
+
+  // Derived at render time rather than synced via an effect: defaults to
+  // the first bestseller once packs load (so the direct order form is
+  // already populated -- pack -> price -> perfumes -> form -> confirm,
+  // no tap required), but a click on "Commander" always wins afterwards.
+  const displayedPack = selectedPack || bestsellers[0] || null;
+
+  const handleOrderNow = useCallback((pack) => {
+    setSelectedPack(pack);
+    orderFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   const handleToggleWishlist = useCallback(async (pack) => {
     const wished = wishedIds.has(pack.id);
@@ -202,6 +227,7 @@ export default function Home() {
                 isWished={wishedIds.has(pack.id)}
                 onToggleWishlist={handleToggleWishlist}
                 onAddToCart={handleAddToCart}
+                onOrderNow={handleOrderNow}
               />
             ))}
           </div>
@@ -214,6 +240,14 @@ export default function Home() {
       ) : (
         <section style={{ textAlign: "center", paddingBottom: "var(--section-gap)" }}>
           <p style={{ color: "var(--text-muted)" }}>{t("home.comingSoon")}</p>
+        </section>
+      )}
+
+      {/* DIRECT ORDER FORM — selecting a pack above scrolls here instead of
+          navigating away; the cart/checkout flow below remains untouched. */}
+      {(packsLoading || bestsellers.length > 0) && (
+        <section style={{ paddingBottom: "var(--section-gap)" }}>
+          <HomeOrderForm pack={displayedPack} ref={orderFormRef} />
         </section>
       )}
 
@@ -251,7 +285,13 @@ export default function Home() {
       <ReviewsSection />
 
       {/* UGC / DELIVERY PHOTOS */}
-      {ugcItems.length > 0 && (
+      {ugcLoading ? (
+        <section className="home-section">
+          <div className="home-ugc-skel-grid">
+            {[0, 1, 2, 3, 4, 5].map((i) => <div className="home-section-skel" key={i} />)}
+          </div>
+        </section>
+      ) : ugcItems.length > 0 && (
         <section className="home-section">
           <div className="home-section-head" style={{ justifyContent: "center", textAlign: "center", flexDirection: "column", alignItems: "center" }}>
             <span className="home-section-eyebrow">{t("home.ugcEyebrow")}</span>
@@ -269,7 +309,13 @@ export default function Home() {
       )}
 
       {/* FAQ */}
-      {faqs.length > 0 && (
+      {faqLoading ? (
+        <section className="home-section">
+          <div className="home-faq-skel">
+            {[0, 1, 2, 3].map((i) => <div className="home-section-skel" key={i} />)}
+          </div>
+        </section>
+      ) : faqs.length > 0 && (
         <section className="home-section">
           <div className="home-section-head" style={{ justifyContent: "center", textAlign: "center", flexDirection: "column", alignItems: "center" }}>
             <span className="home-section-eyebrow">{t("home.faqEyebrow")}</span>

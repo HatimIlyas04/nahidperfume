@@ -167,7 +167,7 @@ function injectCSS() {
 // matching useCallback on the handlers passed in, which is required for
 // memo() here to actually do anything (a new inline function every render
 // would defeat it silently).
-function PackCard({ pack, badge, priority = false, isWished = false, onToggleWishlist, onAddToCart }) {
+function PackCard({ pack, badge, priority = false, isWished = false, onToggleWishlist, onAddToCart, onOrderNow }) {
   injectCSS();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -182,6 +182,14 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
   const saveAmount = hasDiscount ? Math.round(Number(pack.compare_at_price) - Number(pack.price)) : 0;
 
   const handleBuyNow = () => {
+    // On the homepage, onOrderNow selects the pack into the inline direct
+    // order form instead of navigating away (see Home.jsx) -- everywhere
+    // else (PacksListing, PackDetails, Wishlist), this prop isn't passed,
+    // so "Commander" keeps navigating to /checkout exactly as before.
+    if (onOrderNow) {
+      onOrderNow(pack);
+      return;
+    }
     navigate("/checkout", {
       state: {
         buyNowItem: {

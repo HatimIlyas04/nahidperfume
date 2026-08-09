@@ -103,9 +103,15 @@ async function withRetry(requestFn) {
 
 // Public, infrequently-changing endpoints — safe to dedupe/short-cache
 // client-side on top of the backend's own Cache-Control headers.
+// "/api/wishlist" is here too: Home.jsx, PackDetails.jsx, and Wishlist.jsx
+// each independently fetch the full wishlist on mount just to know which
+// packs/perfumes are already saved -- without this they'd each hit the
+// network separately instead of sharing one cached response. Mutations
+// (add/remove) call invalidateCache() below so a stale list is never shown.
 const CACHEABLE_PREFIXES = [
   "/api/packs", "/api/perfumes", "/api/faq", "/api/testimonials",
   "/api/banners", "/api/homepage-sections", "/api/settings", "/api/custom-pack-settings",
+  "/api/wishlist",
 ];
 // Within FRESH_TTL: return the cache, no network call at all.
 // Between FRESH_TTL and STALE_TTL: stale-while-revalidate — return the
@@ -168,6 +174,15 @@ api.get = function resilientGet(url, config = {}) {
   if (cacheable) inFlightRequests.set(key, promise);
   return promise;
 };
+
+/** Drops any cached GET response(s) whose URL starts with `urlPrefix` —
+ * call after a mutation so the next read doesn't serve stale cached data
+ * (e.g. a wishlist add/remove) instead of waiting out the TTL. */
+function invalidateCache(urlPrefix) {
+  for (const key of responseCache.keys()) {
+    if (key.startsWith(urlPrefix)) responseCache.delete(key);
+  }
+}
 
 /** Stable per-browser identity for wishlist, with no login system. */
 export function getDeviceToken() {
@@ -246,13 +261,17 @@ export const contactApi = {
 export const wishlistApi = {
   get: () => api.get("/api/wishlist", { params: { device_token: getDeviceToken() } }).then(unwrap),
   addPerfume: (perfumeId) =>
-    api.post("/api/wishlist/perfumes", { device_token: getDeviceToken(), perfume_id: perfumeId }).then(unwrap),
+    api.post("/api/wishlist/perfumes", { device_token: getDeviceToken(), perfume_id: perfumeId })
+      .then(unwrap).finally(() => invalidateCache("/api/wishlist")),
   removePerfume: (perfumeId) =>
-    api.delete(`/api/wishlist/perfumes/${perfumeId}`, { params: { device_token: getDeviceToken() } }).then(unwrap),
+    api.delete(`/api/wishlist/perfumes/${perfumeId}`, { params: { device_token: getDeviceToken() } })
+      .then(unwrap).finally(() => invalidateCache("/api/wishlist")),
   addPack: (packId) =>
-    api.post("/api/wishlist/packs", { device_token: getDeviceToken(), pack_id: packId }).then(unwrap),
+    api.post("/api/wishlist/packs", { device_token: getDeviceToken(), pack_id: packId })
+      .then(unwrap).finally(() => invalidateCache("/api/wishlist")),
   removePack: (packId) =>
-    api.delete(`/api/wishlist/packs/${packId}`, { params: { device_token: getDeviceToken() } }).then(unwrap),
+    api.delete(`/api/wishlist/packs/${packId}`, { params: { device_token: getDeviceToken() } })
+      .then(unwrap).finally(() => invalidateCache("/api/wishlist")),
 };
 
 // ── Settings (public) ────────────────────────────────────────

@@ -3,6 +3,10 @@ const packsRepo = require('../db/packsRepo');
 const packPerfumesRepo = require('../db/packPerfumesRepo');
 const perfumesRepo = require('../db/perfumesRepo');
 const AppError = require('../utils/AppError');
+const cache = require('../utils/memoryCache');
+
+const LIST_CACHE_PREFIX = 'packs:list:';
+const LIST_CACHE_TTL_MS = 60 * 1000; // matches cachePublic(60) on /api/packs
 
 async function validatePerfumeIds(perfumeIds) {
   if (!Array.isArray(perfumeIds) || perfumeIds.length !== 4) {
@@ -38,8 +42,10 @@ async function attachPerfumes(packs, { lean = false } = {}, conn = pool) {
 // pack on the page. The single-pack detail view below needs the full
 // record (perfume modal, replace-a-perfume), so it stays non-lean.
 async function listPacks({ isActive } = {}) {
-  const packs = await packsRepo.findAll({ isActive });
-  return attachPerfumes(packs, { lean: true });
+  return cache.getOrSet(`${LIST_CACHE_PREFIX}${isActive}`, LIST_CACHE_TTL_MS, async () => {
+    const packs = await packsRepo.findAll({ isActive });
+    return attachPerfumes(packs, { lean: true });
+  });
 }
 
 async function getPack(id, conn = pool) {
@@ -51,7 +57,7 @@ async function getPack(id, conn = pool) {
 
 async function createPack({ perfumeIds, ...packData }) {
   await validatePerfumeIds(perfumeIds);
-  return withTransaction(async (conn) => {
+  const result = await withTransaction(async (conn) => {
     const pack = await packsRepo.create(packData, conn);
     await packPerfumesRepo.replaceForPack(pack.id, perfumeIds, conn);
     if (packData.is_upsell_offer) {
@@ -59,13 +65,15 @@ async function createPack({ perfumeIds, ...packData }) {
     }
     return getPack(pack.id, conn);
   });
+  cache.delPrefix(LIST_CACHE_PREFIX);
+  return result;
 }
 
 async function updatePack(id, { perfumeIds, ...packData }) {
   const existing = await packsRepo.findById(id);
   if (!existing) throw new AppError('Pack not found', 404);
 
-  return withTransaction(async (conn) => {
+  const result = await withTransaction(async (conn) => {
     if (Object.keys(packData).length) {
       await packsRepo.update(id, packData, conn);
     }
@@ -78,6 +86,8 @@ async function updatePack(id, { perfumeIds, ...packData }) {
     }
     return getPack(id, conn);
   });
+  cache.delPrefix(LIST_CACHE_PREFIX);
+  return result;
 }
 
 async function getUpsellOffer() {
@@ -90,16 +100,18 @@ async function getUpsellOffer() {
 async function setActive(id, isActive) {
   const pack = await packsRepo.setActive(id, isActive);
   if (!pack) throw new AppError('Pack not found', 404);
+  cache.delPrefix(LIST_CACHE_PREFIX);
   return getPack(id);
 }
 
 async function reorder(items) {
   await packsRepo.reorder(items);
+  cache.delPrefix(LIST_CACHE_PREFIX);
 }
 
 async function duplicatePack(id) {
   const source = await getPack(id);
-  return withTransaction(async (conn) => {
+  const result = await withTransaction(async (conn) => {
     const copy = await packsRepo.create(
       {
         title: `${source.title} (copie)`,
@@ -122,12 +134,15 @@ async function duplicatePack(id) {
     );
     return getPack(copy.id, conn);
   });
+  cache.delPrefix(LIST_CACHE_PREFIX);
+  return result;
 }
 
 async function deletePack(id) {
   const existing = await packsRepo.findById(id);
   if (!existing) throw new AppError('Pack not found', 404);
   await packsRepo.remove(id);
+  cache.delPrefix(LIST_CACHE_PREFIX);
 }
 
 /**

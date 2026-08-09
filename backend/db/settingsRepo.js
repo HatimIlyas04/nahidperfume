@@ -1,4 +1,8 @@
 const { pool } = require('../config/db');
+const cache = require('../utils/memoryCache');
+
+const PUBLIC_CACHE_KEY = 'settings:public';
+const PUBLIC_CACHE_TTL_MS = 300 * 1000; // matches cachePublic(300) on /api/settings
 
 // Only these keys are ever exposed on the public (unauthenticated) endpoint.
 // Everything else in the `settings` table is admin-only. Secrets never live
@@ -25,11 +29,13 @@ async function findAll(conn = pool) {
 }
 
 async function findPublic(conn = pool) {
-  const [rows] = await conn.query(
-    'SELECT setting_key, setting_value FROM settings WHERE setting_key IN (?)',
-    [PUBLIC_KEYS]
-  );
-  return rows;
+  return cache.getOrSet(PUBLIC_CACHE_KEY, PUBLIC_CACHE_TTL_MS, async () => {
+    const [rows] = await conn.query(
+      'SELECT setting_key, setting_value FROM settings WHERE setting_key IN (?)',
+      [PUBLIC_KEYS]
+    );
+    return rows;
+  });
 }
 
 async function upsertMany(entries, conn = pool) {
@@ -40,6 +46,7 @@ async function upsertMany(entries, conn = pool) {
       [key, value]
     );
   }
+  cache.del(PUBLIC_CACHE_KEY);
 }
 
 module.exports = { findAll, findPublic, upsertMany, PUBLIC_KEYS };

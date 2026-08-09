@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useWishlist } from "../context/WishlistContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useCart } from "../context/CartContext";
-import { settingsApi, API_BASE_URL } from "../services/api";
+import { settingsApi, packsApi } from "../services/api";
 import LanguageSelector from "./LanguageSelector";
 import CountdownTimer from "./CountdownTimer";
 import {
@@ -318,22 +318,23 @@ export default function Navbar({ isAdminLoggedIn, setIsAdminLoggedIn }) {
 
   useEffect(() => {
     if (!query || query.length < 2) { setLiveResults([]); return; }
-    const controller = new AbortController();
+    let cancelled = false;
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/packs`, { signal: controller.signal });
-        const { data } = await res.json();
+        // Routed through packsApi.list() instead of a raw fetch so it hits
+        // the same stale-while-revalidate cache/dedup layer as the rest of
+        // the app -- typing a search no longer re-downloads the full packs
+        // payload on every keystroke once it's already cached.
+        const data = await packsApi.list();
+        if (cancelled) return;
         const q = query.trim().toLowerCase();
         const matches = (Array.isArray(data) ? data : []).filter((p) => p.title.toLowerCase().includes(q));
         setLiveResults(matches.slice(0, 5));
-      } catch (err) { if (err.name !== "AbortError") setLiveResults([]); }
-      finally { setSearching(false); }
+      } catch { if (!cancelled) setLiveResults([]); }
+      finally { if (!cancelled) setSearching(false); }
     }, 280);
-    // Cancels both the pending debounce and any in-flight fetch from a
-    // previous keystroke, so a slow older response can never overwrite
-    // fresher results (the classic search-race-condition bug).
-    return () => { clearTimeout(timer); controller.abort(); };
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [query]);
 
   const handleLogout = () => {

@@ -1,10 +1,16 @@
 const { pool } = require('../config/db');
+const cache = require('../utils/memoryCache');
+
+const APPROVED_CACHE_KEY = 'feedbacks:approved';
+const APPROVED_CACHE_TTL_MS = 30 * 1000; // matches cachePublic(30) on /api/feedbacks
 
 async function findApproved(conn = pool) {
-  const [rows] = await conn.query(
-    "SELECT * FROM feedbacks WHERE status = 'approved' ORDER BY created_at DESC"
-  );
-  return rows;
+  return cache.getOrSet(APPROVED_CACHE_KEY, APPROVED_CACHE_TTL_MS, async () => {
+    const [rows] = await conn.query(
+      "SELECT * FROM feedbacks WHERE status = 'approved' ORDER BY created_at DESC"
+    );
+    return rows;
+  });
 }
 
 async function findAll({ status } = {}, conn = pool) {
@@ -31,11 +37,13 @@ async function create(data, conn = pool) {
 
 async function setStatus(id, status, conn = pool) {
   await conn.query('UPDATE feedbacks SET status = ? WHERE id = ?', [status, id]);
+  cache.del(APPROVED_CACHE_KEY);
   return findById(id, conn);
 }
 
 async function remove(id, conn = pool) {
   await conn.query('DELETE FROM feedbacks WHERE id = ?', [id]);
+  cache.del(APPROVED_CACHE_KEY);
 }
 
 module.exports = { findApproved, findAll, findById, create, setStatus, remove };
