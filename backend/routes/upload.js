@@ -12,16 +12,20 @@ cloudinary.config({
 
 const CLOUDINARY_CONFIGURED = !!(env.cloudinary.cloudName && env.cloudinary.apiKey && env.cloudinary.apiSecret);
 
+// eslint-disable-next-line no-console
+console.log(`[UPLOAD] Cloudinary config at startup: ${CLOUDINARY_CONFIGURED ? 'present' : 'MISSING'} (cloud_name=${env.cloudinary.cloudName ? 'set' : 'missing'}, api_key=${env.cloudinary.apiKey ? 'set' : 'missing'}, api_secret=${env.cloudinary.apiSecret ? 'set' : 'missing'})`);
+
 function requireCloudinary(req, res, next) {
     if (!CLOUDINARY_CONFIGURED) {
         // Full detail (which exact keys are missing) only in the Render
         // logs — the client just needs to know upload isn't available
-        // right now, not the server's environment-variable layout.
+        // right now, not the server's environment-variable layout. Never
+        // logs the secret values themselves, only whether each is set.
         // eslint-disable-next-line no-console
-        console.error('[upload] Cloudinary is not configured — CLOUDINARY_CLOUD_NAME/CLOUDINARY_API_KEY/CLOUDINARY_API_SECRET missing on this environment.');
+        console.error(`[UPLOAD] Cloudinary error: not configured — cloud_name=${env.cloudinary.cloudName ? 'set' : 'MISSING'}, api_key=${env.cloudinary.apiKey ? 'set' : 'MISSING'}, api_secret=${env.cloudinary.apiSecret ? 'set' : 'MISSING'}`);
         return res.status(503).json({
             success: false,
-            message: "Le service de téléchargement d'images est temporairement indisponible. Veuillez réessayer plus tard.",
+            message: 'Cloudinary is not configured on the production server.',
         });
     }
     next();
@@ -60,9 +64,17 @@ function streamToCloudinary(buffer, options) {
 }
 
 // ── POST /api/upload/image ──────────────────────────────
-router.post('/image', requireCloudinary, imageUpload.single('file'), async (req, res) => {
+router.post('/image', requireCloudinary, (req, res, next) => {
+    // eslint-disable-next-line no-console
+    console.log('[UPLOAD] request received (POST /api/upload/image)');
+    next();
+}, imageUpload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, message: 'Aucun fichier reçu.' });
+    // eslint-disable-next-line no-console
+    console.log(`[UPLOAD] file received: field="file" mimetype=${req.file.mimetype} size=${req.file.size}B`);
     try {
+        // eslint-disable-next-line no-console
+        console.log('[UPLOAD] Cloudinary upload started');
         const result = await streamToCloudinary(req.file.buffer, {
             folder: 'nahid-perfume/products',
             resource_type: 'image',
@@ -71,18 +83,32 @@ router.post('/image', requireCloudinary, imageUpload.single('file'), async (req,
                 { quality: 'auto', fetch_format: 'auto' },
             ],
         });
+        // eslint-disable-next-line no-console
+        console.log(`[UPLOAD] Cloudinary upload completed: public_id=${result.public_id}`);
         res.json({ success: true, url: result.secure_url, public_id: result.public_id });
     } catch (err) {
+        // Cloudinary SDK errors are categorical (e.g. "Invalid API key",
+        // "Invalid Signature") and never include the secret itself, so it's
+        // safe (and per the current diagnostic need, useful) to relay the
+        // real message back instead of a generic string.
         // eslint-disable-next-line no-console
-        console.error('[upload] Cloudinary image upload failed:', err.message);
-        res.status(502).json({ success: false, message: "Échec du téléchargement de l'image. Veuillez réessayer." });
+        console.error(`[UPLOAD] Cloudinary error: ${err.message}`);
+        res.status(502).json({ success: false, message: err.message || "Échec du téléchargement de l'image." });
     }
 });
 
 // ── POST /api/upload/video ──────────────────────────────
-router.post('/video', requireCloudinary, videoUpload.single('file'), async (req, res) => {
+router.post('/video', requireCloudinary, (req, res, next) => {
+    // eslint-disable-next-line no-console
+    console.log('[UPLOAD] request received (POST /api/upload/video)');
+    next();
+}, videoUpload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, message: 'Aucun fichier reçu.' });
+    // eslint-disable-next-line no-console
+    console.log(`[UPLOAD] file received: field="file" mimetype=${req.file.mimetype} size=${req.file.size}B`);
     try {
+        // eslint-disable-next-line no-console
+        console.log('[UPLOAD] Cloudinary upload started');
         const result = await streamToCloudinary(req.file.buffer, {
             folder: 'nahid-perfume/videos',
             resource_type: 'video',
@@ -90,11 +116,13 @@ router.post('/video', requireCloudinary, videoUpload.single('file'), async (req,
             eager: [{ format: 'mp4', quality: 'auto' }],
             eager_async: true,
         });
+        // eslint-disable-next-line no-console
+        console.log(`[UPLOAD] Cloudinary upload completed: public_id=${result.public_id}`);
         res.json({ success: true, url: result.secure_url, public_id: result.public_id });
     } catch (err) {
         // eslint-disable-next-line no-console
-        console.error('[upload] Cloudinary video upload failed:', err.message);
-        res.status(502).json({ success: false, message: 'Échec du téléchargement de la vidéo. Veuillez réessayer.' });
+        console.error(`[UPLOAD] Cloudinary error: ${err.message}`);
+        res.status(502).json({ success: false, message: err.message || 'Échec du téléchargement de la vidéo.' });
     }
 });
 
