@@ -16,6 +16,13 @@ const CSS = `
 .ty-order-num { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; color: var(--primary); margin: 16px 0; }
 .ty-total { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 40px; }
 
+.ty-summary { background: var(--background); border-radius: var(--radius-lg); padding: 20px 22px; margin: 0 auto 12px; text-align: start; max-width: 420px; }
+.ty-summary-row { display: flex; justify-content: space-between; gap: 12px; font-size: 0.83rem; color: var(--text-light); padding: 5px 0; }
+.ty-summary-row strong { color: var(--text); font-weight: 600; }
+.ty-summary-total { font-weight: 700; }
+.ty-summary-total strong { color: var(--primary-dark); font-family: var(--font-display); font-size: 1.05rem; }
+.ty-summary-divider { border-top: 1px solid var(--border-light); margin: 8px 0; }
+
 .ty-upsell-section { margin-top: 20px; text-align: start; }
 .ty-upsell-head { text-align: center; margin-bottom: 20px; }
 .ty-upsell-head h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 500; margin-bottom: 6px; }
@@ -78,7 +85,11 @@ export default function ThankYou() {
     setApplyingId(offer.id);
     try {
       const updated = await ordersApi.applyUpsell(order.id, order.upsell_token, offer.id);
-      setOrder(updated);
+      // Merge, don't replace: the upsell endpoint returns the fresh order
+      // row (total, upsell_applied_at, etc.) but not the items summary
+      // createOrder attached client-side -- replacing wholesale would blank
+      // out the order summary card right after a successful upsell.
+      setOrder((prev) => ({ ...prev, ...updated }));
       setAcceptedIds((prev) => new Set(prev).add(offer.id));
       Swal.fire({ icon: "success", title: t("thankYou.upsellSuccessTitle"), timer: 1800, showConfirmButton: false });
     } catch (err) {
@@ -99,7 +110,22 @@ export default function ThankYou() {
         <h1>{t("thankYou.title")}</h1>
         <p>{t("thankYou.subtitle")}</p>
         <div className="ty-order-num">{order.order_number}</div>
-        <p className="ty-total">{t("thankYou.totalLabel")} : {Math.round(order.total_amount)} MAD · {t("thankYou.codLabel")}</p>
+
+        <div className="ty-summary">
+          {(order.items || []).map((item, i) => (
+            <div className="ty-summary-row" key={i}>
+              <span>{item.title}{item.quantity > 1 ? ` × ${item.quantity}` : ""}</span>
+              <strong>{Math.round(item.price * item.quantity)} MAD</strong>
+            </div>
+          ))}
+          <div className="ty-summary-row"><span>{t("checkout.shipping")}</span><strong>{t("cart.free")}</strong></div>
+          <div className="ty-summary-row ty-summary-total"><span>{t("thankYou.totalLabel")}</span><strong>{Math.round(order.total_amount)} MAD</strong></div>
+          <div className="ty-summary-divider" />
+          <div className="ty-summary-row"><span>{t("checkout.fullName")}</span><span>{order.customer_name}</span></div>
+          <div className="ty-summary-row"><span>{t("checkout.phone")}</span><span>{order.customer_phone}</span></div>
+          {order.customer_city && <div className="ty-summary-row"><span>{t("checkout.city")}</span><span>{order.customer_city}</span></div>}
+        </div>
+        <p className="ty-total">{t("thankYou.codLabel")}</p>
 
         {showUpsell && (
           <div className="ty-upsell-section">

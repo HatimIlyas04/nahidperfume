@@ -2,12 +2,25 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
+const env = require('../config/env');
 
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key:    process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: env.cloudinary.cloudName,
+    api_key:    env.cloudinary.apiKey,
+    api_secret: env.cloudinary.apiSecret,
 });
+
+const CLOUDINARY_CONFIGURED = !!(env.cloudinary.cloudName && env.cloudinary.apiKey && env.cloudinary.apiSecret);
+
+function requireCloudinary(req, res, next) {
+    if (!CLOUDINARY_CONFIGURED) {
+        return res.status(503).json({
+            error: 'Le service de téléchargement d\'images n\'est pas configuré sur le serveur.',
+            details: 'Missing CLOUDINARY_CLOUD_NAME/CLOUDINARY_API_KEY/CLOUDINARY_API_SECRET environment variable(s).',
+        });
+    }
+    next();
+}
 
 // Memory storage — no disk writes, stream directly to Cloudinary
 const storage = multer.memoryStorage();
@@ -42,7 +55,7 @@ function streamToCloudinary(buffer, options) {
 }
 
 // ── POST /api/upload/image ──────────────────────────────
-router.post('/image', imageUpload.single('file'), async (req, res) => {
+router.post('/image', requireCloudinary, imageUpload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' });
     try {
         const result = await streamToCloudinary(req.file.buffer, {
@@ -61,7 +74,7 @@ router.post('/image', imageUpload.single('file'), async (req, res) => {
 });
 
 // ── POST /api/upload/video ──────────────────────────────
-router.post('/video', videoUpload.single('file'), async (req, res) => {
+router.post('/video', requireCloudinary, videoUpload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' });
     try {
         const result = await streamToCloudinary(req.file.buffer, {

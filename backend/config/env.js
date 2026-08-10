@@ -14,6 +14,22 @@ function loadEnv() {
     process.exit(1);
   }
 
+  // Not in REQUIRED (a missing key here shouldn't stop the whole server
+  // from booting — every other route still works), but a silent
+  // misconfiguration here is exactly what turns into a confusing 500 on
+  // every image upload with no clue why, so it gets a loud one-time
+  // warning in the Render logs instead of only surfacing when an admin
+  // actually tries to upload something.
+  const missingCloudinary = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']
+    .filter((key) => !process.env[key] || !process.env[key].trim());
+  if (missingCloudinary.length > 0) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[env] Cloudinary is not fully configured — missing: ${missingCloudinary.join(', ')}. ` +
+      'Image/video upload (POST /api/upload/*) will fail until these are set.'
+    );
+  }
+
   return {
     nodeEnv: process.env.NODE_ENV || 'development',
     port: Number(process.env.PORT) || 5000,

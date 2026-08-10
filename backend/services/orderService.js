@@ -192,7 +192,18 @@ async function createOrder(payload) {
     // Short-lived token scoping the Thank You page's one-click upsell to
     // exactly this order — nothing else lets a client mutate an order total.
     const upsellToken = jwt.sign({ orderId: order.id, purpose: 'upsell' }, env.jwtSecret, { expiresIn: '30m' });
-    return { ...order, upsell_token: upsellToken };
+    // resolvedItems is already in memory from earlier in this function --
+    // reusing it here means the Thank You page can show "which pack did I
+    // just order" without a second request (GET /api/orders/:id is
+    // admin-only, and adding a public one just for this would be exactly
+    // the kind of unnecessary extra API call this order flow avoids
+    // elsewhere).
+    const items = resolvedItems.map((item) => ({
+      title: item.item_name_snapshot,
+      price: item.unit_price,
+      quantity: item.quantity,
+    }));
+    return { ...order, upsell_token: upsellToken, items };
   });
 }
 

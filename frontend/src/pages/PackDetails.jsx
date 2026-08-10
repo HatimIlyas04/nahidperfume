@@ -55,16 +55,32 @@ const CSS = `
 .pd-contains-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .pd-contains-name { font-size: 0.76rem; font-weight: 500; color: var(--text); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.pd-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; margin-bottom: 8px; }
-.pd-actions .btn-primary, .pd-actions .btn-outline { flex: 1; min-width: 160px; }
-.pd-customize-cta {
-  flex: 1; min-width: 180px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 14px 24px; border-radius: var(--radius-full); border: 1.5px solid var(--border); background: white;
-  cursor: pointer; font-size: 0.88rem; font-weight: 500; color: var(--secondary); transition: var(--transition);
+/* Compact, hierarchical CTA stack -- one dominant primary action instead
+   of 3-4 same-size buttons competing for attention. Row 1 is the sale:
+   direct order + the two icon-only secondary affordances (wishlist,
+   share) that don't need a label. Row 2 is two lighter, smaller actions
+   for customers who want the cart/customize path instead. */
+.pd-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; margin-bottom: 8px; }
+.pd-actions-row1 { display: flex; gap: 8px; }
+.pd-btn-primary {
+  flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 12px 18px; border-radius: var(--radius-full); border: none;
+  background: var(--primary); color: white; font-size: 0.86rem; font-weight: 600;
+  cursor: pointer; transition: var(--transition); box-shadow: 0 6px 16px -6px rgba(239,119,106,0.55);
 }
-.pd-customize-cta:hover, .pd-customize-cta.active { border-color: var(--secondary); background: var(--secondary); color: white; }
+.pd-btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(239,119,106,0.65); }
+.pd-actions-row2 { display: flex; gap: 8px; }
+.pd-btn-secondary, .pd-btn-tertiary {
+  flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 14px; border-radius: var(--radius-full);
+  font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: var(--transition); white-space: nowrap;
+}
+.pd-btn-secondary { border: 1.3px solid var(--border); background: white; color: var(--secondary); }
+.pd-btn-secondary:hover, .pd-btn-secondary.active { border-color: var(--secondary); background: var(--secondary); color: white; }
+.pd-btn-tertiary { border: none; background: none; color: var(--text-light); }
+.pd-btn-tertiary:hover { color: var(--primary-dark); background: var(--primary-light); }
 .pd-icon-btn {
-  width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid var(--border); background: white;
+  width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid var(--border); background: white;
   display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); flex-shrink: 0;
 }
 .pd-icon-btn:hover, .pd-icon-btn.active { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
@@ -285,19 +301,23 @@ export default function PackDetails() {
             </div>
 
             <div className="pd-actions">
-              <button className="btn-primary" onClick={scrollToOrderForm}>
-                <FiCreditCard size={15} /> {t("packCard.order")}
-              </button>
-              <button className="btn-outline" onClick={handleAddToCart}>
-                <FiShoppingBag size={15} /> {t("packDetails.addToCart")}
-              </button>
-              <button className={`pd-customize-cta${customizing ? " active" : ""}`} onClick={scrollToCustomize}>
-                <FiSliders size={15} /> {t("packDetails.customizeToggle")}
-              </button>
-              <button className={`pd-icon-btn${isWished ? " active" : ""}`} onClick={toggleWishlist} aria-label={t("packDetails.wishlist")}>
-                <FiHeart size={18} fill={isWished ? "currentColor" : "none"} />
-              </button>
-              <button className="pd-icon-btn" onClick={handleShare} aria-label={t("packDetails.share")}><FiShare2 size={17} /></button>
+              <div className="pd-actions-row1">
+                <button className="pd-btn-primary" onClick={scrollToOrderForm}>
+                  <FiCreditCard size={15} /> {t("packCard.order")}
+                </button>
+                <button className={`pd-icon-btn${isWished ? " active" : ""}`} onClick={toggleWishlist} aria-label={t("packDetails.wishlist")}>
+                  <FiHeart size={17} fill={isWished ? "currentColor" : "none"} />
+                </button>
+                <button className="pd-icon-btn" onClick={handleShare} aria-label={t("packDetails.share")}><FiShare2 size={16} /></button>
+              </div>
+              <div className="pd-actions-row2">
+                <button className={`pd-btn-secondary${customizing ? " active" : ""}`} onClick={scrollToCustomize}>
+                  <FiSliders size={13} /> {t("packDetails.customizeToggle")}
+                </button>
+                <button className="pd-btn-tertiary" onClick={handleAddToCart}>
+                  <FiShoppingBag size={13} /> {t("packDetails.addToCart")}
+                </button>
+              </div>
             </div>
           </div>
         </div>
