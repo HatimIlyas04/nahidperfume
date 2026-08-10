@@ -6,6 +6,7 @@ import { perfumesApi, customPackSettingsApi } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
+import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import PerfumeModal from "../components/PerfumeModal";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
@@ -229,7 +230,7 @@ export default function BuildYourOwnPack() {
                 return (
                   <div key={p.id} className={`byop-card${isSelected ? " selected" : ""}`} onClick={() => toggleSelect(p)}>
                     <div className="byop-card-img">
-                      <img src={cldResize(p.image_url, 250) || "/nahid1.png"} alt={p.name} loading="lazy" />
+                      <img src={cldResize(p.image_url, 250) || NO_IMAGE_PLACEHOLDER} alt={p.name} loading="lazy" />
                       <div className="byop-card-check"><FiCheck size={15} /></div>
                       <button
                         className="byop-card-view"
@@ -258,7 +259,7 @@ export default function BuildYourOwnPack() {
                 <div className="byop-slot-num">{i + 1}</div>
                 {p ? (
                   <>
-                    <img className="byop-slot-img" src={cldResize(p.image_url, 80) || "/nahid1.png"} alt={p.name} />
+                    <img className="byop-slot-img" src={cldResize(p.image_url, 80) || NO_IMAGE_PLACEHOLDER} alt={p.name} />
                     <span className="byop-slot-name">{p.name}</span>
                     <button className="byop-slot-remove" onClick={() => removeSlot(p.id)} aria-label={t("buildPack.remove")}>
                       <FiX size={15} />

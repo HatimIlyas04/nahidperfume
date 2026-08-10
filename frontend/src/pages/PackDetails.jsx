@@ -6,6 +6,7 @@ import { packsApi, perfumesApi, wishlistApi } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
+import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import PerfumeModal from "../components/PerfumeModal";
 import ReplacePerfumeModal from "../components/ReplacePerfumeModal";
 import HomeOrderForm from "../components/HomeOrderForm";
@@ -273,7 +274,7 @@ export default function PackDetails() {
 
         <div className="pd-hero">
           <div className="pd-media">
-            <img src={cldResize(pack.cover_image, 700) || "/nahid1.png"} alt={pack.title} />
+            <img src={cldResize(pack.cover_image, 700) || NO_IMAGE_PLACEHOLDER} alt={pack.title} />
           </div>
           <div className="pd-info">
             <h1 className="pd-title">{pack.title}</h1>
@@ -292,7 +293,7 @@ export default function PackDetails() {
                 {currentSlots.map((slot) => (
                   <div className="pd-contains-item" key={slot.position}>
                     <div className="pd-contains-thumb">
-                      <img src={cldResize(slot.image_url, 70) || "/nahid1.png"} alt={slot.name} loading="lazy" />
+                      <img src={cldResize(slot.image_url, 70) || NO_IMAGE_PLACEHOLDER} alt={slot.name} loading="lazy" />
                     </div>
                     <span className="pd-contains-name">{slot.name}</span>
                   </div>
@@ -340,7 +341,7 @@ export default function PackDetails() {
                 <div className={`pd-perfume-card${changed ? " changed" : ""}`} key={slot.position}>
                   {changed && <span className="pd-changed-tag">{t("packDetails.changedTag")}</span>}
                   <button className="pd-perfume-img-btn" onClick={() => setPreviewPerfume(slot)}>
-                    <img src={cldResize(slot.image_url, 300) || "/nahid1.png"} alt={slot.name} loading="lazy" />
+                    <img src={cldResize(slot.image_url, 300) || NO_IMAGE_PLACEHOLDER} alt={slot.name} loading="lazy" />
                   </button>
                   <div className="pd-perfume-body">
                     <div className="pd-perfume-name">{slot.name}</div>

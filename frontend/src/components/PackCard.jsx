@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { FiHeart, FiShoppingBag, FiCreditCard } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
+import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 
 const CSS = `
 .pc-card {
@@ -210,7 +211,7 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
     <div className="pc-card">
       <Link to={`/packs/${pack.id}`} className="pc-media">
         <img
-          src={cldResize(pack.cover_image, 500) || "/nahid1.png"}
+          src={cldResize(pack.cover_image, 500) || NO_IMAGE_PLACEHOLDER}
           alt={pack.title}
           loading={priority ? "eager" : "lazy"}
           fetchpriority={priority ? "high" : "auto"}

@@ -20,6 +20,7 @@ export default function PerfumesPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("idle"); // idle | success | error
   const [saving, setSaving] = useState(false);
 
   const load = () => adminPerfumesApi.list().then(setPerfumes).catch(() => {}).finally(() => setLoading(false));
@@ -31,10 +32,11 @@ export default function PerfumesPage() {
     return perfumes.filter((p) => p.name.toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q));
   }, [perfumes, query]);
 
-  const openCreate = () => { setEditing(null); setForm(EMPTY); setModalOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(EMPTY); setUploadStatus("idle"); setModalOpen(true); };
   const openEdit = (p) => {
     setEditing(p);
     setForm({ ...EMPTY, ...p, is_new: !!p.is_new, is_bestseller: !!p.is_bestseller, is_active: !!p.is_active });
+    setUploadStatus(p.image_url ? "success" : "idle");
     setModalOpen(true);
   };
 
@@ -44,22 +46,34 @@ export default function PerfumesPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadStatus("idle");
     try {
       const { data } = await uploadApi.image(file);
       setForm((f) => ({ ...f, image_url: data.url }));
+      setUploadStatus("success");
     } catch (err) {
+      // Upload failing must never silently leave image_url as-is and let
+      // the form get saved anyway -- that's exactly how a perfume ends up
+      // with no real photo. Surface the real backend message and make the
+      // button itself say so, not just a toast that disappears.
+      setUploadStatus("error");
       Swal.fire({
         icon: "error",
         title: "Échec du téléchargement de l'image",
-        text: err.response?.data?.error || err.response?.data?.details || "Veuillez réessayer.",
+        text: err.response?.data?.message || "Veuillez réessayer.",
       });
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (!form.image_url) {
+      Swal.fire({ icon: "warning", title: "Image requise", text: "Téléversez une image avant d'enregistrer ce parfum." });
+      return;
+    }
     setSaving(true);
     try {
       if (editing) await adminPerfumesApi.update(editing.id, form);
@@ -142,11 +156,21 @@ export default function PerfumesPage() {
             <div className="adm-modal-head"><h3>{editing ? "Modifier le parfum" : "Nouveau parfum"}</h3></div>
             <form onSubmit={handleSave}>
               <div className="adm-form-group">
-                <label>Image</label>
+                <label>Image *</label>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   {form.image_url && <img src={form.image_url} alt="" style={{ width: 50, height: 50, borderRadius: 8, objectFit: "cover" }} />}
-                  <label className="adm-btn adm-btn-outline adm-btn-sm" style={{ cursor: "pointer" }}>
-                    <FiUploadCloud size={13} /> {uploading ? "Envoi..." : "Téléverser"}
+                  <label
+                    className="adm-btn adm-btn-outline adm-btn-sm"
+                    style={{ cursor: "pointer", color: uploadStatus === "error" ? "#C62828" : uploadStatus === "success" ? "#2E7D32" : undefined }}
+                  >
+                    <FiUploadCloud size={13} />{" "}
+                    {uploading
+                      ? "Upload en cours..."
+                      : uploadStatus === "success"
+                        ? "Image téléchargée avec succès ✓"
+                        : uploadStatus === "error"
+                          ? "Erreur d'upload — réessayer"
+                          : form.image_url ? "Changer l'image" : "Choisir une image"}
                     <input type="file" accept="image/*" hidden onChange={handleUpload} />
                   </label>
                 </div>

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
+import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 
 const CSS = `
 .pf-modal-overlay {
@@ -77,7 +78,7 @@ export default function PerfumeModal({ perfume, onClose }) {
           <FiX size={18} />
         </button>
         <div className="pf-modal-media">
-          <img src={cldResize(perfume.image_url, 500) || "/nahid1.png"} alt={perfume.name} />
+          <img src={cldResize(perfume.image_url, 500) || NO_IMAGE_PLACEHOLDER} alt={perfume.name} />
         </div>
         <div className="pf-modal-body">
           <h2 className="pf-modal-title">{perfume.name}</h2>

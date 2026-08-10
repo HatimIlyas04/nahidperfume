@@ -6,6 +6,7 @@ import { wishlistApi } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
+import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import PerfumeModal from "../components/PerfumeModal";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
@@ -100,7 +101,7 @@ export default function Wishlist() {
                     <div className="wl-card" key={pack.id}>
                       <button className="wl-card-remove" onClick={() => removePack(pack.id)}><FiX size={14} /></button>
                       <Link to={`/packs/${pack.id}`} className="wl-card-img">
-                        <img src={cldResize(pack.cover_image, 300) || "/nahid1.png"} alt={pack.title} loading="lazy" />
+                        <img src={cldResize(pack.cover_image, 300) || NO_IMAGE_PLACEHOLDER} alt={pack.title} loading="lazy" />
                       </Link>
                       <div className="wl-card-body">
                         <div className="wl-card-name">{pack.title}</div>
@@ -126,7 +127,7 @@ export default function Wishlist() {
                     <div className="wl-card" key={perfume.id}>
                       <button className="wl-card-remove" onClick={() => removePerfume(perfume.id)}><FiX size={14} /></button>
                       <div className="wl-card-img" onClick={() => setPreviewPerfume(perfume)}>
-                        <img src={cldResize(perfume.image_url, 300) || "/nahid1.png"} alt={perfume.name} loading="lazy" />
+                        <img src={cldResize(perfume.image_url, 300) || NO_IMAGE_PLACEHOLDER} alt={perfume.name} loading="lazy" />
                       </div>
                       <div className="wl-card-body">
                         <div className="wl-card-name">{perfume.name}</div>

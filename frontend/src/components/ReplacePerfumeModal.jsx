@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FiX, FiSearch, FiCheck, FiArrowRight } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
+import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 
 const CSS = `
 .rp-modal-overlay {
@@ -93,7 +94,7 @@ export default function ReplacePerfumeModal({ perfumes, excludeIds = [], current
         {currentPerfume && (
           <div className="rp-current">
             <div className="rp-current-thumb">
-              <img src={cldResize(currentPerfume.image_url, 90) || "/nahid1.png"} alt={currentPerfume.name} />
+              <img src={cldResize(currentPerfume.image_url, 90) || NO_IMAGE_PLACEHOLDER} alt={currentPerfume.name} />
             </div>
             <div className="rp-current-text">
               <div className="rp-current-label">{t("replaceModal.currentLabel")}</div>
@@ -123,7 +124,7 @@ export default function ReplacePerfumeModal({ perfumes, excludeIds = [], current
               className={`rp-item${p.id === currentPerfumeId ? " selected" : ""}`}
               onClick={() => onSelect(p)}
             >
-              <img className="rp-item-img" src={cldResize(p.image_url, 100) || "/nahid1.png"} alt={p.name} loading="lazy" />
+              <img className="rp-item-img" src={cldResize(p.image_url, 100) || NO_IMAGE_PLACEHOLDER} alt={p.name} loading="lazy" />
               <div>
                 <div className="rp-item-name">{p.name}</div>
                 <div className="rp-item-cat">{p.category}{p.gender ? ` · ${p.gender}` : ""}</div>

@@ -5,6 +5,7 @@ import { FiCheck, FiPlus, FiArrowRight, FiTruck } from "react-icons/fi";
 import { packsApi, ordersApi } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
+import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
 
@@ -148,7 +149,7 @@ export default function ThankYou() {
                 return (
                   <div className="ty-upsell-card" key={offer.id}>
                     <span className="ty-upsell-badge">{t("thankYou.upsellBadge")}</span>
-                    <img className="ty-upsell-img" src={cldResize(offer.cover_image, 300) || "/nahid1.png"} alt={offer.title} loading="lazy" />
+                    <img className="ty-upsell-img" src={cldResize(offer.cover_image, 300) || NO_IMAGE_PLACEHOLDER} alt={offer.title} loading="lazy" />
                     <div className="ty-upsell-title">{offer.title}</div>
                     {(offer.perfumes || []).length > 0 && (
                       <div className="ty-upsell-perfumes">{offer.perfumes.map((p) => p.name).join(" · ")}</div>

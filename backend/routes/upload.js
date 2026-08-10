@@ -14,9 +14,14 @@ const CLOUDINARY_CONFIGURED = !!(env.cloudinary.cloudName && env.cloudinary.apiK
 
 function requireCloudinary(req, res, next) {
     if (!CLOUDINARY_CONFIGURED) {
+        // Full detail (which exact keys are missing) only in the Render
+        // logs — the client just needs to know upload isn't available
+        // right now, not the server's environment-variable layout.
+        // eslint-disable-next-line no-console
+        console.error('[upload] Cloudinary is not configured — CLOUDINARY_CLOUD_NAME/CLOUDINARY_API_KEY/CLOUDINARY_API_SECRET missing on this environment.');
         return res.status(503).json({
-            error: 'Le service de téléchargement d\'images n\'est pas configuré sur le serveur.',
-            details: 'Missing CLOUDINARY_CLOUD_NAME/CLOUDINARY_API_KEY/CLOUDINARY_API_SECRET environment variable(s).',
+            success: false,
+            message: "Le service de téléchargement d'images est temporairement indisponible. Veuillez réessayer plus tard.",
         });
     }
     next();
@@ -56,7 +61,7 @@ function streamToCloudinary(buffer, options) {
 
 // ── POST /api/upload/image ──────────────────────────────
 router.post('/image', requireCloudinary, imageUpload.single('file'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' });
+    if (!req.file) return res.status(400).json({ success: false, message: 'Aucun fichier reçu.' });
     try {
         const result = await streamToCloudinary(req.file.buffer, {
             folder: 'nahid-perfume/products',
@@ -68,14 +73,15 @@ router.post('/image', requireCloudinary, imageUpload.single('file'), async (req,
         });
         res.json({ success: true, url: result.secure_url, public_id: result.public_id });
     } catch (err) {
-        console.error('Cloudinary image upload error:', err.message);
-        res.status(500).json({ error: 'Erreur upload image', details: err.message });
+        // eslint-disable-next-line no-console
+        console.error('[upload] Cloudinary image upload failed:', err.message);
+        res.status(502).json({ success: false, message: "Échec du téléchargement de l'image. Veuillez réessayer." });
     }
 });
 
 // ── POST /api/upload/video ──────────────────────────────
 router.post('/video', requireCloudinary, videoUpload.single('file'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' });
+    if (!req.file) return res.status(400).json({ success: false, message: 'Aucun fichier reçu.' });
     try {
         const result = await streamToCloudinary(req.file.buffer, {
             folder: 'nahid-perfume/videos',
@@ -86,8 +92,9 @@ router.post('/video', requireCloudinary, videoUpload.single('file'), async (req,
         });
         res.json({ success: true, url: result.secure_url, public_id: result.public_id });
     } catch (err) {
-        console.error('Cloudinary video upload error:', err.message);
-        res.status(500).json({ error: 'Erreur upload vidéo', details: err.message });
+        // eslint-disable-next-line no-console
+        console.error('[upload] Cloudinary video upload failed:', err.message);
+        res.status(502).json({ success: false, message: 'Échec du téléchargement de la vidéo. Veuillez réessayer.' });
     }
 });
 
@@ -99,19 +106,21 @@ router.delete('/:public_id(*)', async (req, res) => {
         await cloudinary.uploader.destroy(public_id, { resource_type });
         res.json({ success: true, message: 'Fichier supprimé de Cloudinary' });
     } catch (err) {
-        res.status(500).json({ error: 'Erreur suppression', details: err.message });
+        // eslint-disable-next-line no-console
+        console.error('[upload] Cloudinary delete failed:', err.message);
+        res.status(502).json({ success: false, message: 'Échec de la suppression du fichier.' });
     }
 });
 
 // Multer error handler
 router.use((err, req, res, next) => {
     if (err instanceof multer.MulterError) {
-        const msg = err.code === 'LIMIT_FILE_SIZE'
-            ? 'Fichier trop volumineux'
+        const message = err.code === 'LIMIT_FILE_SIZE'
+            ? 'Fichier trop volumineux.'
             : err.message;
-        return res.status(400).json({ error: msg });
+        return res.status(400).json({ success: false, message });
     }
-    if (err) return res.status(400).json({ error: err.message });
+    if (err) return res.status(400).json({ success: false, message: err.message });
     next();
 });
 

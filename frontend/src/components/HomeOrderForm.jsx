@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import { FiCheck, FiShoppingBag, FiTruck } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
+import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import { cartToOrderItems } from "../context/CartContext";
 import { ordersApi, getDeviceToken } from "../services/api";
 import { isValidMoroccanPhone } from "../utils/validation";
@@ -163,7 +164,7 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
             ) : (
               <>
                 <div className="hof-pack-media">
-                  <img src={cldResize(pack.cover_image, 500) || "/nahid1.png"} alt={pack.title} loading="lazy" />
+                  <img src={cldResize(pack.cover_image, 500) || NO_IMAGE_PLACEHOLDER} alt={pack.title} loading="lazy" />
                 </div>
                 <h3 className="hof-pack-title">{pack.title}</h3>
                 {(pack.perfumes || []).length > 0 && (

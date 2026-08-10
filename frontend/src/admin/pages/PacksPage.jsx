@@ -19,6 +19,7 @@ export default function PacksPage() {
   const [form, setForm] = useState(EMPTY);
   const [selectedPerfumeIds, setSelectedPerfumeIds] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState("idle"); // idle | success | error
   const [saving, setSaving] = useState(false);
 
   const load = () => adminPacksApi.list().then(setPacks).catch(() => {}).finally(() => setLoading(false));
@@ -27,7 +28,7 @@ export default function PacksPage() {
     adminPerfumesApi.list().then(setPerfumes).catch(() => {});
   }, []);
 
-  const openCreate = () => { setEditing(null); setForm(EMPTY); setSelectedPerfumeIds([]); setModalOpen(true); };
+  const openCreate = () => { setEditing(null); setForm(EMPTY); setSelectedPerfumeIds([]); setUploadStatus("idle"); setModalOpen(true); };
   const openEdit = (p) => {
     setEditing(p);
     setForm({
@@ -35,6 +36,7 @@ export default function PacksPage() {
       is_upsell_offer: !!p.is_upsell_offer, upsell_price: p.upsell_price ?? "",
     });
     setSelectedPerfumeIds(p.perfumes.map((x) => x.perfume_id));
+    setUploadStatus(p.cover_image ? "success" : "idle");
     setModalOpen(true);
   };
 
@@ -52,13 +54,21 @@ export default function PacksPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadStatus("idle");
     try {
       const { data } = await uploadApi.image(file);
       setForm((f) => ({ ...f, cover_image: data.url }));
-    } catch {
-      Swal.fire({ icon: "error", title: "Erreur d'upload" });
+      setUploadStatus("success");
+    } catch (err) {
+      setUploadStatus("error");
+      Swal.fire({
+        icon: "error",
+        title: "Échec du téléchargement de l'image",
+        text: err.response?.data?.message || "Veuillez réessayer.",
+      });
     } finally {
       setUploading(false);
+      e.target.value = "";
     }
   };
 
@@ -66,6 +76,10 @@ export default function PacksPage() {
     e.preventDefault();
     if (selectedPerfumeIds.length !== 4) {
       Swal.fire({ icon: "warning", title: "Exactement 4 parfums requis", text: `Vous en avez sélectionné ${selectedPerfumeIds.length}.` });
+      return;
+    }
+    if (!form.cover_image) {
+      Swal.fire({ icon: "warning", title: "Image requise", text: "Téléversez une image de couverture avant d'enregistrer ce pack." });
       return;
     }
     setSaving(true);
@@ -140,11 +154,21 @@ export default function PacksPage() {
             <div className="adm-modal-head"><h3>{editing ? "Modifier le pack" : "Nouveau pack"}</h3></div>
             <form onSubmit={handleSave}>
               <div className="adm-form-group">
-                <label>Image de couverture</label>
+                <label>Image de couverture *</label>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   {form.cover_image && <img src={form.cover_image} alt="" style={{ width: 50, height: 50, borderRadius: 8, objectFit: "cover" }} />}
-                  <label className="adm-btn adm-btn-outline adm-btn-sm" style={{ cursor: "pointer" }}>
-                    <FiUploadCloud size={13} /> {uploading ? "Envoi..." : "Téléverser"}
+                  <label
+                    className="adm-btn adm-btn-outline adm-btn-sm"
+                    style={{ cursor: "pointer", color: uploadStatus === "error" ? "#C62828" : uploadStatus === "success" ? "#2E7D32" : undefined }}
+                  >
+                    <FiUploadCloud size={13} />{" "}
+                    {uploading
+                      ? "Upload en cours..."
+                      : uploadStatus === "success"
+                        ? "Image téléchargée avec succès ✓"
+                        : uploadStatus === "error"
+                          ? "Erreur d'upload — réessayer"
+                          : form.cover_image ? "Changer l'image" : "Choisir une image"}
                     <input type="file" accept="image/*" hidden onChange={handleUpload} />
                   </label>
                 </div>
