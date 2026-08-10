@@ -66,7 +66,8 @@ function injectCSS() {
 
 // Matches Checkout.jsx's own SHIPPING_FLAT exactly -- this form must never
 // claim or charge a different delivery fee than the regular checkout does.
-const SHIPPING_FLAT = 30;
+// Pack prices are all-inclusive: delivery is free.
+const SHIPPING_FLAT = 0;
 
 const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSelectPack }, ref) {
   injectCSS();
@@ -234,7 +235,7 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
               {pack && (
                 <div className="hof-totals">
                   <div className="hof-totals-row"><span>{t("checkout.subtotal")}</span><span>{Math.round(subtotal).toLocaleString("fr-MA")} MAD</span></div>
-                  <div className="hof-totals-row"><span>{t("checkout.shipping")}</span><span>{Math.round(shipping).toLocaleString("fr-MA")} MAD</span></div>
+                  <div className="hof-totals-row"><span>{t("checkout.shipping")}</span><span>{shipping > 0 ? `${Math.round(shipping).toLocaleString("fr-MA")} MAD` : t("cart.free")}</span></div>
                   <div className="hof-totals-row hof-totals-total"><span>{t("checkout.total")}</span><span>{Math.round(total).toLocaleString("fr-MA")} MAD</span></div>
                 </div>
               )}

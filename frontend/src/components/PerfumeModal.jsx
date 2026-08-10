@@ -88,6 +88,12 @@ export default function PerfumeModal({ perfume, onClose }) {
           {perfume.description && <p className="pf-modal-desc">{perfume.description}</p>}
 
           <div className="pf-modal-grid">
+            {perfume.size && (
+              <div>
+                <div className="pf-modal-field-label">{t("perfumeModal.size")}</div>
+                <div className="pf-modal-field-value">{perfume.size} ml</div>
+              </div>
+            )}
             {perfume.concentration && (
               <div>
                 <div className="pf-modal-field-label">{t("perfumeModal.concentration")}</div>

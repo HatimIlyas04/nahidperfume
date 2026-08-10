@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { FiHeart, FiShare2, FiSliders, FiShoppingBag, FiRefreshCw, FiArrowLeft } from "react-icons/fi";
+import { FiHeart, FiShare2, FiSliders, FiShoppingBag, FiRefreshCw, FiArrowLeft, FiCreditCard } from "react-icons/fi";
 import { packsApi, perfumesApi, wishlistApi } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import PerfumeModal from "../components/PerfumeModal";
 import ReplacePerfumeModal from "../components/ReplacePerfumeModal";
+import HomeOrderForm from "../components/HomeOrderForm";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
 
@@ -55,7 +56,7 @@ const CSS = `
 .pd-contains-name { font-size: 0.76rem; font-weight: 500; color: var(--text); max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .pd-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; margin-bottom: 8px; }
-.pd-actions .btn-primary { flex: 1; min-width: 180px; }
+.pd-actions .btn-primary, .pd-actions .btn-outline { flex: 1; min-width: 160px; }
 .pd-customize-cta {
   flex: 1; min-width: 180px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 14px 24px; border-radius: var(--radius-full); border: 1.5px solid var(--border); background: white;
@@ -131,6 +132,7 @@ export default function PackDetails() {
   const [replaceTarget, setReplaceTarget] = useState(null); // position being replaced
   const [previewPerfume, setPreviewPerfume] = useState(null);
   const [isWished, setIsWished] = useState(false);
+  const orderFormRef = useRef(null);
 
   useEffect(() => {
     setLoading(true);
@@ -228,6 +230,10 @@ export default function PackDetails() {
     document.getElementById("pd-perfumes-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const scrollToOrderForm = () => {
+    orderFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -279,7 +285,10 @@ export default function PackDetails() {
             </div>
 
             <div className="pd-actions">
-              <button className="btn-primary" onClick={handleAddToCart}>
+              <button className="btn-primary" onClick={scrollToOrderForm}>
+                <FiCreditCard size={15} /> {t("packCard.order")}
+              </button>
+              <button className="btn-outline" onClick={handleAddToCart}>
                 <FiShoppingBag size={15} /> {t("packDetails.addToCart")}
               </button>
               <button className={`pd-customize-cta${customizing ? " active" : ""}`} onClick={scrollToCustomize}>
@@ -328,6 +337,13 @@ export default function PackDetails() {
           </div>
         </div>
       </div>
+
+      {/* Direct order: "Commander" above scrolls here instead of forcing
+          Add to cart -> Cart -> Checkout. Cart flow remains fully intact
+          for customers who prefer it (or want the customized version). */}
+      <section style={{ padding: "var(--section-gap) 0" }}>
+        <HomeOrderForm pack={pack} ref={orderFormRef} />
+      </section>
 
       {hasChanges && (
         <div className="pd-sticky-cta">

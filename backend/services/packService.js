@@ -60,9 +60,6 @@ async function createPack({ perfumeIds, ...packData }) {
   const result = await withTransaction(async (conn) => {
     const pack = await packsRepo.create(packData, conn);
     await packPerfumesRepo.replaceForPack(pack.id, perfumeIds, conn);
-    if (packData.is_upsell_offer) {
-      await packsRepo.clearOtherUpsellOffers(pack.id, conn);
-    }
     return getPack(pack.id, conn);
   });
   cache.delPrefix(LIST_CACHE_PREFIX);
@@ -81,20 +78,19 @@ async function updatePack(id, { perfumeIds, ...packData }) {
       await validatePerfumeIds(perfumeIds);
       await packPerfumesRepo.replaceForPack(id, perfumeIds, conn);
     }
-    if (packData.is_upsell_offer) {
-      await packsRepo.clearOtherUpsellOffers(id, conn);
-    }
     return getPack(id, conn);
   });
   cache.delPrefix(LIST_CACHE_PREFIX);
   return result;
 }
 
-async function getUpsellOffer() {
-  const pack = await packsRepo.findUpsellOffer();
-  if (!pack) return null;
-  const [withPerfumes] = await attachPerfumes([pack]);
-  return withPerfumes;
+// Any number of packs can be flagged is_upsell_offer=1 -- the Thank You
+// page shows all of them (see orderService.applyUpsell for the per-pack
+// idempotency check that lets a customer accept more than one).
+async function getUpsellOffers() {
+  const packs = await packsRepo.findUpsellOffers();
+  if (!packs.length) return [];
+  return attachPerfumes(packs, { lean: true });
 }
 
 async function setActive(id, isActive) {
@@ -175,5 +171,5 @@ module.exports = {
   deletePack,
   validatePerfumeIds,
   resolveCustomizedSelection,
-  getUpsellOffer,
+  getUpsellOffers,
 };

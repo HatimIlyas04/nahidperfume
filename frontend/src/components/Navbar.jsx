@@ -7,10 +7,9 @@ import { settingsApi, packsApi } from "../services/api";
 import LanguageSelector from "./LanguageSelector";
 import CountdownTimer from "./CountdownTimer";
 import {
-  FiShoppingCart, FiUser, FiLogOut, FiSearch,
+  FiShoppingCart, FiSearch,
   FiMenu, FiX, FiHeart, FiChevronRight, FiInstagram, FiFacebook,
 } from "react-icons/fi";
-import { FaCrown } from "react-icons/fa";
 import { RiTiktokLine } from "react-icons/ri";
 
 /* ─── CSS ────────────────────────────────────────────────── */
@@ -251,7 +250,7 @@ function injectCSS() {
 }
 
 /* ─── Component ─────────────────────────────────────────── */
-export default function Navbar({ isAdminLoggedIn, setIsAdminLoggedIn }) {
+export default function Navbar() {
   injectCSS();
   const navigate = useNavigate();
   const location = useLocation();
@@ -270,8 +269,6 @@ export default function Navbar({ isAdminLoggedIn, setIsAdminLoggedIn }) {
   const [settings,      setSettings]      = useState(null);
 
   const searchRef = useRef(null);
-  const token     = localStorage.getItem("adminToken");
-  const isAdmin   = !!token || isAdminLoggedIn;
 
   const ANN_ITEMS = t("nav.announcements");
   const QUICK_SEARCHES = t("nav.quickSearches");
@@ -336,12 +333,6 @@ export default function Navbar({ isAdminLoggedIn, setIsAdminLoggedIn }) {
     }, 280);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [query]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    if (setIsAdminLoggedIn) setIsAdminLoggedIn(false);
-    navigate("/"); window.location.reload();
-  };
 
   const handleSearch = (e, q) => {
     e?.preventDefault();
@@ -458,15 +449,10 @@ export default function Navbar({ isAdminLoggedIn, setIsAdminLoggedIn }) {
           </div>
 
           <div className="nb-right">
-            {isAdmin ? (
-              <>
-                <Link to="/admin" className="nb-ap nb-ap-fill"><FaCrown size={10} /> {t("nav.dashboard")}</Link>
-                <button onClick={handleLogout} className="nb-ap nb-ap-ghost"><FiLogOut size={11} /> {t("nav.logout")}</button>
-              </>
-            ) : (
-              <Link to="/admin" className="nb-ap nb-ap-ghost"><FiUser size={11} /> {t("nav.proSpace")}</Link>
-            )}
-            <div className="nb-div" />
+            {/* No admin/dashboard entry point in the customer-facing navbar
+                on purpose -- the admin dashboard stays reachable at /admin
+                directly by URL (still behind authAdmin), it's just not
+                advertised to storefront visitors. */}
             <LanguageSelector />
             <div className="nb-div" />
             <Link to="/wishlist" className="nb-ic" aria-label={t("nav.favorites")}>
@@ -533,22 +519,8 @@ export default function Navbar({ isAdminLoggedIn, setIsAdminLoggedIn }) {
             {wishCount > 0 && <span className="nb-m-tag">{wishCount}</span>}
           </Link>
 
-          <div className="nb-m-lbl">{t("nav.account")}</div>
-          {isAdmin ? (
-            <>
-              <Link to="/admin" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
-                <FaCrown size={12} /><span style={{ flex: 1 }}>{t("nav.dashboard")}</span>
-                <span className="nb-m-tag">{t("nav.admin")}</span>
-              </Link>
-              <button className="nb-m-lnk" onClick={handleLogout} style={{ color: "var(--g)" }}>
-                <FiLogOut size={13} /><span>{t("nav.disconnect")}</span>
-              </button>
-            </>
-          ) : (
-            <Link to="/admin" className="nb-m-lnk" onClick={() => setMenuOpen(false)}>
-              <FiUser size={13} /><span>{t("nav.proSpace")}</span>
-            </Link>
-          )}
+          {/* No admin/dashboard entry point in the customer-facing navbar
+              on purpose -- see the desktop nb-right block for why. */}
         </nav>
 
         <div className="nb-dr-foot">

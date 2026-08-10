@@ -80,7 +80,15 @@ const FIRST_ATTEMPT_TIMEOUT = 40000;
 // A retry only happens after the first attempt already failed, so by then
 // the backend has very likely finished waking up — short timeouts are fine.
 const RETRY_TIMEOUT = 8000;
-const MAX_RETRIES = 3;
+// A single retry, not several: the 40s first attempt already covers a full
+// cold start, so a failure at that point is either (a) the backend is now
+// warm and one retry succeeds in ~200ms, or (b) something is genuinely
+// broken and no amount of retrying with short timeouts fixes it. This used
+// to be 3 retries with growing backoff — worst case 40s + 1s + 8s + 2s + 8s
+// + 4s + 8s = 71s of a customer staring at a skeleton before the UI gave up
+// and showed an empty state. One retry caps that at 40s + 1s + 8s = 49s,
+// and the common case (cold start, then a fast warm retry) is unaffected.
+const MAX_RETRIES = 1;
 const RETRY_BASE_DELAY = 1000;
 
 api.defaults.timeout = FIRST_ATTEMPT_TIMEOUT;
@@ -204,7 +212,7 @@ export const perfumesApi = {
 export const packsApi = {
   list: () => api.get("/api/packs").then(unwrap),
   get: (id) => api.get(`/api/packs/${id}`).then(unwrap),
-  getUpsellOffer: () => api.get("/api/packs/upsell-offer").then(unwrap),
+  getUpsellOffers: () => api.get("/api/packs/upsell-offers").then(unwrap),
 };
 
 // ── Custom pack settings ─────────────────────────────────────
@@ -217,8 +225,8 @@ export const ordersApi = {
   create: (payload) => api.post("/api/orders", payload).then(unwrap),
   track: (orderNumber, phone) =>
     api.get("/api/orders/track", { params: { order_number: orderNumber, phone } }).then(unwrap),
-  applyUpsell: (orderId, upsellToken) =>
-    api.post(`/api/orders/${orderId}/upsell`, { upsell_token: upsellToken }).then(unwrap),
+  applyUpsell: (orderId, upsellToken, packId) =>
+    api.post(`/api/orders/${orderId}/upsell`, { upsell_token: upsellToken, pack_id: packId }).then(unwrap),
 };
 
 // ── Coupons ──────────────────────────────────────────────────
@@ -397,9 +405,15 @@ export const adminCustomersApi = {
 };
 
 export const uploadApi = {
+  // No explicit Content-Type here on purpose: the browser/axios auto-sets
+  // "multipart/form-data; boundary=----..." for a FormData body. Overriding
+  // it to a bare "multipart/form-data" (no boundary) used to make every
+  // upload fail server-side with "Multipart: Boundary not found", since the
+  // body was genuinely multipart but the header no longer described where
+  // each part starts/ends.
   image: (file) => {
     const form = new FormData();
     form.append("file", file);
-    return api.post("/api/upload/image", form, { headers: { "Content-Type": "multipart/form-data" } });
+    return api.post("/api/upload/image", form, { timeout: 60000 });
   },
 };

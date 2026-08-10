@@ -52,19 +52,16 @@ async function remove(id, conn = pool) {
   await conn.query('DELETE FROM packs WHERE id = ?', [id]);
 }
 
-async function findUpsellOffer(conn = pool) {
+// Any number of packs can be flagged as an upsell offer -- the Thank You
+// page shows every currently active one, not just a single "the" offer.
+async function findUpsellOffers(conn = pool) {
   const [rows] = await conn.query(
-    `SELECT ${FIELDS} FROM packs WHERE is_upsell_offer = 1 AND is_active = 1 LIMIT 1`
+    `SELECT ${FIELDS} FROM packs WHERE is_upsell_offer = 1 AND is_active = 1 ORDER BY display_order ASC, id DESC`
   );
-  return rows[0] || null;
-}
-
-/** Only one pack can be the upsell offer at a time. */
-async function clearOtherUpsellOffers(exceptId, conn = pool) {
-  await conn.query('UPDATE packs SET is_upsell_offer = 0 WHERE id != ?', [exceptId]);
+  return rows;
 }
 
 module.exports = {
   findAll, findById, create, update, setActive, reorder, remove,
-  findUpsellOffer, clearOtherUpsellOffers,
+  findUpsellOffers,
 };

@@ -3,10 +3,12 @@ import Swal from "sweetalert2";
 import { FiPlus, FiEdit2, FiTrash2, FiUploadCloud } from "react-icons/fi";
 import { adminPerfumesApi, uploadApi } from "../../services/api";
 
+const SIZES_ML = ["10", "20", "30", "50", "60", "100"];
+
 const EMPTY = {
   name: "", image_url: "", description: "", category: "", gender: "Unisex",
   product_type: "Original", inspired_by: "", concentration: "", scent_family: "",
-  longevity: "", top_notes: "", middle_notes: "", base_notes: "",
+  longevity: "", size: "", top_notes: "", middle_notes: "", base_notes: "",
   is_new: false, is_bestseller: false, is_active: true,
 };
 
@@ -45,8 +47,12 @@ export default function PerfumesPage() {
     try {
       const { data } = await uploadApi.image(file);
       setForm((f) => ({ ...f, image_url: data.url }));
-    } catch {
-      Swal.fire({ icon: "error", title: "Erreur d'upload" });
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Échec du téléchargement de l'image",
+        text: err.response?.data?.error || err.response?.data?.details || "Veuillez réessayer.",
+      });
     } finally {
       setUploading(false);
     }
@@ -170,6 +176,15 @@ export default function PerfumesPage() {
               <div className="adm-form-row">
                 <div className="adm-form-group"><label>Concentration</label><input value={form.concentration} onChange={set("concentration")} /></div>
                 <div className="adm-form-group"><label>Tenue</label><input value={form.longevity} onChange={set("longevity")} /></div>
+              </div>
+              <div className="adm-form-row">
+                <div className="adm-form-group">
+                  <label>Taille</label>
+                  <select value={form.size} onChange={set("size")}>
+                    <option value="">—</option>
+                    {SIZES_ML.map((s) => <option key={s} value={s}>{s} ml</option>)}
+                  </select>
+                </div>
               </div>
               <div className="adm-form-group"><label>Notes de tête</label><input value={form.top_notes} onChange={set("top_notes")} /></div>
               <div className="adm-form-group"><label>Notes de cœur</label><input value={form.middle_notes} onChange={set("middle_notes")} /></div>

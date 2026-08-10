@@ -71,7 +71,10 @@ export default function Cart() {
   const [coupon, setCoupon] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
 
-  const SHIPPING_FLAT = 30;
+  // Pack prices are all-inclusive -- delivery is free, not a fee added at
+  // checkout. Matches backend orderService.computeShipping, which reads the
+  // same policy from the settings table (shipping_flat_rate).
+  const SHIPPING_FLAT = 0;
   const shipping = cart.length === 0 ? 0 : SHIPPING_FLAT;
   const discount = coupon ? coupon.discount : 0;
   const total = Math.max(0, subtotal + shipping - discount);

@@ -325,7 +325,7 @@ INSERT INTO settings (setting_key, setting_value, setting_group) VALUES
   ('contact_email', '', 'contact'),
   ('instagram_url', '', 'social'),
   ('facebook_url', '', 'social'),
-  ('shipping_flat_rate', '30', 'shipping'),
+  ('shipping_flat_rate', '0', 'shipping'),
   ('free_shipping_threshold', '', 'shipping'),
   ('countdown_enabled', '0', 'cro'),
   ('countdown_end_at', '', 'cro'),

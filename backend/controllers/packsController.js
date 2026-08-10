@@ -48,9 +48,9 @@ async function getOne(req, res) {
   return success(res, pack);
 }
 
-async function getUpsellOffer(req, res) {
-  const pack = await packService.getUpsellOffer();
-  return success(res, pack);
+async function getUpsellOffers(req, res) {
+  const packs = await packService.getUpsellOffers();
+  return success(res, packs);
 }
 
 async function create(req, res) {
@@ -97,4 +97,4 @@ async function remove(req, res) {
   return res.status(204).send();
 }
 
-module.exports = { list, listForAdmin, getOne, getUpsellOffer, create, update, setActive, reorder, duplicate, remove };
+module.exports = { list, listForAdmin, getOne, getUpsellOffers, create, update, setActive, reorder, duplicate, remove };

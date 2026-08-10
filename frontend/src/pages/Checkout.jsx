@@ -62,7 +62,10 @@ export default function Checkout() {
   const effectiveCart = buyNowItem ? [buyNowItem] : cart;
   const subtotal = buyNowItem ? buyNowItem.price * buyNowItem.quantity : cartSubtotal;
 
-  const SHIPPING_FLAT = 30;
+  // Pack prices are all-inclusive -- delivery is free, not a fee added at
+  // checkout. Matches backend orderService.computeShipping, which reads the
+  // same policy from the settings table (shipping_flat_rate).
+  const SHIPPING_FLAT = 0;
   const shipping = effectiveCart.length === 0 ? 0 : SHIPPING_FLAT;
   const total = subtotal + shipping;
 
@@ -187,7 +190,7 @@ export default function Checkout() {
               </div>
             ))}
             <div className="co-summary-row"><span>{t("checkout.subtotal")}</span><strong>{Math.round(subtotal)} MAD</strong></div>
-            <div className="co-summary-row"><span>{t("checkout.shipping")}</span><strong>{shipping} MAD</strong></div>
+            <div className="co-summary-row"><span>{t("checkout.shipping")}</span><strong>{shipping > 0 ? `${shipping} MAD` : t("cart.free")}</strong></div>
             <div className="co-total-row">
               <span style={{ fontWeight: 700 }}>{t("checkout.total")}</span>
               <span className="co-total-val">{Math.round(total)} MAD</span>

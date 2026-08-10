@@ -11,12 +11,25 @@ const ALLOWED_FIELDS = [
   'is_new', 'is_bestseller', 'is_active', 'display_order',
 ];
 
+// The only sizes the site actually sells — rejecting anything else here
+// keeps "size" a closed set all the way through (admin dropdown -> API ->
+// DB), not just a UI convention a direct API call could bypass.
+const ALLOWED_SIZES = ['10', '20', '30', '50', '60', '100'];
+
 function pickPayload(body) {
   const data = {};
   for (const field of ALLOWED_FIELDS) {
     if (body[field] !== undefined) data[field] = body[field];
   }
   if (data.name) data.name = requireString(data.name, 'name', { maxLength: 255 });
+  if (data.size !== undefined && data.size !== null && data.size !== '') {
+    data.size = String(data.size);
+    if (!ALLOWED_SIZES.includes(data.size)) {
+      throw new AppError(`Invalid size. Must be one of: ${ALLOWED_SIZES.join(', ')}`, 400);
+    }
+  } else if (data.size === '') {
+    data.size = null;
+  }
   if (data.is_new !== undefined) data.is_new = toBool(data.is_new) ? 1 : 0;
   if (data.is_bestseller !== undefined) data.is_bestseller = toBool(data.is_bestseller) ? 1 : 0;
   if (data.is_active !== undefined) data.is_active = toBool(data.is_active) ? 1 : 0;

@@ -228,22 +228,42 @@ function verifyUpsellToken(token, orderId) {
   }
 }
 
-/** Applies the one-click post-purchase upsell to an existing order — never
- * creates a new order, just appends one more ready_pack line and recomputes
- * the total. Idempotent: rejects if already applied to this order. */
-async function applyUpsell(orderId, token) {
+/** Runs the WhatsApp admin alert for an accepted post-purchase upsell —
+ * mirrors notifyOrderCreated's fire-and-forget pattern: the upsell is
+ * already committed to the DB by the time this runs, so a WhatsApp/network
+ * failure here must never surface as an error to the customer. */
+async function notifyUpsellApplied(order, upsellItem) {
+  await whatsappService.sendAdminUpsellAlert(order, upsellItem).catch((err) => {
+    // eslint-disable-next-line no-console
+    console.error('[orderService] upsell notification failed', err.message);
+  });
+}
+
+/** Applies a post-purchase upsell pack to an existing order — never creates
+ * a new order, just appends one more ready_pack line item to the SAME
+ * order and recomputes its total (so "which order does this belong to" is
+ * trivially the order_id already on the row, no separate relation needed).
+ * A customer can accept more than one upsell pack (each one is validated
+ * against the currently active offers and priced server-side); accepting
+ * the SAME pack twice is rejected, but different packs are not. */
+async function applyUpsell(orderId, token, packId) {
   verifyUpsellToken(token, orderId);
 
   const order = await ordersRepo.findById(orderId);
   if (!order) throw new AppError('Order not found', 404);
-  if (order.upsell_applied_at) throw new AppError('This upsell has already been applied to your order.', 409);
 
-  const offerPack = await packService.getUpsellOffer();
-  if (!offerPack) throw new AppError('No upsell offer is currently available.', 404);
+  const offers = await packService.getUpsellOffers();
+  const offerPack = offers.find((p) => p.id === packId);
+  if (!offerPack) throw new AppError('This upsell offer is no longer available.', 404);
+
+  const existingItems = await orderItemsRepo.findByOrderId(orderId);
+  if (existingItems.some((item) => item.source_pack_id === packId)) {
+    throw new AppError('This pack has already been added to your order.', 409);
+  }
 
   const upsellPrice = offerPack.upsell_price !== null ? Number(offerPack.upsell_price) : Number(offerPack.price);
 
-  return withTransaction(async (conn) => {
+  const { updatedOrder, upsellItem } = await withTransaction(async (conn) => {
     const orderItemId = await orderItemsRepo.create(
       {
         order_id: orderId,
@@ -272,8 +292,14 @@ async function applyUpsell(orderId, token) {
       [newTotal, upsellPrice, orderId]
     );
 
-    return ordersRepo.findById(orderId, conn);
+    return {
+      updatedOrder: await ordersRepo.findById(orderId, conn),
+      upsellItem: { pack_title: offerPack.title, unit_price: upsellPrice },
+    };
   });
+
+  notifyUpsellApplied(updatedOrder, upsellItem).catch(() => {});
+  return updatedOrder;
 }
 
 async function listOrders(filters) {

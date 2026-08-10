@@ -38,7 +38,7 @@ const AvatarBubble = ({ avatarId, name, size = 48 }) => {
   );
 };
 
-const ReviewsSection = () => {
+const ReviewsSection = ({ titleOverride }) => {
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
   const [reviews, setReviews] = useState([]);
@@ -64,7 +64,7 @@ const ReviewsSection = () => {
       <div className="container">
         <div style={styles.header}>
           <span style={styles.eyebrow}>{t("reviewsSection.eyebrow")}</span>
-          <h2 style={styles.title}>{t("reviewsSection.title")}</h2>
+          <h2 style={styles.title}>{titleOverride || t("reviewsSection.title")}</h2>
           <div style={styles.aggregate}>
             <Stars count={5} />
             <span style={styles.score}>{avg}</span>

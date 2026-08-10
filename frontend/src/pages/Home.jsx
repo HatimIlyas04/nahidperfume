@@ -5,7 +5,7 @@ import {
   FiArrowRight, FiPackage, FiSliders, FiTruck, FiShield, FiHeart,
   FiMail, FiCheckCircle, FiPlay,
 } from "react-icons/fi";
-import { packsApi, faqApi, bannersApi, wishlistApi } from "../services/api";
+import { packsApi, faqApi, bannersApi, wishlistApi, homepageSectionsApi } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
@@ -132,6 +132,7 @@ export default function Home() {
   const [ugcLoading, setUgcLoading] = useState(true);
   const [wishedIds, setWishedIds] = useState(() => new Set());
   const [selectedPack, setSelectedPack] = useState(null);
+  const [sections, setSections] = useState([]);
   const orderFormRef = useRef(null);
 
   useEffect(() => {
@@ -139,9 +140,25 @@ export default function Home() {
     faqApi.listActive().then((data) => setFaqs(data.slice(0, 6))).catch(() => setFaqs([])).finally(() => setFaqLoading(false));
     bannersApi.listActive("ugc_gallery").then(setUgcItems).catch(() => setUgcItems([])).finally(() => setUgcLoading(false));
     wishlistApi.get().then((w) => setWishedIds(new Set(w.packs.map((p) => p.id)))).catch(() => {});
+    homepageSectionsApi.listActive().then(setSections).catch(() => setSections([]));
   }, []);
 
-  const bestsellers = packs.slice(0, 8);
+  // Lets the admin's Homepage CMS (homepage_sections table) override each
+  // section's heading text and enable/disable it, without hardcoding
+  // content the CMS is meant to control. Falls back to the translated
+  // default text, and defaults a section to visible before the CMS fetch
+  // resolves (or if that section row doesn't exist) so nothing flashes
+  // hidden on first paint.
+  const sectionByKey = useCallback((key) => sections.find((s) => s.section_key === key), [sections]);
+  const sectionText = useCallback((key, field, fallbackKey) => sectionByKey(key)?.[field] || t(fallbackKey), [sectionByKey, t]);
+  const isSectionVisible = useCallback((key) => {
+    const section = sectionByKey(key);
+    return section ? !!section.is_active : true;
+  }, [sectionByKey]);
+
+  // Featured packs surface first -- matches the admin's "Featured" flag on
+  // the Packs page instead of pure display_order, without hiding any pack.
+  const bestsellers = [...packs].sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0)).slice(0, 8);
   const whyItems = t("home.whyItems");
 
   // Derived at render time rather than synced via an effect: defaults to
@@ -207,8 +224,8 @@ export default function Home() {
       <div className="home-top-eyebrow">
         <span>{t("home.eyebrow")}</span>
       </div>
-      <h1 className="home-top-title">{t("home.title")}</h1>
-      <p className="home-top-sub">{t("home.subtitle")}</p>
+      <h1 className="home-top-title">{sectionText("bestsellers", "title", "home.title")}</h1>
+      <p className="home-top-sub">{sectionText("bestsellers", "subtitle", "home.subtitle")}</p>
 
       {packsLoading ? (
         <section style={{ paddingBottom: "var(--section-gap)" }}>
@@ -254,35 +271,41 @@ export default function Home() {
       <TrustBadges />
 
       {/* CREATE YOUR OWN PACK CTA */}
-      <div style={{ maxWidth: "var(--container-max)", margin: "0 auto", padding: "0 32px 0" }}>
-        <div className="home-cta-band">
-          <div className="home-cta-band-text">
-            <h2>{t("home.ctaTitle")}</h2>
-            <p>{t("home.ctaText")}</p>
+      {isSectionVisible("custom_pack_builder") && (
+        <div style={{ maxWidth: "var(--container-max)", margin: "0 auto", padding: "0 32px 0" }}>
+          <div className="home-cta-band">
+            <div className="home-cta-band-text">
+              <h2>{sectionText("custom_pack_builder", "title", "home.ctaTitle")}</h2>
+              <p>{sectionText("custom_pack_builder", "subtitle", "home.ctaText")}</p>
+            </div>
+            <Link to="/build-your-pack" className="home-cta-band-btn">{t("home.ctaBtn")} <FiArrowRight size={16} /></Link>
           </div>
-          <Link to="/build-your-pack" className="home-cta-band-btn">{t("home.ctaBtn")} <FiArrowRight size={16} /></Link>
         </div>
-      </div>
+      )}
 
       {/* WHY CHOOSE US */}
-      <section className="home-section home-why">
-        <div className="home-section-head" style={{ justifyContent: "center", textAlign: "center", flexDirection: "column", alignItems: "center" }}>
-          <span className="home-section-eyebrow">{t("home.whyEyebrow")}</span>
-          <h2 className="home-section-title">{t("home.whyTitle")}</h2>
-        </div>
-        <div className="home-why-grid">
-          {Array.isArray(whyItems) && whyItems.map((item, i) => (
-            <div className="home-why-card" key={item.title}>
-              <div className="home-why-icon">{WHY_ICONS[i]}</div>
-              <h4>{item.title}</h4>
-              <p>{item.text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {isSectionVisible("why_choose_us") && (
+        <section className="home-section home-why">
+          <div className="home-section-head" style={{ justifyContent: "center", textAlign: "center", flexDirection: "column", alignItems: "center" }}>
+            <span className="home-section-eyebrow">{t("home.whyEyebrow")}</span>
+            <h2 className="home-section-title">{sectionText("why_choose_us", "title", "home.whyTitle")}</h2>
+          </div>
+          <div className="home-why-grid">
+            {Array.isArray(whyItems) && whyItems.map((item, i) => (
+              <div className="home-why-card" key={item.title}>
+                <div className="home-why-icon">{WHY_ICONS[i]}</div>
+                <h4>{item.title}</h4>
+                <p>{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* REVIEWS */}
-      <ReviewsSection />
+      {isSectionVisible("testimonials") && (
+        <ReviewsSection titleOverride={sectionByKey("testimonials")?.title} />
+      )}
 
       {/* UGC / DELIVERY PHOTOS */}
       {ugcLoading ? (
@@ -291,11 +314,11 @@ export default function Home() {
             {[0, 1, 2, 3, 4, 5].map((i) => <div className="home-section-skel" key={i} />)}
           </div>
         </section>
-      ) : ugcItems.length > 0 && (
+      ) : ugcItems.length > 0 && isSectionVisible("instagram_gallery") && (
         <section className="home-section">
           <div className="home-section-head" style={{ justifyContent: "center", textAlign: "center", flexDirection: "column", alignItems: "center" }}>
             <span className="home-section-eyebrow">{t("home.ugcEyebrow")}</span>
-            <h2 className="home-section-title">{t("home.ugcTitle")}</h2>
+            <h2 className="home-section-title">{sectionText("instagram_gallery", "title", "home.ugcTitle")}</h2>
           </div>
           <div className="home-ugc-grid">
             {ugcItems.map((item) => (
@@ -315,11 +338,11 @@ export default function Home() {
             {[0, 1, 2, 3].map((i) => <div className="home-section-skel" key={i} />)}
           </div>
         </section>
-      ) : faqs.length > 0 && (
+      ) : faqs.length > 0 && isSectionVisible("faq_preview") && (
         <section className="home-section">
           <div className="home-section-head" style={{ justifyContent: "center", textAlign: "center", flexDirection: "column", alignItems: "center" }}>
             <span className="home-section-eyebrow">{t("home.faqEyebrow")}</span>
-            <h2 className="home-section-title">{t("home.faqTitle")}</h2>
+            <h2 className="home-section-title">{sectionText("faq_preview", "title", "home.faqTitle")}</h2>
           </div>
           <div className="home-faq">
             {faqs.map((f) => (
@@ -336,10 +359,11 @@ export default function Home() {
       )}
 
       {/* NEWSLETTER */}
+      {isSectionVisible("newsletter") && (
       <div style={{ maxWidth: "var(--container-max)", margin: "0 auto", padding: "0 32px" }}>
         <div className="home-newsletter">
-          <h3>{t("home.newsletterTitle")}</h3>
-          <p>{t("home.newsletterText")}</p>
+          <h3>{sectionText("newsletter", "title", "home.newsletterTitle")}</h3>
+          <p>{sectionText("newsletter", "subtitle", "home.newsletterText")}</p>
           <form className="home-newsletter-form" onSubmit={handleNewsletter}>
             <input
               type="email" required placeholder={t("home.newsletterPlaceholder")} className="form-input"
@@ -349,6 +373,7 @@ export default function Home() {
           </form>
         </div>
       </div>
+      )}
 
       <NahidFooter />
     </>

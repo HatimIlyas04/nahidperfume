@@ -27,16 +27,41 @@ function formatOrderMessage(order) {
   return lines.join('\n');
 }
 
-async function sendAdminOrderAlert(order) {
+function formatUpsellMessage(order, upsellItem) {
+  const lines = [
+    '🎁 *UPSELL — NOUVELLE COMMANDE ADDITIONNELLE*',
+    '',
+    `Commande originale: ${order.order_number}`,
+    '',
+    'Client:',
+    order.customer_name,
+    '',
+    'Pack ajouté:',
+    upsellItem.pack_title,
+    '',
+    'Prix promotionnel:',
+    `${Math.round(upsellItem.unit_price)} DH`,
+    '',
+    'Livraison:',
+    'Gratuite',
+    '',
+    'Total supplémentaire:',
+    `${Math.round(upsellItem.unit_price)} DH`,
+  ];
+
+  return lines.join('\n');
+}
+
+/** Shared UltraMsg dispatch — used by both the order-creation alert and the
+ * upsell alert. Returns {sent:false, reason:'not_configured'} rather than
+ * throwing when credentials aren't set, so callers can fire-and-forget this
+ * without special-casing "WhatsApp isn't set up yet". */
+async function sendToAdmins(body) {
   if (!env.ultramsg.instanceId || !env.ultramsg.token || !env.ultramsg.adminNumbers.length) {
-    // eslint-disable-next-line no-console
-    console.log(`[whatsappService] not configured yet — would have alerted about order #${order.id}`);
     return { sent: false, reason: 'not_configured' };
   }
 
-  const body = formatOrderMessage(order);
   const url = `https://api.ultramsg.com/${env.ultramsg.instanceId}/messages/chat`;
-
   const results = await Promise.allSettled(
     env.ultramsg.adminNumbers.map((to) =>
       axios.post(
@@ -48,17 +73,33 @@ async function sendAdminOrderAlert(order) {
   );
 
   const anySucceeded = results.some((r) => r.status === 'fulfilled');
-  if (anySucceeded) {
-    await ordersRepo.markWhatsappNotified(order.id);
-  }
-
   const failures = results.filter((r) => r.status === 'rejected');
-  if (failures.length) {
-    // eslint-disable-next-line no-console
-    console.error(`[whatsappService] ${failures.length}/${results.length} WhatsApp alert(s) failed for order #${order.id}`);
-  }
-
   return { sent: anySucceeded, total: results.length, failed: failures.length };
 }
 
-module.exports = { sendAdminOrderAlert, formatOrderMessage };
+async function sendAdminOrderAlert(order) {
+  const result = await sendToAdmins(formatOrderMessage(order));
+  if (result.sent) await ordersRepo.markWhatsappNotified(order.id);
+  if (result.reason === 'not_configured') {
+    // eslint-disable-next-line no-console
+    console.log(`[whatsappService] not configured yet — would have alerted about order #${order.id}`);
+  } else if (result.failed) {
+    // eslint-disable-next-line no-console
+    console.error(`[whatsappService] ${result.failed}/${result.total} WhatsApp alert(s) failed for order #${order.id}`);
+  }
+  return result;
+}
+
+async function sendAdminUpsellAlert(order, upsellItem) {
+  const result = await sendToAdmins(formatUpsellMessage(order, upsellItem));
+  if (result.reason === 'not_configured') {
+    // eslint-disable-next-line no-console
+    console.log(`[whatsappService] not configured yet — would have alerted about upsell on order #${order.id}`);
+  } else if (result.failed) {
+    // eslint-disable-next-line no-console
+    console.error(`[whatsappService] ${result.failed}/${result.total} upsell WhatsApp alert(s) failed for order #${order.id}`);
+  }
+  return result;
+}
+
+module.exports = { sendAdminOrderAlert, sendAdminUpsellAlert, formatOrderMessage, formatUpsellMessage };

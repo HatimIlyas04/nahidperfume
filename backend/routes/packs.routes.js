@@ -5,7 +5,7 @@ const asyncHandler = require('../middleware/asyncHandler');
 
 const router = express.Router();
 router.get('/', asyncHandler(controller.list));
-router.get('/upsell-offer', asyncHandler(controller.getUpsellOffer));
+router.get('/upsell-offers', asyncHandler(controller.getUpsellOffers));
 router.get('/:id', asyncHandler(controller.getOne));
 
 const adminRouter = express.Router();

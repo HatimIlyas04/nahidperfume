@@ -76,7 +76,8 @@ async function stats(req, res) {
 async function applyUpsell(req, res) {
   const id = toInt(req.params.id, 'id');
   const token = requireString(req.body.upsell_token, 'upsell_token', { maxLength: 2000 });
-  const order = await orderService.applyUpsell(id, token);
+  const packId = toInt(req.body.pack_id, 'pack_id');
+  const order = await orderService.applyUpsell(id, token, packId);
   return success(res, order);
 }
 

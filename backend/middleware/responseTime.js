@@ -11,8 +11,23 @@ const IS_DEV = process.env.NODE_ENV !== 'production';
  */
 module.exports = function responseTime(req, res, next) {
   const start = process.hrtime.bigint();
+  let serverMs = null;
+
+  // Exposes exact server-side processing time (Express + service + DB, up
+  // to the moment the JSON body is handed off) as a standard Server-Timing
+  // response header — inspectable via `curl -sD -` or the browser Network
+  // tab, so "was it Render or the network?" is measurable, not guessed.
+  // Only wraps res.json (every route in this app responds via
+  // success()/created() in utils/responseShape.js, which call res.json).
+  const originalJson = res.json.bind(res);
+  res.json = (body) => {
+    serverMs = Number(process.hrtime.bigint() - start) / 1e6;
+    res.set('Server-Timing', `app;dur=${serverMs.toFixed(1)}`);
+    return originalJson(body);
+  };
+
   res.on('finish', () => {
-    const ms = Number(process.hrtime.bigint() - start) / 1e6;
+    const ms = serverMs ?? Number(process.hrtime.bigint() - start) / 1e6;
     const line = `${req.method} ${req.originalUrl} - ${ms.toFixed(1)}ms`;
 
     if (IS_DEV) {
