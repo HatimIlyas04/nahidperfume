@@ -22,13 +22,22 @@ async function create(req, res) {
   const packId = toInt(req.params.packId, 'packId');
   await requirePack(packId);
   const imageUrl = requireString(req.body.image_url, 'image_url', { maxLength: 500 });
-  const existing = await packFeedbackImagesRepo.findAllByPackId(packId);
-  const row = await packFeedbackImagesRepo.create({
-    pack_id: packId,
-    image_url: imageUrl,
-    display_order: existing.length,
-    is_active: 1,
-  });
+  let row;
+  try {
+    const existing = await packFeedbackImagesRepo.findAllByPackId(packId);
+    row = await packFeedbackImagesRepo.create({
+      pack_id: packId,
+      image_url: imageUrl,
+      display_order: existing.length,
+      is_active: 1,
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(`[PACK_FEEDBACK_UPLOAD] packId=${packId} database=FAILED code=${err.code || 'unknown'} message=${err.sqlMessage || err.message}`);
+    throw err; // still handled centrally (errorHandler.js) for the HTTP response
+  }
+  // eslint-disable-next-line no-console
+  console.log(`[PACK_FEEDBACK_UPLOAD] packId=${packId} database=OK imageId=${row.id}`);
   await activityLogService.log(req, 'pack_feedback_image.create', { entityType: 'pack_feedback_image', entityId: row.id, details: { pack_id: packId } });
   return created(res, row);
 }
