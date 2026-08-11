@@ -75,8 +75,13 @@ router.post('/image', requireCloudinary, (req, res, next) => {
     try {
         // eslint-disable-next-line no-console
         console.log('[UPLOAD] Cloudinary upload started');
+        // Optional destination folder (multer parses non-file form fields
+        // into req.body too) -- restricted to a known allow-list so the
+        // client can't write into an arbitrary Cloudinary folder.
+        const ALLOWED_FOLDERS = ['nahid-perfume/products', 'nahid-perfume/feedbacks/packs'];
+        const folder = ALLOWED_FOLDERS.includes(req.body.folder) ? req.body.folder : 'nahid-perfume/products';
         const result = await streamToCloudinary(req.file.buffer, {
-            folder: 'nahid-perfume/products',
+            folder,
             resource_type: 'image',
             transformation: [
                 { width: 900, height: 900, crop: 'limit' },

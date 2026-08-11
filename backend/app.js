@@ -14,6 +14,7 @@ const responseTime = require('./middleware/responseTime');
 
 const perfumesRoutes = require('./routes/perfumes.routes');
 const packsRoutes = require('./routes/packs.routes');
+const packFeedbackImagesRoutes = require('./routes/packFeedbackImages.routes');
 const customPackSettingsRoutes = require('./routes/customPackSettings.routes');
 const ordersRoutes = require('./routes/orders.routes');
 const couponCodesRoutes = require('./routes/couponCodes.routes');
@@ -110,6 +111,8 @@ app.use('/api/announcements', cachePublic(120), announcementsRoutes.publicRouter
 
 // ── Admin resource routes (each sub-router applies authAdmin itself) ──
 app.use('/api/admin/perfumes', perfumesRoutes.adminRouter);
+app.use('/api/admin/packs/:packId/feedback-images', packFeedbackImagesRoutes.nestedRouter);
+app.use('/api/admin/pack-feedback-images', packFeedbackImagesRoutes.flatRouter);
 app.use('/api/admin/packs', packsRoutes.adminRouter);
 app.use('/api/admin/custom-pack-settings', customPackSettingsRoutes.adminRouter);
 app.use('/api/admin/orders', ordersRoutes.adminRouter);

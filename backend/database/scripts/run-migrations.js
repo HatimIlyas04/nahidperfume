@@ -51,6 +51,7 @@ const ORDER = [
   '028_homepage_sections_bilingual.sql',
   '029_pack_pricing_correction.sql',
   '030_announcements.sql',
+  '031_pack_feedback_images.sql',
 ];
 
 /** Strips the mysql-CLI-only DELIMITER directive so the file can be sent

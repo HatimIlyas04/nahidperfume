@@ -2,6 +2,7 @@ const { pool, withTransaction } = require('../config/db');
 const packsRepo = require('../db/packsRepo');
 const packPerfumesRepo = require('../db/packPerfumesRepo');
 const perfumesRepo = require('../db/perfumesRepo');
+const packFeedbackImagesRepo = require('../db/packFeedbackImagesRepo');
 const AppError = require('../utils/AppError');
 const cache = require('../utils/memoryCache');
 
@@ -52,7 +53,8 @@ async function getPack(id, conn = pool) {
   const pack = await packsRepo.findById(id, conn);
   if (!pack) throw new AppError('Pack not found', 404);
   const [withPerfumes] = await attachPerfumes([pack], { lean: false }, conn);
-  return withPerfumes;
+  const feedbackImages = await packFeedbackImagesRepo.findActiveByPackId(id, conn);
+  return { ...withPerfumes, feedback_images: feedbackImages };
 }
 
 async function createPack({ perfumeIds, ...packData }) {

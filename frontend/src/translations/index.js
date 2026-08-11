@@ -156,6 +156,12 @@ export const translations = {
       errorTitle: "Erreur",
       wishlistError: "Impossible de mettre à jour vos favoris.",
     },
+    packFeedback: {
+      eyebrow: "✦ Avis clients",
+      title: "Vos avis sur cette offre",
+      trustMessage: "Des clientes partagent leur expérience avec cette offre",
+      seeAll: "Voir tous les avis",
+    },
     replaceModal: {
       title: "Remplacer le parfum",
       close: "Fermer",
@@ -493,6 +499,12 @@ export const translations = {
       errorTitle: "Error",
       wishlistError: "Unable to update your wishlist.",
     },
+    packFeedback: {
+      eyebrow: "✦ Customer Reviews",
+      title: "What customers say about this offer",
+      trustMessage: "Customers share their experience with this offer",
+      seeAll: "See all reviews",
+    },
     replaceModal: {
       title: "Replace this perfume",
       close: "Close",
@@ -829,6 +841,12 @@ export const translations = {
       notFound: "الباقة غير موجودة",
       errorTitle: "خطأ",
       wishlistError: "تعذر تحديث المفضلة.",
+    },
+    packFeedback: {
+      eyebrow: "✦ آراء الزبونات",
+      title: "آراء وتجارب زبوناتنا",
+      trustMessage: "زبوناتنا يشاركن تجاربهن مع هذه الباقة",
+      seeAll: "عرض جميع الآراء",
     },
     replaceModal: {
       title: "استبدال هذا العطر",

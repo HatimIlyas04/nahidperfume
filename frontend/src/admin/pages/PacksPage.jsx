@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { FiPlus, FiEdit2, FiTrash2, FiCopy, FiUploadCloud, FiCheck, FiArrowUp, FiArrowDown } from "react-icons/fi";
 import { adminPacksApi, adminPerfumesApi, uploadApi } from "../../services/api";
+import PackFeedbackPhotosEditor from "../components/PackFeedbackPhotosEditor";
 
 const EMPTY = {
   title: "", description: "", cover_image: "", price: "", compare_at_price: "",
@@ -220,6 +221,17 @@ export default function PacksPage() {
                 <div className="adm-form-group">
                   <label>Prix upsell (MAD) — laisser vide pour utiliser le prix normal</label>
                   <input type="number" step="0.01" value={form.upsell_price} onChange={set("upsell_price")} placeholder="ex: 200" />
+                </div>
+              )}
+
+              {editing ? (
+                <PackFeedbackPhotosEditor packId={editing.id} />
+              ) : (
+                <div className="adm-form-group">
+                  <label>Photos de retours clients</label>
+                  <p style={{ fontSize: "0.76rem", color: "var(--adm-text-light)" }}>
+                    Enregistrez d'abord ce pack pour pouvoir y ajouter des photos de retours clients.
+                  </p>
                 </div>
               )}
 

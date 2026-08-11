@@ -419,6 +419,13 @@ export const adminAnnouncementsApi = {
   remove: (id) => api.delete(`/api/admin/announcements/${id}`),
 };
 
+export const adminPackFeedbackImagesApi = {
+  list: (packId) => api.get(`/api/admin/packs/${packId}/feedback-images`).then(unwrap),
+  create: (packId, imageUrl) => api.post(`/api/admin/packs/${packId}/feedback-images`, { image_url: imageUrl }).then(unwrap),
+  reorder: (packId, items) => api.patch(`/api/admin/packs/${packId}/feedback-images/reorder`, { items }).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/pack-feedback-images/${id}`),
+};
+
 export const adminContactMessagesApi = {
   list: (status) => api.get("/api/admin/contact-messages", { params: { status } }).then(unwrap),
   setStatus: (id, status) => api.put(`/api/admin/contact-messages/${id}/status`, { status }).then(unwrap),
@@ -451,9 +458,10 @@ export const uploadApi = {
   // upload fail server-side with "Multipart: Boundary not found", since the
   // body was genuinely multipart but the header no longer described where
   // each part starts/ends.
-  image: (file) => {
+  image: (file, folder) => {
     const form = new FormData();
     form.append("file", file);
+    if (folder) form.append("folder", folder);
     return api.post("/api/upload/image", form, { timeout: 60000 });
   },
 };

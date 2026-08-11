@@ -12,7 +12,7 @@ import PerfumeModal from "../components/PerfumeModal";
 import ReplacePerfumeModal from "../components/ReplacePerfumeModal";
 import HomeOrderForm from "../components/HomeOrderForm";
 import PackCard from "../components/PackCard";
-import ReviewsSection from "../components/ReviewsSection";
+import PackFeedbackGallery from "../components/PackFeedbackGallery";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
 
@@ -421,7 +421,7 @@ export default function PackDetails() {
         <HomeOrderForm pack={pack} ref={orderFormRef} />
       </section>
 
-      <ReviewsSection />
+      <PackFeedbackGallery images={pack.feedback_images} />
 
       {recommendedPacks.length > 0 && (
         <section style={{ padding: "0 0 var(--section-gap)" }}>
