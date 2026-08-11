@@ -32,6 +32,7 @@ const customersRoutes = require('./routes/customers.routes');
 const uploadRouter = require('./routes/upload');
 const siteContentRoutes = require('./routes/siteContent.routes');
 const trustBadgesRoutes = require('./routes/trustBadges.routes');
+const announcementsRoutes = require('./routes/announcements.routes');
 
 const app = express();
 
@@ -105,6 +106,7 @@ app.use('/api/wishlist', wishlistRoutes.publicRouter);
 app.use('/api/settings', cachePublic(300), settingsRoutes.publicRouter);
 app.use('/api/site-content', cachePublic(300), siteContentRoutes.publicRouter);
 app.use('/api/trust-badges', cachePublic(120), trustBadgesRoutes.publicRouter);
+app.use('/api/announcements', cachePublic(120), announcementsRoutes.publicRouter);
 
 // ── Admin resource routes (each sub-router applies authAdmin itself) ──
 app.use('/api/admin/perfumes', perfumesRoutes.adminRouter);
@@ -124,6 +126,7 @@ app.use('/api/admin/activity-logs', activityLogsRoutes.adminRouter);
 app.use('/api/admin/customers', customersRoutes.adminRouter);
 app.use('/api/admin/site-content', siteContentRoutes.adminRouter);
 app.use('/api/admin/trust-badges', trustBadgesRoutes.adminRouter);
+app.use('/api/admin/announcements', announcementsRoutes.adminRouter);
 // Admin auth (login/verify/change-password) + admins CRUD, all under /api/admin
 app.use('/api/admin', adminsRoutes.adminRouter);
 

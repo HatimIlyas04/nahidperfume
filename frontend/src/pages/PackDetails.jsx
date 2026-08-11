@@ -7,9 +7,12 @@ import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
+import { buildPackContentDetail } from "../utils/packContent";
 import PerfumeModal from "../components/PerfumeModal";
 import ReplacePerfumeModal from "../components/ReplacePerfumeModal";
 import HomeOrderForm from "../components/HomeOrderForm";
+import PackCard from "../components/PackCard";
+import ReviewsSection from "../components/ReviewsSection";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
 
@@ -21,20 +24,19 @@ const CSS = `
 .pd-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
 @media (max-width: 900px) { .pd-hero { grid-template-columns: 1fr; gap: 28px; } }
 
-/* The catalog photography is already a complete, full-bleed studio shot,
-   not an isolated cutout -- so the gallery panel goes edge-to-edge with
-   object-fit: cover and zero inner padding. Padding + a synthetic
-   background behind an already-finished photo only shrinks it and boxes
-   it in, which read as small/cheap rather than premium. */
+/* Real admin-uploaded photos don't always match a 4:5 crop -- the pack
+   standard is 970x1600, so the panel uses that exact ratio with
+   object-fit: contain, guaranteeing the complete pack is always visible
+   regardless of the source photo's real dimensions. */
 .pd-media {
   position: relative;
   border-radius: var(--radius-lg); overflow: hidden;
-  aspect-ratio: 4/5; max-height: 620px;
+  aspect-ratio: 970 / 1600; max-height: 620px;
   background: var(--background);
   border: 1px solid var(--border-light);
   box-shadow: 0 1px 2px rgba(20,16,14,0.04), 0 20px 40px -20px rgba(20,16,14,0.18);
 }
-.pd-media img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+.pd-media img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
 @media (max-width: 900px) { .pd-media { max-height: 440px; } }
 
 .pd-info { display: flex; flex-direction: column; }
@@ -49,7 +51,8 @@ const CSS = `
 /* Compact "what's inside" summary — answers "what am I buying?" before
    the customer scrolls, without duplicating the full grid below. */
 .pd-contains { margin: 18px 0; padding: 14px 16px; background: var(--background); border-radius: var(--radius-md); }
-.pd-contains-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-light); margin-bottom: 10px; }
+.pd-contains-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-light); margin-bottom: 4px; }
+.pd-contains-detail { font-size: 0.78rem; color: var(--text); margin-bottom: 10px; }
 .pd-contains-list { display: flex; flex-wrap: wrap; gap: 10px; }
 .pd-contains-item { display: flex; align-items: center; gap: 7px; }
 .pd-contains-thumb { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; background: var(--white); border: 1.5px solid var(--border-light); flex-shrink: 0; }
@@ -94,6 +97,9 @@ const CSS = `
   border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: var(--transition);
 }
 .pd-customize-toggle.active { background: var(--secondary); border-color: var(--secondary); color: white; }
+.pd-recommended-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 500; margin-bottom: 22px; text-align: center; }
+.pd-recommended-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+@media (max-width: 860px) { .pd-recommended-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; } }
 .pd-perfumes-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 @media (max-width: 760px) { .pd-perfumes-grid { grid-template-columns: repeat(2, 1fr); } }
 .pd-perfume-card { border-radius: var(--radius-md); border: 1px solid var(--border-light); overflow: hidden; background: white; transition: var(--transition); position: relative; box-shadow: 0 1px 2px rgba(20,16,14,0.04); }
@@ -139,7 +145,7 @@ export default function PackDetails() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const [pack, setPack] = useState(null);
   const [allPerfumes, setAllPerfumes] = useState([]);
@@ -149,14 +155,17 @@ export default function PackDetails() {
   const [replaceTarget, setReplaceTarget] = useState(null); // position being replaced
   const [previewPerfume, setPreviewPerfume] = useState(null);
   const [isWished, setIsWished] = useState(false);
+  const [allPacks, setAllPacks] = useState([]);
+  const [recWishedIds, setRecWishedIds] = useState(() => new Set());
   const orderFormRef = useRef(null);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([packsApi.get(id), perfumesApi.list({ active: "true" })])
-      .then(([p, perfumes]) => {
+    Promise.all([packsApi.get(id), perfumesApi.list({ active: "true" }), packsApi.list()])
+      .then(([p, perfumes, packs]) => {
         setPack(p);
         setAllPerfumes(perfumes);
+        setAllPacks(packs);
         setReplacements({});
       })
       .catch(() => Swal.fire({ icon: "error", title: t("packDetails.notFound") }).then(() => navigate("/packs")))
@@ -164,13 +173,56 @@ export default function PackDetails() {
   }, [id, navigate, t]);
 
   useEffect(() => {
-    wishlistApi.get().then((w) => setIsWished(w.packs.some((p) => p.id === Number(id)))).catch(() => {});
+    wishlistApi.get().then((w) => {
+      setIsWished(w.packs.some((p) => p.id === Number(id)));
+      setRecWishedIds(new Set(w.packs.map((p) => p.id)));
+    }).catch(() => {});
   }, [id]);
+
+  const recommendedPacks = useMemo(
+    () => allPacks.filter((p) => p.id !== Number(id)).slice(0, 3),
+    [allPacks, id]
+  );
+
+  const handleRecToggleWishlist = async (recPack) => {
+    const wished = recWishedIds.has(recPack.id);
+    setRecWishedIds((prev) => {
+      const next = new Set(prev);
+      wished ? next.delete(recPack.id) : next.add(recPack.id);
+      return next;
+    });
+    try {
+      if (wished) await wishlistApi.removePack(recPack.id);
+      else await wishlistApi.addPack(recPack.id);
+    } catch {
+      setRecWishedIds((prev) => {
+        const next = new Set(prev);
+        wished ? next.add(recPack.id) : next.delete(recPack.id);
+        return next;
+      });
+    }
+  };
+
+  const handleRecAddToCart = (recPack) => {
+    addToCart({
+      cartItemId: `ready_${recPack.id}`,
+      item_type: "ready_pack",
+      pack_id: recPack.id,
+      title: recPack.title,
+      image: recPack.cover_image,
+      price: Number(recPack.price),
+      quantity: 1,
+      perfumes: (recPack.perfumes || []).map((p) => ({ perfume_id: p.perfume_id, name: p.name, image_url: p.image_url })),
+    });
+    Swal.fire({ icon: "success", title: t("home.addedToCart"), timer: 1400, showConfirmButton: false });
+  };
 
   const currentSlots = useMemo(() => {
     if (!pack) return [];
     return pack.perfumes.map((p) => replacements[p.position] || p);
   }, [pack, replacements]);
+
+  const packContentDetail = useMemo(() => buildPackContentDetail(currentSlots, lang), [currentSlots, lang]);
 
   const hasChanges = Object.keys(replacements).length > 0;
   const excludeIds = currentSlots.map((s) => s.perfume_id || s.id);
@@ -289,6 +341,7 @@ export default function PackDetails() {
 
             <div className="pd-contains">
               <div className="pd-contains-label">{t("packDetails.containsFour")}</div>
+              {packContentDetail && <div className="pd-contains-detail">{packContentDetail}</div>}
               <div className="pd-contains-list">
                 {currentSlots.map((slot) => (
                   <div className="pd-contains-item" key={slot.position}>
@@ -367,6 +420,27 @@ export default function PackDetails() {
       <section style={{ padding: "var(--section-gap) 0" }}>
         <HomeOrderForm pack={pack} ref={orderFormRef} />
       </section>
+
+      <ReviewsSection />
+
+      {recommendedPacks.length > 0 && (
+        <section style={{ padding: "0 0 var(--section-gap)" }}>
+          <div className="container">
+            <h2 className="pd-recommended-title">{t("packDetails.recommendedTitle")}</h2>
+            <div className="pd-recommended-grid">
+              {recommendedPacks.map((recPack) => (
+                <PackCard
+                  key={recPack.id}
+                  pack={recPack}
+                  isWished={recWishedIds.has(recPack.id)}
+                  onToggleWishlist={handleRecToggleWishlist}
+                  onAddToCart={handleRecAddToCart}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {hasChanges && (
         <div className="pd-sticky-cta">

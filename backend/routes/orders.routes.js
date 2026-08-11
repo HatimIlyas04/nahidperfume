@@ -17,5 +17,6 @@ adminRouter.get('/stats', asyncHandler(controller.stats));
 adminRouter.get('/:id', asyncHandler(controller.getOne));
 adminRouter.put('/:id/status', asyncHandler(controller.updateStatus));
 adminRouter.put('/:id/notes', asyncHandler(controller.updateNotes));
+adminRouter.delete('/:id', asyncHandler(controller.remove));
 
 module.exports = { publicRouter: router, adminRouter };

@@ -10,6 +10,7 @@ import { ordersApi, getDeviceToken } from "../services/api";
 import { isValidMoroccanPhone } from "../utils/validation";
 import { getRecaptchaToken } from "../utils/recaptcha";
 import { SHIPPING_FEE } from "../utils/pricing";
+import { buildPackContentDetail } from "../utils/packContent";
 
 // Major Moroccan delivery cities, common e-commerce list — "Autre" reveals
 // a free-text field so any city is still accepted.
@@ -32,9 +33,11 @@ const CSS = `
 .hof-pack { background: var(--background); padding: 28px 26px; display: flex; flex-direction: column; }
 .hof-pack-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--primary); margin-bottom: 14px; }
 .hof-pack-select { margin-bottom: 16px; }
-.hof-pack-media { border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 4/3; margin-bottom: 16px; }
-.hof-pack-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hof-pack-media { border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 970 / 1600; max-height: 340px; background: var(--white); margin-bottom: 16px; }
+.hof-pack-media img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
 .hof-pack-title { font-family: var(--font-display); font-size: 1.3rem; font-weight: 500; margin-bottom: 12px; }
+.hof-contains-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-light); margin-bottom: 2px; }
+.hof-contains-detail { font-size: 0.76rem; color: var(--text); margin-bottom: 10px; }
 .hof-perfume-list { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 7px; }
 .hof-perfume-list li { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text); }
 .hof-perfume-check { width: 18px; height: 18px; border-radius: 50%; background: var(--primary-light); color: var(--primary-dark); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -68,7 +71,7 @@ function injectCSS() {
 
 const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSelectPack }, ref) {
   injectCSS();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", phone: "", city: "", cityOther: "", address: "", quantity: 1 });
   const [errors, setErrors] = useState({});
@@ -77,6 +80,7 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const quantity = Math.max(1, Math.min(10, Number(form.quantity) || 1));
+  const packContentDetail = pack ? buildPackContentDetail(pack.perfumes, lang) : null;
   const subtotal = pack ? Number(pack.price) * quantity : 0;
   const shipping = pack ? SHIPPING_FEE : 0;
   const total = subtotal + shipping;
@@ -164,14 +168,18 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
                 </div>
                 <h3 className="hof-pack-title">{pack.title}</h3>
                 {(pack.perfumes || []).length > 0 && (
-                  <ul className="hof-perfume-list">
-                    {pack.perfumes.slice(0, 4).map((p) => (
-                      <li key={p.perfume_id || p.id}>
-                        <span className="hof-perfume-check"><FiCheck size={11} /></span>
-                        {p.name}
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <div className="hof-contains-label">{t("packDetails.containsFour")}</div>
+                    {packContentDetail && <div className="hof-contains-detail">{packContentDetail}</div>}
+                    <ul className="hof-perfume-list">
+                      {pack.perfumes.slice(0, 4).map((p) => (
+                        <li key={p.perfume_id || p.id}>
+                          <span className="hof-perfume-check"><FiCheck size={11} /></span>
+                          {p.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
                 )}
                 <div className="hof-pack-price-row">
                   <span className="hof-pack-price">{Math.round(Number(pack.price)).toLocaleString("fr-MA")} MAD</span>

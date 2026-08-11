@@ -97,7 +97,7 @@ export const translations = {
       cityPlaceholder: "Choisir une ville",
       cityOther: "Autre ville",
       cityOtherPlaceholder: "Précisez votre ville",
-      confirmBtn: "Je commande — Paiement à la livraison",
+      confirmBtn: "Confirmer ma commande",
       successTitle: "Commande enregistrée !",
       successText: "Nous vous contacterons bientôt pour confirmer la livraison.",
     },
@@ -129,7 +129,7 @@ export const translations = {
       customize: "Personnaliser",
       perfumesCount: "parfums",
       choosePack: "Choisir ce pack",
-      order: "Commander",
+      order: "Commander maintenant",
       viewDetails: "Détails du pack",
     },
     packDetails: {
@@ -176,7 +176,7 @@ export const translations = {
       baseNotes: "Fond",
     },
     perfumeCard: {
-      inspiredBy: "Inspiré par",
+      inspiredBy: "Inspiration :",
     },
     buildPack: {
       title: "Créez Votre Propre Pack",
@@ -434,7 +434,7 @@ export const translations = {
       cityPlaceholder: "Select a city",
       cityOther: "Other city",
       cityOtherPlaceholder: "Enter your city",
-      confirmBtn: "Order now — Cash on delivery",
+      confirmBtn: "Confirm my order",
       successTitle: "Order placed!",
       successText: "We'll contact you shortly to confirm delivery.",
     },
@@ -513,7 +513,7 @@ export const translations = {
       baseNotes: "Base",
     },
     perfumeCard: {
-      inspiredBy: "Inspired by",
+      inspiredBy: "Inspiration:",
     },
     buildPack: {
       title: "Build Your Own Pack",
@@ -771,7 +771,7 @@ export const translations = {
       cityPlaceholder: "اختاري المدينة",
       cityOther: "مدينة أخرى",
       cityOtherPlaceholder: "حددي مدينتك",
-      confirmBtn: "اطلبي الآن — الدفع عند الاستلام",
+      confirmBtn: "تأكيد الطلب",
       successTitle: "تم تسجيل طلبك بنجاح",
       successText: "سنتواصل معك قريباً لتأكيد التوصيل.",
     },

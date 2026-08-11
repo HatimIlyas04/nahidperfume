@@ -33,7 +33,7 @@ const CSS = `
 .ty-upsell-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
 .ty-upsell-card { background: white; border: 1.5px solid var(--border-light); border-radius: var(--radius-xl); padding: 20px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; animation: fadeUp 0.5s ease both; }
 .ty-upsell-badge { position: absolute; top: 0; inset-inline-end: 0; background: var(--primary); color: white; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 14px; border-end-start-radius: 12px; }
-.ty-upsell-img { width: 100%; aspect-ratio: 1; border-radius: var(--radius-md); object-fit: cover; background: var(--gray-100); margin-bottom: 12px; }
+.ty-upsell-img { width: 100%; aspect-ratio: 970 / 1600; border-radius: var(--radius-md); object-fit: contain; object-position: center; background: var(--gray-100); margin-bottom: 12px; }
 .ty-upsell-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 500; margin-bottom: 6px; }
 .ty-upsell-perfumes { font-size: 0.76rem; color: var(--text-light); margin-bottom: 10px; line-height: 1.5; }
 .ty-upsell-price { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }

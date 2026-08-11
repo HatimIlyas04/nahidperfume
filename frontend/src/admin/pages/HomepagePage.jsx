@@ -3,7 +3,7 @@ import Swal from "sweetalert2";
 import { FiSave, FiPlus, FiTrash2, FiUploadCloud, FiArrowUp, FiArrowDown } from "react-icons/fi";
 import {
   adminHomepageSectionsApi, adminBannersApi, adminCustomPackSettingsApi,
-  adminTrustBadgesApi, customPackSettingsApi, uploadApi,
+  adminTrustBadgesApi, adminAnnouncementsApi, customPackSettingsApi, uploadApi,
 } from "../../services/api";
 
 const ICON_OPTIONS = [
@@ -13,21 +13,24 @@ const ICON_OPTIONS = [
   { key: "phone", label: "Téléphone (support)" },
 ];
 const EMPTY_BADGE = { icon_key: "shield", title_fr: "", title_ar: "", subtitle_fr: "", subtitle_ar: "", is_active: true };
+const EMPTY_ANNOUNCEMENT = { text_fr: "", text_ar: "", is_active: true };
 
 export default function HomepagePage() {
   const [sections, setSections] = useState([]);
   const [banners, setBanners] = useState([]);
   const [badges, setBadges] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   const [customSettings, setCustomSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [newBanner, setNewBanner] = useState({ title: "", caption: "", customer_name: "", image_url: "", link_url: "", placement: "homepage_hero" });
   const [newBadge, setNewBadge] = useState(EMPTY_BADGE);
+  const [newAnnouncement, setNewAnnouncement] = useState(EMPTY_ANNOUNCEMENT);
 
   const load = () => {
     Promise.all([
-      adminHomepageSectionsApi.list(), adminBannersApi.list(), customPackSettingsApi.get(), adminTrustBadgesApi.list(),
+      adminHomepageSectionsApi.list(), adminBannersApi.list(), customPackSettingsApi.get(), adminTrustBadgesApi.list(), adminAnnouncementsApi.list(),
     ])
-      .then(([s, b, cp, badges]) => { setSections(s); setBanners(b); setCustomSettings(cp); setBadges(badges); })
+      .then(([s, b, cp, badges, ann]) => { setSections(s); setBanners(b); setCustomSettings(cp); setBadges(badges); setAnnouncements(ann); })
       .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
@@ -116,6 +119,30 @@ export default function HomepagePage() {
     await adminTrustBadgesApi.reorder(next.map((b, i) => ({ id: b.id, display_order: i })));
   };
 
+  const addAnnouncement = async () => {
+    if (!newAnnouncement.text_fr) {
+      Swal.fire({ icon: "warning", title: "Le texte (FR) est requis" });
+      return;
+    }
+    await adminAnnouncementsApi.create(newAnnouncement);
+    setNewAnnouncement(EMPTY_ANNOUNCEMENT);
+    load();
+  };
+  const updateAnnouncement = (id, data) => setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, ...data } : a)));
+  const saveAnnouncement = async (a) => {
+    await adminAnnouncementsApi.update(a.id, a);
+    Swal.fire({ icon: "success", title: "Annonce enregistrée", timer: 1000, showConfirmButton: false });
+  };
+  const removeAnnouncement = async (id) => { await adminAnnouncementsApi.remove(id); load(); };
+  const moveAnnouncement = async (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= announcements.length) return;
+    const next = [...announcements];
+    [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+    setAnnouncements(next);
+    await adminAnnouncementsApi.reorder(next.map((a, i) => ({ id: a.id, display_order: i })));
+  };
+
   if (loading) return <p style={{ color: "var(--adm-text-light)" }}>Chargement...</p>;
 
   const heroBanners = banners.filter((b) => b.placement === "homepage_hero");
@@ -193,6 +220,39 @@ export default function HomepagePage() {
             <input placeholder="Titre (FR) *" value={newBadge.title_fr} onChange={(e) => setNewBadge({ ...newBadge, title_fr: e.target.value })} />
           </div>
           <button className="adm-btn adm-btn-primary adm-btn-sm" style={{ marginTop: "10px" }} onClick={addBadge}><FiPlus size={12} /> Ajouter un badge</button>
+        </div>
+      </div>
+
+      <div className="adm-card">
+        <h3 style={{ fontFamily: "var(--font-display)", marginBottom: "4px" }}>Bandeau d'annonces (défilement en haut du site)</h3>
+        <p style={{ fontSize: "0.78rem", color: "var(--adm-text-light)", marginBottom: "16px" }}>
+          Messages défilant en haut de chaque page. Utilisez les flèches pour changer l'ordre.
+        </p>
+        {announcements.map((a, i) => (
+          <div key={a.id} style={{ borderBottom: "1px solid var(--adm-border)", padding: "14px 0" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+              <button className="adm-btn adm-btn-outline adm-btn-sm adm-btn-icon" disabled={i === 0} onClick={() => moveAnnouncement(i, -1)}><FiArrowUp size={12} /></button>
+              <button className="adm-btn adm-btn-outline adm-btn-sm adm-btn-icon" disabled={i === announcements.length - 1} onClick={() => moveAnnouncement(i, 1)}><FiArrowDown size={12} /></button>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem" }}>
+                <input type="checkbox" checked={!!a.is_active} onChange={(e) => updateAnnouncement(a.id, { is_active: e.target.checked })} /> Visible
+              </label>
+              <button className="adm-btn adm-btn-danger adm-btn-sm adm-btn-icon" onClick={() => removeAnnouncement(a.id)}><FiTrash2 size={12} /></button>
+            </div>
+            <div className="adm-form-row">
+              <input placeholder="Texte (FR)" value={a.text_fr || ""} onChange={(e) => updateAnnouncement(a.id, { text_fr: e.target.value })} />
+              <input dir="rtl" placeholder="النص (AR)" value={a.text_ar || ""} onChange={(e) => updateAnnouncement(a.id, { text_ar: e.target.value })} />
+            </div>
+            <button className="adm-btn adm-btn-outline adm-btn-sm" style={{ marginTop: "8px" }} onClick={() => saveAnnouncement(a)}>
+              <FiSave size={12} /> Enregistrer
+            </button>
+          </div>
+        ))}
+        <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px dashed var(--adm-border)" }}>
+          <div className="adm-form-row">
+            <input placeholder="Texte (FR) *" value={newAnnouncement.text_fr} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, text_fr: e.target.value })} />
+            <input dir="rtl" placeholder="النص (AR)" value={newAnnouncement.text_ar} onChange={(e) => setNewAnnouncement({ ...newAnnouncement, text_ar: e.target.value })} />
+          </div>
+          <button className="adm-btn adm-btn-primary adm-btn-sm" style={{ marginTop: "10px" }} onClick={addAnnouncement}><FiPlus size={12} /> Ajouter une annonce</button>
         </div>
       </div>
 

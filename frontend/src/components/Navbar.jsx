@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useWishlist } from "../context/WishlistContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useCart } from "../context/CartContext";
-import { settingsApi, packsApi } from "../services/api";
+import { settingsApi, packsApi, announcementsApi } from "../services/api";
 import LanguageSelector from "./LanguageSelector";
 import CountdownTimer from "./CountdownTimer";
 import {
@@ -255,7 +255,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { wishlist } = useWishlist();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { cartCount } = useCart();
   const wishCount = wishlist.length;
 
@@ -267,10 +267,16 @@ export default function Navbar() {
   const [liveResults,   setLiveResults]   = useState([]);
   const [searching,     setSearching]     = useState(false);
   const [settings,      setSettings]      = useState(null);
+  const [announcements, setAnnouncements] = useState(null);
 
   const searchRef = useRef(null);
 
-  const ANN_ITEMS = t("nav.announcements");
+  // Falls back to the hardcoded translation array if the API hasn't
+  // resolved yet or returns empty -- the ticker never disappears or
+  // flashes blank while /api/announcements loads.
+  const ANN_ITEMS = announcements && announcements.length > 0
+    ? announcements.map((a) => (lang === "ar" ? a.text_ar : a.text_fr) || a.text_fr)
+    : t("nav.announcements");
   const QUICK_SEARCHES = t("nav.quickSearches");
 
   /* Only 5 links, per the packs-only, conversion-focused navigation. */
@@ -284,6 +290,7 @@ export default function Navbar() {
 
   useEffect(() => {
     settingsApi.getPublic().then(setSettings).catch(() => setSettings({}));
+    announcementsApi.listActive().then(setAnnouncements).catch(() => setAnnouncements([]));
   }, []);
 
   useEffect(() => {

@@ -20,6 +20,7 @@ function formatOrderMessage(order) {
     }),
     '',
     `💰 Total: ${Math.round(order.total_amount)} MAD`,
+    `🚚 Livraison: Incluse`,
     `💳 Paiement: ${PAYMENT_LABEL[order.payment_method] || order.payment_method}`,
     `🕐 ${new Date(order.created_at).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}`,
   ].filter(Boolean);
@@ -43,7 +44,7 @@ function formatUpsellMessage(order, upsellItem) {
     `${Math.round(upsellItem.unit_price)} DH`,
     '',
     'Livraison:',
-    'Gratuite',
+    'Incluse',
     '',
     'Total supplémentaire:',
     `${Math.round(upsellItem.unit_price)} DH`,

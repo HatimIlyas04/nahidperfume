@@ -8,7 +8,7 @@ import { adminSiteContentApi } from "../../services/api";
 // silently disappears from the editor).
 const CATEGORY_ORDER = [
   "nav", "home", "directOrder", "reviewsSection", "packsPage", "packCard", "packDetails",
-  "replaceModal", "perfumeModal", "buildPack", "cart", "checkout", "thankYou",
+  "replaceModal", "perfumeModal", "perfumeCard", "buildPack", "cart", "checkout", "thankYou",
   "contactPage", "faqPage", "orderTrackingPage", "wishlistPage", "countdown", "whatsapp",
 ];
 

@@ -68,6 +68,17 @@ async function updateNotes(req, res) {
   return success(res, order);
 }
 
+async function remove(req, res) {
+  const id = toInt(req.params.id, 'id');
+  const order = await orderService.deleteOrder(id);
+  await activityLogService.log(req, 'order.delete', {
+    entityType: 'order',
+    entityId: id,
+    details: { order_number: order.order_number, total_amount: order.total_amount },
+  });
+  return success(res, { id });
+}
+
 async function stats(req, res) {
   const data = await orderService.getStats();
   return success(res, data);
@@ -81,4 +92,4 @@ async function applyUpsell(req, res) {
   return success(res, order);
 }
 
-module.exports = { create, track, validateCoupon, list, getOne, updateStatus, updateNotes, stats, applyUpsell };
+module.exports = { create, track, validateCoupon, list, getOne, updateStatus, updateNotes, remove, stats, applyUpsell };

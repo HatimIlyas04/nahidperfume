@@ -119,7 +119,7 @@ async function withRetry(requestFn) {
 const CACHEABLE_PREFIXES = [
   "/api/packs", "/api/perfumes", "/api/faq", "/api/testimonials",
   "/api/banners", "/api/homepage-sections", "/api/settings", "/api/custom-pack-settings",
-  "/api/wishlist", "/api/site-content", "/api/trust-badges",
+  "/api/wishlist", "/api/site-content", "/api/trust-badges", "/api/announcements",
 ];
 // Within FRESH_TTL: return the cache, no network call at all.
 // Between FRESH_TTL and STALE_TTL: stale-while-revalidate — return the
@@ -272,6 +272,11 @@ export const trustBadgesApi = {
   listActive: () => api.get("/api/trust-badges").then(unwrap),
 };
 
+// ── Announcement bar (navbar ticker) ────────────────────────────
+export const announcementsApi = {
+  listActive: () => api.get("/api/announcements").then(unwrap),
+};
+
 // ── Contact ──────────────────────────────────────────────────
 export const contactApi = {
   submit: (payload) => api.post("/api/contact", payload).then(unwrap),
@@ -345,6 +350,7 @@ export const adminOrdersApi = {
   get: (id) => api.get(`/api/admin/orders/${id}`).then(unwrap),
   updateStatus: (id, status) => api.put(`/api/admin/orders/${id}/status`, { status }).then(unwrap),
   updateNotes: (id, admin_notes) => api.put(`/api/admin/orders/${id}/notes`, { admin_notes }).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/orders/${id}`).then(unwrap),
   stats: () => api.get("/api/admin/orders/stats").then(unwrap),
 };
 
@@ -403,6 +409,14 @@ export const adminTrustBadgesApi = {
   update: (id, data) => api.put(`/api/admin/trust-badges/${id}`, data).then(unwrap),
   reorder: (items) => api.patch("/api/admin/trust-badges/reorder", { items }).then(unwrap),
   remove: (id) => api.delete(`/api/admin/trust-badges/${id}`),
+};
+
+export const adminAnnouncementsApi = {
+  list: () => api.get("/api/admin/announcements").then(unwrap),
+  create: (data) => api.post("/api/admin/announcements", data).then(unwrap),
+  update: (id, data) => api.put(`/api/admin/announcements/${id}`, data).then(unwrap),
+  reorder: (items) => api.patch("/api/admin/announcements/reorder", { items }).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/announcements/${id}`),
 };
 
 export const adminContactMessagesApi = {

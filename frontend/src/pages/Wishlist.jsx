@@ -19,10 +19,9 @@ const CSS = `
 .wl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
 .wl-card { border-radius: var(--radius-lg); border: 1px solid var(--border-light); overflow: hidden; background: white; position: relative; transition: var(--transition); }
 .wl-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
-.wl-card-img { aspect-ratio: 1; background: var(--gray-100); cursor: pointer; }
-.wl-card-img img { width: 100%; height: 100%; object-fit: cover; }
+.wl-card-img { aspect-ratio: 970 / 1600; background: var(--gray-100); cursor: pointer; }
+.wl-card-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; }
 .wl-card-img.perfume { aspect-ratio: 1122 / 1402; }
-.wl-card-img.perfume img { object-fit: contain; object-position: center; }
 .wl-card-body { padding: 12px 14px; }
 .wl-card-name { font-size: 0.88rem; font-weight: 700; color: var(--secondary); }
 .wl-card-inspired { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; line-height: 1.35; }

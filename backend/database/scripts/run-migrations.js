@@ -50,6 +50,7 @@ const ORDER = [
   '027_trust_badges.sql',
   '028_homepage_sections_bilingual.sql',
   '029_pack_pricing_correction.sql',
+  '030_announcements.sql',
 ];
 
 /** Strips the mysql-CLI-only DELIMITER directive so the file can be sent

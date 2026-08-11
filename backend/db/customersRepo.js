@@ -73,4 +73,14 @@ async function upsertForOrder({ name, email, phone, deviceToken, orderTotal, ord
   return findById(customer.id, conn);
 }
 
-module.exports = { findByPhone, findById, findAll, create, update, upsertForOrder };
+/** Reverses upsertForOrder's increment when the order it was recorded for
+ *  is deleted. Clamped at 0 so this can never go negative (e.g. if stats
+ *  were already inconsistent for an unrelated reason). */
+async function decrementForOrder(customerId, orderTotal, conn = pool) {
+  await conn.query(
+    'UPDATE customers SET orders_count = GREATEST(0, orders_count - 1), total_spent = GREATEST(0, total_spent - ?) WHERE id = ?',
+    [orderTotal, customerId]
+  );
+}
+
+module.exports = { findByPhone, findById, findAll, create, update, upsertForOrder, decrementForOrder };

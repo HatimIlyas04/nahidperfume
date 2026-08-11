@@ -4,6 +4,7 @@ import { FiHeart, FiShoppingBag, FiCreditCard } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
+import { buildPackContentDetail } from "../utils/packContent";
 
 const CSS = `
 .pc-card {
@@ -25,18 +26,19 @@ const CSS = `
 
 /* The catalog photography is already a complete, full-bleed studio shot
    (bottle + styled props filling the whole frame) -- not an isolated
-   cutout with empty margins. So the image area is edge-to-edge cover,
-   no inner padding, no synthetic background: adding either just shrinks
-   an already-finished photo and boxes it in. This is what makes the
-   pack read as large/premium instead of "a small photo lost in a card". */
+   cutout with empty margins. Real admin-uploaded photos don't always
+   match that assumption, and object-fit: cover was cropping them --
+   the pack standard is 970x1600, so the container now uses that exact
+   ratio with object-fit: contain, guaranteeing the full pack is always
+   visible regardless of the source photo's real dimensions. */
 .pc-media {
   position: relative;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 970 / 1600;
   overflow: hidden;
   background: var(--background);
 }
 .pc-media img {
-  width: 100%; height: 100%; object-fit: cover; object-position: center;
+  width: 100%; height: 100%; object-fit: contain; object-position: center;
   transition: transform 0.6s cubic-bezier(0.16,1,0.3,1);
   display: block;
 }
@@ -85,6 +87,7 @@ const CSS = `
   color: var(--primary-dark);
 }
 .pc-included-star { font-size: 0.7rem; }
+.pc-content-detail { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; margin-bottom: 8px; line-height: 1.35; }
 
 .pc-perfume-list {
   display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 10px;
@@ -174,9 +177,10 @@ function injectCSS() {
 // would defeat it silently).
 function PackCard({ pack, badge, priority = false, isWished = false, onToggleWishlist, onAddToCart, onOrderNow }) {
   injectCSS();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const perfumes = pack.perfumes || [];
+  const contentDetail = buildPackContentDetail(perfumes, lang);
   const fmt = (n) => Math.round(Number(n)).toLocaleString("fr-MA");
   const BADGE_KEYS = { best_seller: "packCard.bestSeller", new: "packCard.new", limited: "packCard.limited" };
   const badgeLabel = (pack.badge && BADGE_KEYS[pack.badge] && t(BADGE_KEYS[pack.badge]))
@@ -245,8 +249,9 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
           <>
             <div className="pc-included">
               <span className="pc-included-star">&#10022;</span>
-              {perfumes.length} {t("packCard.perfumesCount")}
+              {t("packDetails.containsFour")}
             </div>
+            {contentDetail && <div className="pc-content-detail">{contentDetail}</div>}
             <ul className="pc-perfume-list">
               {perfumes.slice(0, 4).map((p) => (
                 <li key={p.perfume_id || p.id}>

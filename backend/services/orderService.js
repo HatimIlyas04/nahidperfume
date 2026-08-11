@@ -362,6 +362,23 @@ async function updateNotes(id, notes) {
   return order;
 }
 
+/** order_items/order_item_perfumes cascade at the DB level (schema.sql).
+ *  The only thing that needs explicit cleanup is the denormalized
+ *  customers.orders_count/total_spent this order contributed to. */
+async function deleteOrder(id) {
+  const order = await ordersRepo.findById(id);
+  if (!order) throw new AppError('Order not found', 404);
+
+  await withTransaction(async (conn) => {
+    if (order.customer_id) {
+      await customersRepo.decrementForOrder(order.customer_id, order.total_amount, conn);
+    }
+    await ordersRepo.remove(id, conn);
+  });
+
+  return order;
+}
+
 async function getStats() {
   const [orderStats, topPerfumes] = await Promise.all([
     ordersRepo.getStats(),
@@ -377,6 +394,7 @@ module.exports = {
   trackOrder,
   updateStatus,
   updateNotes,
+  deleteOrder,
   getStats,
   applyUpsell,
   VALID_STATUSES,

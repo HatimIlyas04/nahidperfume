@@ -58,6 +58,14 @@ async function markWhatsappNotified(id, conn = pool) {
   await conn.query('UPDATE orders SET whatsapp_notified_at = NOW() WHERE id = ?', [id]);
 }
 
+/** order_items and order_item_perfumes cascade automatically (ON DELETE
+ *  CASCADE, see schema.sql); customers.first_order_id is set NULL by its
+ *  own FK if this was that customer's first order. */
+async function remove(id, conn = pool) {
+  const [result] = await conn.query('DELETE FROM orders WHERE id = ?', [id]);
+  return result.affectedRows > 0;
+}
+
 async function getStats(conn = pool) {
   // Three independent aggregates over the same table — safe to fire
   // concurrently (each pool.query() call checks out its own connection),
@@ -93,5 +101,6 @@ module.exports = {
   updateStatus,
   updateNotes,
   markWhatsappNotified,
+  remove,
   getStats,
 };

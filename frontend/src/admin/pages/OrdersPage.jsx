@@ -3,9 +3,10 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import Swal from "sweetalert2";
 import {
   FiEye, FiDownload, FiFileText, FiX, FiUser, FiPhone, FiMapPin,
-  FiCheck, FiPackage, FiTruck, FiHome, FiClock,
+  FiCheck, FiPackage, FiTruck, FiHome, FiClock, FiTrash2,
 } from "react-icons/fi";
 import { adminOrdersApi } from "../../services/api";
 
@@ -51,6 +52,27 @@ export default function OrdersPage() {
     await adminOrdersApi.updateStatus(id, status);
     load();
     if (selected?.id === id) setSelected((s) => ({ ...s, status }));
+  };
+
+  const handleDelete = async (order) => {
+    const r = await Swal.fire({
+      icon: "warning",
+      title: "Supprimer cette commande ?",
+      html: `<strong>${order.order_number}</strong><br/>Êtes-vous sûr de vouloir supprimer cette commande ? Cette action est irréversible.<br/><span dir="rtl">هل أنت متأكد من رغبتك في حذف هذا الطلب؟ هذا الإجراء لا يمكن التراجع عنه.</span>`,
+      showCancelButton: true,
+      confirmButtonText: "Supprimer",
+      cancelButtonText: "Annuler",
+      confirmButtonColor: "#C62828",
+    });
+    if (!r.isConfirmed) return;
+    try {
+      await adminOrdersApi.remove(order.id);
+      if (selected?.id === order.id) setSelected(null);
+      load();
+      Swal.fire({ icon: "success", title: "Commande supprimée", timer: 1400, showConfirmButton: false });
+    } catch (err) {
+      Swal.fire({ icon: "error", title: "Erreur", text: err.response?.data?.error || "Impossible de supprimer cette commande." });
+    }
   };
 
   const exportExcel = () => {
@@ -125,7 +147,10 @@ export default function OrdersPage() {
                     </select>
                   </td>
                   <td>{new Date(o.created_at).toLocaleDateString("fr-FR")}</td>
-                  <td><button className="adm-btn adm-btn-outline adm-btn-sm adm-btn-icon" onClick={() => setSelected(o)}><FiEye size={13} /></button></td>
+                  <td style={{ display: "flex", gap: "6px" }}>
+                    <button className="adm-btn adm-btn-outline adm-btn-sm adm-btn-icon" onClick={() => setSelected(o)}><FiEye size={13} /></button>
+                    <button className="adm-btn adm-btn-outline adm-btn-sm adm-btn-icon" style={{ color: "#C62828", borderColor: "#C62828" }} onClick={() => handleDelete(o)} aria-label="Supprimer"><FiTrash2 size={13} /></button>
+                  </td>
                 </tr>
               ))
             )}
@@ -141,7 +166,12 @@ export default function OrdersPage() {
                 <h3>{selected.order_number}</h3>
                 <span className={`adm-badge adm-badge-${selected.status}`}>{STATUS_LABEL[selected.status]}</span>
               </div>
-              <button className="adm-order-close" onClick={() => setSelected(null)} aria-label="Fermer"><FiX size={16} /></button>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button className="adm-btn adm-btn-outline adm-btn-sm" style={{ color: "#C62828", borderColor: "#C62828" }} onClick={() => handleDelete(selected)}>
+                  <FiTrash2 size={13} /> Supprimer
+                </button>
+                <button className="adm-order-close" onClick={() => setSelected(null)} aria-label="Fermer"><FiX size={16} /></button>
+              </div>
             </div>
 
             <div className="adm-order-body">
