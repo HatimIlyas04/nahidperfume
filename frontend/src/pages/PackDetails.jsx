@@ -100,15 +100,15 @@ const CSS = `
 .pd-perfume-card:hover { box-shadow: 0 14px 24px -12px rgba(20,16,14,0.16); }
 .pd-perfume-card.changed { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(239,119,106,0.12); }
 .pd-perfume-img-btn {
-  display: block; width: 100%; aspect-ratio: 1; overflow: hidden;
+  display: block; width: 100%; aspect-ratio: 1122 / 1402; overflow: hidden;
   background: var(--background);
   border: none; padding: 0; cursor: pointer;
 }
-.pd-perfume-img-btn img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; transition: transform 0.4s; }
+.pd-perfume-img-btn img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; transition: transform 0.4s; }
 .pd-perfume-img-btn:hover img { transform: scale(1.06); }
 .pd-perfume-body { padding: 12px 14px; }
-.pd-perfume-name { font-size: 0.86rem; font-weight: 600; color: var(--secondary); }
-.pd-perfume-cat { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; margin-bottom: 10px; }
+.pd-perfume-name { font-size: 0.92rem; font-weight: 700; color: var(--secondary); }
+.pd-perfume-inspired { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; margin-bottom: 10px; line-height: 1.4; }
 .pd-replace-btn {
   width: 100%; padding: 8px; border-radius: var(--radius-full); border: 1.5px solid var(--border);
   background: none; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
@@ -345,7 +345,9 @@ export default function PackDetails() {
                   </button>
                   <div className="pd-perfume-body">
                     <div className="pd-perfume-name">{slot.name}</div>
-                    <div className="pd-perfume-cat">{slot.category}</div>
+                    {slot.inspired_by && (
+                      <div className="pd-perfume-inspired">{t("perfumeCard.inspiredBy")} {slot.inspired_by}</div>
+                    )}
                     {customizing && (
                       <button className="pd-replace-btn" onClick={() => setReplaceTarget(slot.position)}>
                         <FiRefreshCw size={11} /> {t("packDetails.replace")}

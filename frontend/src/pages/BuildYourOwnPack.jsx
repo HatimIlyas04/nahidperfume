@@ -46,8 +46,8 @@ const CSS = `
 }
 .byop-card:hover { transform: translateY(-3px); }
 .byop-card.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(239,119,106,0.15); }
-.byop-card-img { aspect-ratio: 1; background: var(--gray-100); position: relative; }
-.byop-card-img img { width: 100%; height: 100%; object-fit: cover; }
+.byop-card-img { aspect-ratio: 1122 / 1402; background: var(--gray-100); position: relative; }
+.byop-card-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; }
 .byop-card-check {
   position: absolute; top: 8px; inset-inline-end: 8px; width: 26px; height: 26px; border-radius: 50%;
   background: white; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
@@ -55,8 +55,8 @@ const CSS = `
 }
 .byop-card.selected .byop-card-check { background: var(--primary); border-color: var(--primary); color: white; }
 .byop-card-info { padding: 10px 12px; }
-.byop-card-name { font-size: 0.82rem; font-weight: 600; color: var(--secondary); line-height: 1.25; }
-.byop-card-cat { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+.byop-card-name { font-size: 0.86rem; font-weight: 700; color: var(--secondary); line-height: 1.25; }
+.byop-card-inspired { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; line-height: 1.35; }
 .byop-card-view { position: absolute; bottom: 8px; inset-inline-start: 8px; font-size: 0.6rem; background: rgba(255,255,255,0.9); padding: 3px 8px; border-radius: var(--radius-full); color: var(--secondary); font-weight: 700; }
 
 .byop-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
@@ -135,7 +135,7 @@ export default function BuildYourOwnPack() {
     return perfumes.filter((p) => {
       if (genderFilter && p.gender !== genderFilter) return false;
       if (!q) return true;
-      return p.name.toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q);
+      return p.name.toLowerCase().includes(q) || (p.inspired_by || "").toLowerCase().includes(q);
     });
   }, [perfumes, query, genderFilter]);
 
@@ -241,7 +241,9 @@ export default function BuildYourOwnPack() {
                     </div>
                     <div className="byop-card-info">
                       <div className="byop-card-name">{p.name}</div>
-                      <div className="byop-card-cat">{p.category}{p.gender ? ` · ${p.gender}` : ""}</div>
+                      {p.inspired_by && (
+                        <div className="byop-card-inspired">{t("perfumeCard.inspiredBy")} {p.inspired_by}</div>
+                      )}
                     </div>
                   </div>
                 );

@@ -21,8 +21,11 @@ const CSS = `
 .wl-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
 .wl-card-img { aspect-ratio: 1; background: var(--gray-100); cursor: pointer; }
 .wl-card-img img { width: 100%; height: 100%; object-fit: cover; }
+.wl-card-img.perfume { aspect-ratio: 1122 / 1402; }
+.wl-card-img.perfume img { object-fit: contain; object-position: center; }
 .wl-card-body { padding: 12px 14px; }
-.wl-card-name { font-size: 0.88rem; font-weight: 600; color: var(--secondary); }
+.wl-card-name { font-size: 0.88rem; font-weight: 700; color: var(--secondary); }
+.wl-card-inspired { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; line-height: 1.35; }
 .wl-card-remove { position: absolute; top: 8px; inset-inline-end: 8px; width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.92); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .wl-card-cta { width: 100%; margin-top: 8px; padding: 8px; border-radius: var(--radius-full); border: none; background: var(--primary); color: white; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .wl-empty { text-align: center; padding: 80px 20px; }
@@ -126,12 +129,14 @@ export default function Wishlist() {
                   {data.perfumes.map((perfume) => (
                     <div className="wl-card" key={perfume.id}>
                       <button className="wl-card-remove" onClick={() => removePerfume(perfume.id)}><FiX size={14} /></button>
-                      <div className="wl-card-img" onClick={() => setPreviewPerfume(perfume)}>
+                      <div className="wl-card-img perfume" onClick={() => setPreviewPerfume(perfume)}>
                         <img src={cldResize(perfume.image_url, 300) || NO_IMAGE_PLACEHOLDER} alt={perfume.name} loading="lazy" />
                       </div>
                       <div className="wl-card-body">
                         <div className="wl-card-name">{perfume.name}</div>
-                        <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "4px" }}>{perfume.category}</div>
+                        {perfume.inspired_by && (
+                          <div className="wl-card-inspired">{t("perfumeCard.inspiredBy")} {perfume.inspired_by}</div>
+                        )}
                       </div>
                     </div>
                   ))}

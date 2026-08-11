@@ -46,8 +46,8 @@ const CSS = `
 .rp-item:hover { border-color: var(--primary); background: var(--primary-light); }
 .rp-item.selected { border-color: var(--primary); background: var(--primary-light); }
 .rp-item-img { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; background: var(--gray-100); flex-shrink: 0; }
-.rp-item-name { font-size: 0.83rem; font-weight: 600; color: var(--secondary); line-height: 1.25; }
-.rp-item-cat { font-size: 0.68rem; color: var(--text-muted); }
+.rp-item-name { font-size: 0.83rem; font-weight: 700; color: var(--secondary); line-height: 1.25; }
+.rp-item-inspired { font-size: 0.66rem; color: var(--text-muted); line-height: 1.3; }
 .rp-item-check { margin-inline-start: auto; color: var(--primary); flex-shrink: 0; }
 .rp-empty { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem; grid-column: 1 / -1; }
 `;
@@ -79,7 +79,7 @@ export default function ReplacePerfumeModal({ perfumes, excludeIds = [], current
     return perfumes.filter((p) => {
       if (excludeIds.includes(p.id) && p.id !== currentPerfumeId) return false;
       if (!q) return true;
-      return p.name.toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q);
+      return p.name.toLowerCase().includes(q) || (p.inspired_by || "").toLowerCase().includes(q);
     });
   }, [perfumes, excludeIds, currentPerfumeId, query]);
 
@@ -127,7 +127,9 @@ export default function ReplacePerfumeModal({ perfumes, excludeIds = [], current
               <img className="rp-item-img" src={cldResize(p.image_url, 100) || NO_IMAGE_PLACEHOLDER} alt={p.name} loading="lazy" />
               <div>
                 <div className="rp-item-name">{p.name}</div>
-                <div className="rp-item-cat">{p.category}{p.gender ? ` · ${p.gender}` : ""}</div>
+                {p.inspired_by && (
+                  <div className="rp-item-inspired">{t("perfumeCard.inspiredBy")} {p.inspired_by}</div>
+                )}
               </div>
               {p.id === currentPerfumeId && <FiCheck className="rp-item-check" size={16} />}
             </button>

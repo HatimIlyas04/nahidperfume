@@ -175,6 +175,9 @@ export const translations = {
       middleNotes: "Cœur",
       baseNotes: "Fond",
     },
+    perfumeCard: {
+      inspiredBy: "Inspiré par",
+    },
     buildPack: {
       title: "Créez Votre Propre Pack",
       subtitle: "Choisissez exactement 4 parfums parmi notre collection et composez un pack unique, à votre image.",
@@ -509,6 +512,9 @@ export const translations = {
       middleNotes: "Heart",
       baseNotes: "Base",
     },
+    perfumeCard: {
+      inspiredBy: "Inspired by",
+    },
     buildPack: {
       title: "Build Your Own Pack",
       subtitle: "Choose exactly 4 perfumes from our collection and build a unique pack, your way.",
@@ -842,6 +848,9 @@ export const translations = {
       topNotes: "المقدمة",
       middleNotes: "القلب",
       baseNotes: "القاعدة",
+    },
+    perfumeCard: {
+      inspiredBy: "مستوحى من",
     },
     buildPack: {
       title: "أنشئ باقتك الخاصة",

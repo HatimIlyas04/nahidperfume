@@ -91,11 +91,15 @@ const CSS = `
   list-style: none; margin: 0; padding: 0;
 }
 .pc-perfume-list li {
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 7px;
   font-size: 0.77rem; color: var(--text); line-height: 1.4;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.pc-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); flex-shrink: 0; }
+.pc-mini-thumb {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  background: var(--gray-100); object-fit: contain; object-position: center;
+  border: 1px solid var(--border-light);
+}
 
 .pc-bottom { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border-light); }
 .pc-price-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
@@ -245,7 +249,10 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
             </div>
             <ul className="pc-perfume-list">
               {perfumes.slice(0, 4).map((p) => (
-                <li key={p.perfume_id || p.id}><span className="pc-dot" />{p.name}</li>
+                <li key={p.perfume_id || p.id}>
+                  <img className="pc-mini-thumb" src={cldResize(p.image_url, 60) || NO_IMAGE_PLACEHOLDER} alt="" loading="lazy" />
+                  {p.name}
+                </li>
               ))}
             </ul>
           </>
