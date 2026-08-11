@@ -4,7 +4,10 @@ const AppError = require('../utils/AppError');
 const { success } = require('../utils/responseShape');
 const { toInt, toBool } = require('../utils/validators');
 
-const ALLOWED_FIELDS = ['title', 'subtitle', 'content_json', 'is_active', 'display_order'];
+const ALLOWED_FIELDS = [
+  'title', 'subtitle', 'title_fr', 'title_ar', 'subtitle_fr', 'subtitle_ar',
+  'content_json', 'is_active', 'display_order',
+];
 
 function pickPayload(body) {
   const data = {};

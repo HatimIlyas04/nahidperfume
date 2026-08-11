@@ -43,6 +43,12 @@ const ORDER = [
   '021_pack_badge.sql',
   '022_customers_sort_index.sql',
   'data-migration.sql',
+  '023_free_delivery.sql',
+  '024_site_content.sql',
+  '025_whatsapp_setting.sql',
+  '026_banner_ugc_fields.sql',
+  '027_trust_badges.sql',
+  '028_homepage_sections_bilingual.sql',
 ];
 
 /** Strips the mysql-CLI-only DELIMITER directive so the file can be sent

@@ -5,7 +5,7 @@ const { success, created } = require('../utils/responseShape');
 const { toInt, toBool, requireString } = require('../utils/validators');
 
 const ALLOWED_FIELDS = [
-  'title', 'subtitle', 'image_url', 'mobile_image_url', 'link_url', 'cta_label',
+  'title', 'caption', 'customer_name', 'subtitle', 'image_url', 'mobile_image_url', 'link_url', 'cta_label',
   'placement', 'is_active', 'display_order', 'starts_at', 'ends_at',
 ];
 

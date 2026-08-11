@@ -24,6 +24,7 @@ const FeedbackPage       = lazy(() => import("./pages/FeedbackPage"));
 const FaqPage            = lazy(() => import("./pages/FaqPage"));
 const CouponsPage        = lazy(() => import("./pages/CouponsPage"));
 const HomepagePage       = lazy(() => import("./pages/HomepagePage"));
+const ContentPage        = lazy(() => import("./pages/ContentPage"));
 const SettingsPage       = lazy(() => import("./pages/SettingsPage"));
 const AdminsPage         = lazy(() => import("./pages/AdminsPage"));
 const ActivityLogsPage   = lazy(() => import("./pages/ActivityLogsPage"));
@@ -116,6 +117,7 @@ export default function AdminApp() {
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/coupons" element={<CouponsPage />} />
           <Route path="/homepage" element={<HomepagePage />} />
+          <Route path="/content" element={<ContentPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/admins" element={admin.role === "super_admin" ? <AdminsPage /> : <Navigate to="/admin" />} />
           <Route path="/logs" element={admin.role === "super_admin" ? <ActivityLogsPage /> : <Navigate to="/admin" />} />

@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import {
   FiGrid, FiShoppingBag, FiPackage, FiBox, FiUsers, FiMessageSquare,
   FiStar, FiHelpCircle, FiTag, FiHome, FiSettings, FiShield, FiFileText,
-  FiBell, FiMoon, FiSun, FiLogOut, FiMenu, FiX,
+  FiBell, FiMoon, FiSun, FiLogOut, FiMenu, FiX, FiEdit3,
 } from "react-icons/fi";
 import { adminNotificationsApi, API_BASE_URL } from "../../services/api";
 import { playNotificationSound } from "../utils/notifSound";
@@ -20,6 +20,7 @@ const NAV = [
   { to: "/admin/packs", icon: FiPackage, label: "Packs Prêts" },
   { section: "Contenu" },
   { to: "/admin/homepage", icon: FiHome, label: "Page d'accueil" },
+  { to: "/admin/content", icon: FiEdit3, label: "Contenu du site" },
   { to: "/admin/testimonials", icon: FiStar, label: "Témoignages" },
   { to: "/admin/feedback", icon: FiMessageSquare, label: "Avis clients" },
   { to: "/admin/faq", icon: FiHelpCircle, label: "FAQ" },

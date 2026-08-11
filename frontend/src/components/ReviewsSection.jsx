@@ -1,18 +1,27 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiStar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { feedbacksApi } from "../services/api";
+import { feedbacksApi, testimonialsApi } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import { AVATARS } from "../pages/Reviews";
 
 const FALLBACK = [
-  { id: 1, first_name: "Yasmine", last_name: "El Amrani", avatar: "bloom",  rating: 5, message: "Un parfum absolument envoûtant. L'oud est profond sans être écrasant, avec une touche florale qui le rend unique. Je reçois des compliments à chaque fois que je le porte." },
-  { id: 2, first_name: "Karim",   last_name: "Bensaid",   avatar: "oud",    rating: 5, message: "J'offre Nahid à toute ma famille maintenant. La qualité est exceptionnelle et les flacons sont magnifiques. La livraison était rapide et l'emballage très soigné." },
-  { id: 3, first_name: "Salma",   last_name: "Tazi",      avatar: "rose",   rating: 5, message: "Amber Noir est mon coup de cœur absolu. Il tient toute la journée et évolue magnifiquement. Le rapport qualité-prix est imbattable pour un parfum de cette qualité." },
-  { id: 4, first_name: "Hassan",  last_name: "Alaoui",    avatar: "nature", rating: 5, message: "Enfin un parfum marocain qui rivalise avec les grandes maisons. Nahid a trouvé l'équilibre parfait entre tradition et modernité. Je suis client fidèle depuis le début." },
-  { id: 5, first_name: "Nadia",   last_name: "Berrada",   avatar: "amber",  rating: 5, message: "J'ai commandé le coffret 3 parfums et je ne regrette absolument pas. Chaque fragrance est une découverte. Le service client est aux petits soins." },
-  { id: 6, first_name: "Omar",    last_name: "Chraibi",   avatar: "marine", rating: 5, message: "Ma femme et moi utilisons les parfums Nahid depuis 6 mois. Nous sommes conquis par la longueur en bouche et la sophistication des compositions. Bravo à l'équipe !" },
+  { id: "fb-1", name: "Yasmine El Amrani", avatarKey: "bloom",  avatarUrl: null, rating: 5, message: "Un parfum absolument envoûtant. L'oud est profond sans être écrasant, avec une touche florale qui le rend unique. Je reçois des compliments à chaque fois que je le porte." },
+  { id: "fb-2", name: "Karim Bensaid",     avatarKey: "oud",    avatarUrl: null, rating: 5, message: "J'offre Nahid à toute ma famille maintenant. La qualité est exceptionnelle et les flacons sont magnifiques. La livraison était rapide et l'emballage très soigné." },
+  { id: "fb-3", name: "Salma Tazi",        avatarKey: "rose",   avatarUrl: null, rating: 5, message: "Amber Noir est mon coup de cœur absolu. Il tient toute la journée et évolue magnifiquement. Le rapport qualité-prix est imbattable pour un parfum de cette qualité." },
+  { id: "fb-4", name: "Hassan Alaoui",     avatarKey: "nature", avatarUrl: null, rating: 5, message: "Enfin un parfum marocain qui rivalise avec les grandes maisons. Nahid a trouvé l'équilibre parfait entre tradition et modernité. Je suis client fidèle depuis le début." },
+  { id: "fb-5", name: "Nadia Berrada",     avatarKey: "amber",  avatarUrl: null, rating: 5, message: "J'ai commandé le coffret 3 parfums et je ne regrette absolument pas. Chaque fragrance est une découverte. Le service client est aux petits soins." },
+  { id: "fb-6", name: "Omar Chraibi",      avatarKey: "marine", avatarUrl: null, rating: 5, message: "Ma femme et moi utilisons les parfums Nahid depuis 6 mois. Nous sommes conquis par la longueur en bouche et la sophistication des compositions. Bravo à l'équipe !" },
 ];
+
+// Two content sources feed this widget: `testimonials` (admin-curated
+// marketing quotes, can carry a real uploaded photo) and `feedbacks`
+// (organic customer submissions via the /reviews form, always shown
+// with an emoji avatar bubble, never a photo). Normalized to one shape
+// so the card rendering below doesn't need to know which source a
+// given review came from.
+const normalizeTestimonial = (t) => ({ id: `ts-${t.id}`, name: t.name, rating: t.rating, message: t.quote, avatarKey: null, avatarUrl: t.avatar_url || null });
+const normalizeFeedback = (f) => ({ id: `fb-${f.id}`, name: `${f.first_name} ${f.last_name}`, rating: f.rating, message: f.message, avatarKey: f.avatar, avatarUrl: null });
 
 const getAvatar = id => AVATARS.find(a => a.id === id) || AVATARS[0];
 
@@ -24,8 +33,11 @@ const Stars = ({ count }) => (
   </div>
 );
 
-const AvatarBubble = ({ avatarId, name, size = 48 }) => {
-  const av = getAvatar(avatarId);
+const AvatarBubble = ({ avatarKey, avatarUrl, name, size = 48 }) => {
+  if (avatarUrl) {
+    return <img src={avatarUrl} alt={name} title={name} style={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, objectFit: "cover", boxShadow: "0 2px 8px rgba(0,0,0,.12)", border: "2px solid white" }} />;
+  }
+  const av = getAvatar(avatarKey);
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%", flexShrink: 0,
@@ -47,10 +59,16 @@ const ReviewsSection = ({ titleOverride }) => {
   const perPage = 3;
 
   useEffect(() => {
-    feedbacksApi.listApproved()
-      .then(data => setReviews(Array.isArray(data) && data.length > 0 ? data : FALLBACK))
-      .catch(() => setReviews(FALLBACK))
-      .finally(() => setLoading(false));
+    Promise.all([
+      testimonialsApi.listActive().catch(() => []),
+      feedbacksApi.listApproved().catch(() => []),
+    ]).then(([testimonials, feedbacks]) => {
+      const combined = [
+        ...(Array.isArray(testimonials) ? testimonials.map(normalizeTestimonial) : []),
+        ...(Array.isArray(feedbacks) ? feedbacks.map(normalizeFeedback) : []),
+      ];
+      setReviews(combined.length > 0 ? combined : FALLBACK);
+    }).finally(() => setLoading(false));
   }, []);
 
   const pages   = Math.ceil(reviews.length / perPage);
@@ -83,10 +101,10 @@ const ReviewsSection = ({ titleOverride }) => {
                 <div style={styles.quote}>"</div>
                 <p style={styles.comment}>{review.message}</p>
                 <div style={styles.cardFooter}>
-                  <AvatarBubble avatarId={review.avatar} name={`${review.first_name} ${review.last_name}`} />
+                  <AvatarBubble avatarKey={review.avatarKey} avatarUrl={review.avatarUrl} name={review.name} />
                   <div style={styles.reviewer}>
                     <div style={styles.reviewerTop}>
-                      <span style={styles.reviewerName}>{review.first_name} {review.last_name}</span>
+                      <span style={styles.reviewerName}>{review.name}</span>
                       <Stars count={review.rating} />
                     </div>
                   </div>

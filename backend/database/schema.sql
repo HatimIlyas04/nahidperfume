@@ -321,7 +321,7 @@ INSERT INTO settings (setting_key, setting_value, setting_group) VALUES
   ('site_name', 'Nahid Perfumes', 'general'),
   ('currency', 'MAD', 'general'),
   ('contact_phone', '', 'contact'),
-  ('contact_whatsapp', '', 'contact'),
+  ('contact_whatsapp', '0636572200', 'contact'),
   ('contact_email', '', 'contact'),
   ('instagram_url', '', 'social'),
   ('facebook_url', '', 'social'),

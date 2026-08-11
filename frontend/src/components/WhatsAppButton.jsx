@@ -1,4 +1,7 @@
+import { useState, useEffect } from "react";
 import { useLanguage } from "../context/LanguageContext";
+import { settingsApi } from "../services/api";
+import { whatsAppLink } from "../utils/whatsapp";
 
 const WA_CSS = `
 @keyframes wa-pulse {
@@ -124,11 +127,15 @@ function injectWACSS() {
 const WhatsAppButton = () => {
   injectWACSS();
   const { t } = useLanguage();
+  const [waLink, setWaLink] = useState(whatsAppLink());
+  useEffect(() => {
+    settingsApi.getPublic().then((s) => { if (s.contact_whatsapp) setWaLink(whatsAppLink(s.contact_whatsapp)); }).catch(() => {});
+  }, []);
   return (
     <div className="wa-fab-wrap">
       <span className="wa-fab-tooltip">{t("whatsapp.tooltip")}</span>
       <a
-        href="https://wa.me/212636550058"
+        href={waLink}
         target="_blank"
         rel="noopener noreferrer"
         className="wa-fab-btn"

@@ -95,6 +95,9 @@ const CSS = `
 .home-ugc-item:hover img { transform: scale(1.1); }
 .home-ugc-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s; color: white; }
 .home-ugc-item:hover .home-ugc-overlay { opacity: 1; }
+.home-ugc-caption { position: absolute; inset-inline: 0; bottom: 0; padding: 16px 10px 8px; background: linear-gradient(to top, rgba(0,0,0,0.65), transparent); color: white; display: flex; flex-direction: column; gap: 1px; }
+.home-ugc-caption strong { font-size: 0.68rem; font-weight: 700; }
+.home-ugc-caption span { font-size: 0.62rem; opacity: 0.9; line-height: 1.3; }
 
 .home-newsletter { background: var(--primary-light); border-radius: var(--radius-xl); max-width: var(--container-max); margin: var(--section-gap) auto 0; padding: 56px 40px; text-align: center; }
 .home-newsletter h3 { font-family: var(--font-display); font-size: 1.8rem; font-weight: 500; margin-bottom: 10px; }
@@ -121,7 +124,7 @@ const WHY_ICONS = [
 export default function Home() {
   injectCSS();
   const { addToCart } = useCart();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [packs, setPacks] = useState([]);
   const [packsLoading, setPacksLoading] = useState(true);
   const [faqs, setFaqs] = useState([]);
@@ -150,7 +153,14 @@ export default function Home() {
   // resolves (or if that section row doesn't exist) so nothing flashes
   // hidden on first paint.
   const sectionByKey = useCallback((key) => sections.find((s) => s.section_key === key), [sections]);
-  const sectionText = useCallback((key, field, fallbackKey) => sectionByKey(key)?.[field] || t(fallbackKey), [sectionByKey, t]);
+  // homepage_sections stores title/subtitle as _fr/_ar pairs (see migration
+  // 028) -- English isn't a first-class CMS language here, so it reads the
+  // French column, same as the rest of the app treats French as the
+  // fallback for anything not explicitly translated.
+  const sectionText = useCallback((key, field, fallbackKey) => {
+    const langField = `${field}_${lang === "ar" ? "ar" : "fr"}`;
+    return sectionByKey(key)?.[langField] || t(fallbackKey);
+  }, [sectionByKey, t, lang]);
   const isSectionVisible = useCallback((key) => {
     const section = sectionByKey(key);
     return section ? !!section.is_active : true;
@@ -323,8 +333,14 @@ export default function Home() {
           <div className="home-ugc-grid">
             {ugcItems.map((item) => (
               <a className="home-ugc-item" href={item.link_url || "#"} key={item.id} target={item.link_url ? "_blank" : undefined} rel="noreferrer">
-                <img src={cldResize(item.image_url, 400)} alt={item.title || "Nahid Perfumes"} loading="lazy" />
+                <img src={cldResize(item.image_url, 400)} alt={item.caption || item.title || "Nahid Perfumes"} loading="lazy" />
                 {item.link_url && <div className="home-ugc-overlay"><FiPlay size={22} /></div>}
+                {(item.caption || item.customer_name) && (
+                  <div className="home-ugc-caption">
+                    {item.customer_name && <strong>@{item.customer_name}</strong>}
+                    {item.caption && <span>{item.caption}</span>}
+                  </div>
+                )}
               </a>
             ))}
           </div>

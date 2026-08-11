@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
-import { FiPlus, FiEdit2, FiTrash2, FiCopy, FiUploadCloud, FiCheck } from "react-icons/fi";
+import { FiPlus, FiEdit2, FiTrash2, FiCopy, FiUploadCloud, FiCheck, FiArrowUp, FiArrowDown } from "react-icons/fi";
 import { adminPacksApi, adminPerfumesApi, uploadApi } from "../../services/api";
 
 const EMPTY = {
@@ -100,6 +100,14 @@ export default function PacksPage() {
   };
 
   const handleToggleActive = async (p) => { await adminPacksApi.setActive(p.id, !p.is_active); load(); };
+  const movePack = async (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= packs.length) return;
+    const next = [...packs];
+    [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+    setPacks(next);
+    await adminPacksApi.reorder(next.map((p, i) => ({ id: p.id, display_order: i })));
+  };
   const handleDuplicate = async (p) => { await adminPacksApi.duplicate(p.id); load(); Swal.fire({ icon: "success", title: "Pack dupliqué", timer: 1200, showConfirmButton: false }); };
   const handleDelete = async (p) => {
     const result = await Swal.fire({ icon: "warning", title: `Supprimer "${p.title}" ?`, showCancelButton: true, confirmButtonText: "Supprimer", confirmButtonColor: "#C62828" });
@@ -114,6 +122,9 @@ export default function PacksPage() {
         <h1>Packs Prêts ({packs.length})</h1>
         <button className="adm-btn adm-btn-primary" onClick={openCreate}><FiPlus size={14} /> Nouveau pack</button>
       </div>
+      <p style={{ fontSize: "0.78rem", color: "var(--adm-text-light)", marginBottom: "14px" }}>
+        Les packs "Vedette" (★) apparaissent en premier sur la page d'accueil. Utilisez les flèches pour ajuster l'ordre d'affichage.
+      </p>
 
       <div className="adm-table-wrap">
         <table className="adm-table">
@@ -124,7 +135,7 @@ export default function PacksPage() {
             ) : packs.length === 0 ? (
               <tr><td colSpan={7} className="adm-empty">Aucun pack. Créez-en un pour commencer.</td></tr>
             ) : (
-              packs.map((p) => (
+              packs.map((p, i) => (
                 <tr key={p.id}>
                   <td><img src={p.cover_image || "/nahid1.png"} alt="" style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover" }} /></td>
                   <td>{p.title}</td>
@@ -136,7 +147,9 @@ export default function PacksPage() {
                       {p.is_active ? "Actif" : "Inactif"}
                     </span>
                   </td>
-                  <td style={{ textAlign: "right" }}>
+                  <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                    <button className="adm-btn adm-btn-outline adm-btn-sm adm-btn-icon" disabled={i === 0} onClick={() => movePack(i, -1)} title="Monter (ordre sur la page d'accueil)"><FiArrowUp size={12} /></button>{" "}
+                    <button className="adm-btn adm-btn-outline adm-btn-sm adm-btn-icon" disabled={i === packs.length - 1} onClick={() => movePack(i, 1)} title="Descendre"><FiArrowDown size={12} /></button>{" "}
                     <button className="adm-btn adm-btn-outline adm-btn-sm adm-btn-icon" onClick={() => openEdit(p)}><FiEdit2 size={13} /></button>{" "}
                     <button className="adm-btn adm-btn-outline adm-btn-sm adm-btn-icon" onClick={() => handleDuplicate(p)}><FiCopy size={13} /></button>{" "}
                     <button className="adm-btn adm-btn-danger adm-btn-sm adm-btn-icon" onClick={() => handleDelete(p)}><FiTrash2 size={13} /></button>
@@ -172,6 +185,9 @@ export default function PacksPage() {
                     <input type="file" accept="image/*" hidden onChange={handleUpload} />
                   </label>
                 </div>
+                <p style={{ fontSize: "0.7rem", color: "var(--adm-text-light)", marginTop: "6px" }}>
+                  Format recommandé : 970 × 1600 px (ratio portrait)
+                </p>
               </div>
               <div className="adm-form-group"><label>Titre *</label><input required value={form.title} onChange={set("title")} /></div>
               <div className="adm-form-group"><label>Description</label><textarea rows={2} value={form.description} onChange={set("description")} /></div>

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { translations } from "../translations";
+import { siteContentApi } from "../services/api";
 
 const LanguageContext = createContext(null);
 
@@ -9,6 +10,18 @@ export function LanguageProvider({ children }) {
     // choice (saved on first switch) always wins over that default.
     return localStorage.getItem("nahid_lang") || "ar";
   });
+
+  // Admin-editable overrides for the app's own translation keys (see the
+  // Website Content admin page) -- { [content_key]: { fr, ar } }. Fetched
+  // once, independent of `lang`, and layered in front of the hardcoded
+  // `translations` lookup inside t() below. Starts empty so the page
+  // renders immediately with the existing hardcoded copy; if/when this
+  // resolves, any admin-edited strings simply swap in on the next render
+  // -- nothing blocks on this, and nothing breaks if it fails.
+  const [contentOverrides, setContentOverrides] = useState({});
+  useEffect(() => {
+    siteContentApi.list().then(setContentOverrides).catch(() => {});
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("nahid_lang", lang);
@@ -43,8 +56,13 @@ export function LanguageProvider({ children }) {
     }
   }, [lang]);
 
-  /* Dot-notation path traversal with French fallback */
+  /* Admin override first (only for fr/ar -- content_override has no "en"
+     column, so this is a no-op for English by construction), then the
+     existing dot-notation path traversal with French fallback. */
   const t = (path) => {
+    const override = contentOverrides[path]?.[lang];
+    if (override) return override;
+
     const keys = path.split(".");
     let val = translations[lang];
     for (const k of keys) {

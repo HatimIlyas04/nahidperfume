@@ -174,6 +174,9 @@ export default function PerfumesPage() {
                     <input type="file" accept="image/*" hidden onChange={handleUpload} />
                   </label>
                 </div>
+                <p style={{ fontSize: "0.7rem", color: "var(--adm-text-light)", marginTop: "6px" }}>
+                  Format recommandé : 1122 × 1402 px (ratio portrait)
+                </p>
               </div>
               <div className="adm-form-row">
                 <div className="adm-form-group"><label>Nom *</label><input required value={form.name} onChange={set("name")} /></div>

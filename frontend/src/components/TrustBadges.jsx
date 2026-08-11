@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { FiShield, FiTruck, FiRefreshCw, FiPhoneCall } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
+import { trustBadgesApi } from "../services/api";
 
 const CSS = `
 .tb-row { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; padding: 28px 32px; max-width: var(--container-max); margin: 0 auto; }
@@ -37,22 +39,53 @@ function injectCSS() {
   }
 }
 
-const BADGE_ICONS = [FiShield, FiTruck, FiRefreshCw, FiPhoneCall];
+const ICONS_BY_KEY = { shield: FiShield, truck: FiTruck, refresh: FiRefreshCw, phone: FiPhoneCall };
+// Falls back to the original hardcoded copy (still fully translated,
+// still correct) if the API hasn't resolved yet or is empty -- the strip
+// never disappears or flashes blank while /api/trust-badges loads.
+const FALLBACK_ICONS = [FiShield, FiTruck, FiRefreshCw, FiPhoneCall];
 
 export default function TrustBadges() {
   injectCSS();
-  const { t } = useLanguage();
-  const items = t("trustBadges.items");
+  const { t, lang } = useLanguage();
+  const [badges, setBadges] = useState(null);
+
+  useEffect(() => {
+    trustBadgesApi.listActive().then((data) => setBadges(Array.isArray(data) && data.length > 0 ? data : [])).catch(() => setBadges([]));
+  }, []);
+
+  if (badges === null || badges.length === 0) {
+    const items = t("trustBadges.items");
+    return (
+      <div className="tb-row">
+        {Array.isArray(items) && items.map((b, i) => {
+          const Icon = FALLBACK_ICONS[i];
+          return (
+            <div className="tb-item" key={b.label}>
+              <div className="tb-icon"><Icon size={16} /></div>
+              <div>
+                <div className="tb-label">{b.label}</div>
+                <div className="tb-sub">{b.sub}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="tb-row">
-      {Array.isArray(items) && items.map((b, i) => {
-        const Icon = BADGE_ICONS[i];
+      {badges.map((b) => {
+        const Icon = ICONS_BY_KEY[b.icon_key] || FiShield;
+        const title = (lang === "ar" ? b.title_ar : b.title_fr) || b.title_fr;
+        const subtitle = (lang === "ar" ? b.subtitle_ar : b.subtitle_fr) || b.subtitle_fr;
         return (
-          <div className="tb-item" key={b.label}>
+          <div className="tb-item" key={b.id}>
             <div className="tb-icon"><Icon size={16} /></div>
             <div>
-              <div className="tb-label">{b.label}</div>
-              <div className="tb-sub">{b.sub}</div>
+              <div className="tb-label">{title}</div>
+              {subtitle && <div className="tb-sub">{subtitle}</div>}
             </div>
           </div>
         );

@@ -119,7 +119,7 @@ async function withRetry(requestFn) {
 const CACHEABLE_PREFIXES = [
   "/api/packs", "/api/perfumes", "/api/faq", "/api/testimonials",
   "/api/banners", "/api/homepage-sections", "/api/settings", "/api/custom-pack-settings",
-  "/api/wishlist",
+  "/api/wishlist", "/api/site-content", "/api/trust-badges",
 ];
 // Within FRESH_TTL: return the cache, no network call at all.
 // Between FRESH_TTL and STALE_TTL: stale-while-revalidate — return the
@@ -260,6 +260,18 @@ export const homepageSectionsApi = {
   listActive: () => api.get("/api/homepage-sections").then(unwrap),
 };
 
+// ── Site content overrides (admin-editable copy of the app's own
+// translation keys -- see LanguageContext.jsx for how these layer in
+// front of the hardcoded translations) ────────────────────────
+export const siteContentApi = {
+  list: () => api.get("/api/site-content").then(unwrap),
+};
+
+// ── Trust badges (homepage strip) ─────────────────────────────
+export const trustBadgesApi = {
+  listActive: () => api.get("/api/trust-badges").then(unwrap),
+};
+
 // ── Contact ──────────────────────────────────────────────────
 export const contactApi = {
   submit: (payload) => api.post("/api/contact", payload).then(unwrap),
@@ -377,6 +389,20 @@ export const adminHomepageSectionsApi = {
   list: () => api.get("/api/admin/homepage-sections").then(unwrap),
   update: (id, data) => api.put(`/api/admin/homepage-sections/${id}`, data).then(unwrap),
   reorder: (items) => api.patch("/api/admin/homepage-sections/reorder", { items }).then(unwrap),
+};
+
+export const adminSiteContentApi = {
+  list: () => api.get("/api/admin/site-content").then(unwrap),
+  update: (key, data) => api.put(`/api/admin/site-content/${encodeURIComponent(key)}`, data).then(unwrap),
+  reset: (key) => api.delete(`/api/admin/site-content/${encodeURIComponent(key)}`).then(unwrap),
+};
+
+export const adminTrustBadgesApi = {
+  list: () => api.get("/api/admin/trust-badges").then(unwrap),
+  create: (data) => api.post("/api/admin/trust-badges", data).then(unwrap),
+  update: (id, data) => api.put(`/api/admin/trust-badges/${id}`, data).then(unwrap),
+  reorder: (items) => api.patch("/api/admin/trust-badges/reorder", { items }).then(unwrap),
+  remove: (id) => api.delete(`/api/admin/trust-badges/${id}`),
 };
 
 export const adminContactMessagesApi = {
