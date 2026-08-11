@@ -49,6 +49,7 @@ const ORDER = [
   '026_banner_ugc_fields.sql',
   '027_trust_badges.sql',
   '028_homepage_sections_bilingual.sql',
+  '029_pack_pricing_correction.sql',
 ];
 
 /** Strips the mysql-CLI-only DELIMITER directive so the file can be sent

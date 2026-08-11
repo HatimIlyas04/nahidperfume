@@ -190,7 +190,7 @@ export default function OrdersPage() {
 
               <div className="adm-order-totals">
                 <div className="adm-order-totals-row"><span>Sous-total</span><span>{Math.round(selected.subtotal_amount)} MAD</span></div>
-                <div className="adm-order-totals-row"><span>Livraison</span><span>{Math.round(selected.shipping_amount)} MAD</span></div>
+                <div className="adm-order-totals-row"><span>Livraison</span><span>{Number(selected.shipping_amount) > 0 ? `${Math.round(selected.shipping_amount)} MAD` : "Gratuite"}</span></div>
                 {selected.discount_amount > 0 && (
                   <div className="adm-order-totals-row"><span>Réduction{selected.coupon_code_snapshot ? ` (${selected.coupon_code_snapshot})` : ""}</span><span>−{Math.round(selected.discount_amount)} MAD</span></div>
                 )}

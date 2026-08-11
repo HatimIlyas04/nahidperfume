@@ -11,11 +11,21 @@ const couponService = require('./couponService');
 const notificationService = require('./notificationService');
 const whatsappService = require('./whatsappService');
 const emailService = require('./emailService');
-const settingsRepo = require('../db/settingsRepo');
 const AppError = require('../utils/AppError');
 const { requireString, requireMoroccanPhone, toInt } = require('../utils/validators');
 
 const VALID_STATUSES = ['pending', 'confirmed', 'preparing', 'shipping', 'delivered', 'cancelled'];
+
+// PACK PRICE POLICY: every pack costs exactly 200 DH with delivery already
+// included -- there is no separate shipping charge, ever. This is a hard
+// constant, not read from the `settings` table (unlike the old
+// shipping_flat_rate scheme), so this invariant can never regress just
+// because a settings row drifts back to a nonzero value.
+const SHIPPING_FEE = 0;
+
+// Fallback price for a post-order upsell pack when it's flagged as an
+// offer (is_upsell_offer) but has no explicit per-pack upsell_price set.
+const DEFAULT_UPSELL_PRICE = 150;
 
 /** Resolves one submitted cart line into a priced, snapshot-ready item. */
 async function resolveLine(line) {
@@ -85,13 +95,8 @@ async function resolveLine(line) {
   throw new AppError(`Unsupported item_type: ${line.item_type}`, 400);
 }
 
-async function computeShipping(subtotal) {
-  const settings = await settingsRepo.findPublic();
-  const map = Object.fromEntries(settings.map((s) => [s.setting_key, s.setting_value]));
-  const flatRate = Number(map.shipping_flat_rate || 0);
-  const freeThreshold = map.free_shipping_threshold ? Number(map.free_shipping_threshold) : null;
-  if (freeThreshold !== null && subtotal >= freeThreshold) return 0;
-  return flatRate;
+function computeShipping() {
+  return SHIPPING_FEE;
 }
 
 async function createOrder(payload) {
@@ -116,7 +121,7 @@ async function createOrder(payload) {
   }
 
   const subtotal = resolvedItems.reduce((sum, it) => sum + it.unit_price * it.quantity, 0);
-  const shipping = await computeShipping(subtotal);
+  const shipping = computeShipping();
 
   let coupon = null;
   let discount = 0;
@@ -272,7 +277,7 @@ async function applyUpsell(orderId, token, packId) {
     throw new AppError('This pack has already been added to your order.', 409);
   }
 
-  const upsellPrice = offerPack.upsell_price !== null ? Number(offerPack.upsell_price) : Number(offerPack.price);
+  const upsellPrice = offerPack.upsell_price !== null ? Number(offerPack.upsell_price) : DEFAULT_UPSELL_PRICE;
 
   const { updatedOrder, upsellItem } = await withTransaction(async (conn) => {
     const orderItemId = await orderItemsRepo.create(

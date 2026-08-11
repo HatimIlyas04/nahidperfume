@@ -7,6 +7,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { ordersApi, getDeviceToken } from "../services/api";
 import { isValidMoroccanPhone } from "../utils/validation";
 import { getRecaptchaToken } from "../utils/recaptcha";
+import { SHIPPING_FEE } from "../utils/pricing";
 import NahidFooter from "../components/NahidFooter";
 
 const CSS = `
@@ -63,10 +64,8 @@ export default function Checkout() {
   const subtotal = buyNowItem ? buyNowItem.price * buyNowItem.quantity : cartSubtotal;
 
   // Pack prices are all-inclusive -- delivery is free, not a fee added at
-  // checkout. Matches backend orderService.computeShipping, which reads the
-  // same policy from the settings table (shipping_flat_rate).
-  const SHIPPING_FLAT = 0;
-  const shipping = effectiveCart.length === 0 ? 0 : SHIPPING_FLAT;
+  // checkout. Matches backend orderService's hardcoded shipping constant.
+  const shipping = effectiveCart.length === 0 ? 0 : SHIPPING_FEE;
   const total = subtotal + shipping;
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));

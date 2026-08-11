@@ -9,6 +9,7 @@ import { cartToOrderItems } from "../context/CartContext";
 import { ordersApi, getDeviceToken } from "../services/api";
 import { isValidMoroccanPhone } from "../utils/validation";
 import { getRecaptchaToken } from "../utils/recaptcha";
+import { SHIPPING_FEE } from "../utils/pricing";
 
 // Major Moroccan delivery cities, common e-commerce list — "Autre" reveals
 // a free-text field so any city is still accepted.
@@ -65,11 +66,6 @@ function injectCSS() {
   }
 }
 
-// Matches Checkout.jsx's own SHIPPING_FLAT exactly -- this form must never
-// claim or charge a different delivery fee than the regular checkout does.
-// Pack prices are all-inclusive: delivery is free.
-const SHIPPING_FLAT = 0;
-
 const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSelectPack }, ref) {
   injectCSS();
   const { t } = useLanguage();
@@ -82,7 +78,7 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
 
   const quantity = Math.max(1, Math.min(10, Number(form.quantity) || 1));
   const subtotal = pack ? Number(pack.price) * quantity : 0;
-  const shipping = pack ? SHIPPING_FLAT : 0;
+  const shipping = pack ? SHIPPING_FEE : 0;
   const total = subtotal + shipping;
 
   const validate = () => {

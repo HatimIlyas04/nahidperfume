@@ -7,6 +7,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import { couponsApi } from "../services/api";
+import { SHIPPING_FEE } from "../utils/pricing";
 import NahidFooter from "../components/NahidFooter";
 
 const CSS = `
@@ -73,10 +74,8 @@ export default function Cart() {
   const [couponLoading, setCouponLoading] = useState(false);
 
   // Pack prices are all-inclusive -- delivery is free, not a fee added at
-  // checkout. Matches backend orderService.computeShipping, which reads the
-  // same policy from the settings table (shipping_flat_rate).
-  const SHIPPING_FLAT = 0;
-  const shipping = cart.length === 0 ? 0 : SHIPPING_FLAT;
+  // checkout. Matches backend orderService's hardcoded shipping constant.
+  const shipping = cart.length === 0 ? 0 : SHIPPING_FEE;
   const discount = coupon ? coupon.discount : 0;
   const total = Math.max(0, subtotal + shipping - discount);
 

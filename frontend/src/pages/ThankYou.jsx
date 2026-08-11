@@ -6,6 +6,7 @@ import { packsApi, ordersApi } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
+import { DEFAULT_UPSELL_PRICE } from "../utils/pricing";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
 
@@ -119,7 +120,10 @@ export default function ThankYou() {
               <strong>{Math.round(item.price * item.quantity)} MAD</strong>
             </div>
           ))}
-          <div className="ty-summary-row"><span>{t("checkout.shipping")}</span><strong>{t("cart.free")}</strong></div>
+          <div className="ty-summary-row">
+            <span>{t("checkout.shipping")}</span>
+            <strong>{Number(order.shipping_amount) > 0 ? `${Math.round(order.shipping_amount)} MAD` : t("cart.free")}</strong>
+          </div>
           <div className="ty-summary-row ty-summary-total"><span>{t("thankYou.totalLabel")}</span><strong>{Math.round(order.total_amount)} MAD</strong></div>
           <div className="ty-summary-divider" />
           <div className="ty-summary-row"><span>{t("checkout.fullName")}</span><span>{order.customer_name}</span></div>
@@ -137,7 +141,7 @@ export default function ThankYou() {
 
             <div className="ty-upsell-grid">
               {offers.map((offer) => {
-                const upsellPrice = offer.upsell_price !== null ? Number(offer.upsell_price) : Number(offer.price);
+                const upsellPrice = offer.upsell_price !== null ? Number(offer.upsell_price) : DEFAULT_UPSELL_PRICE;
                 const accepted = acceptedIds.has(offer.id);
                 if (accepted) {
                   return (
