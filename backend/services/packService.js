@@ -53,7 +53,10 @@ async function getPack(id, conn = pool) {
   const pack = await packsRepo.findById(id, conn);
   if (!pack) throw new AppError('Pack not found', 404);
   const [withPerfumes] = await attachPerfumes([pack], { lean: false }, conn);
-  const feedbackImages = await packFeedbackImagesRepo.findActiveByPackId(id, conn);
+  // Defensive: a feedback-images lookup failure (e.g. pending migration)
+  // must never take down the core pack-detail response that already
+  // works today -- degrade to an empty gallery instead of a 500.
+  const feedbackImages = await packFeedbackImagesRepo.findActiveByPackId(id, conn).catch(() => []);
   return { ...withPerfumes, feedback_images: feedbackImages };
 }
 
