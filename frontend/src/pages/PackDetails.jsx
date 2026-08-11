@@ -27,17 +27,22 @@ const CSS = `
 /* Real admin-uploaded photos don't always match a 4:5 crop -- the pack
    standard is 970x1600, so the panel uses that exact ratio with
    object-fit: contain, guaranteeing the complete pack is always visible
-   regardless of the source photo's real dimensions. */
+   regardless of the source photo's real dimensions. Capped by max-width
+   (not max-height): a height cap on a wide grid column would fight the
+   aspect-ratio and force a near-square box, leaving visible empty space
+   around the contained image -- capping width instead lets the ratio
+   compute a consistent, correctly-proportioned height at any screen size,
+   and keeps the image from becoming an unnecessarily huge hero. */
 .pd-media {
   position: relative;
   border-radius: var(--radius-lg); overflow: hidden;
-  aspect-ratio: 970 / 1600; max-height: 620px;
+  aspect-ratio: 970 / 1600; max-width: min(100%, 420px); margin: 0 auto;
   background: var(--background);
   border: 1px solid var(--border-light);
   box-shadow: 0 1px 2px rgba(20,16,14,0.04), 0 20px 40px -20px rgba(20,16,14,0.18);
+  flex-shrink: 0;
 }
 .pd-media img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
-@media (max-width: 900px) { .pd-media { max-height: 440px; } }
 
 .pd-info { display: flex; flex-direction: column; }
 .pd-title { font-family: var(--font-display); font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 500; margin-bottom: 8px; }

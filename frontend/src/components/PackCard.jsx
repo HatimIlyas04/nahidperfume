@@ -36,6 +36,7 @@ const CSS = `
   aspect-ratio: 970 / 1600;
   overflow: hidden;
   background: var(--background);
+  flex-shrink: 0;
 }
 .pc-media img {
   width: 100%; height: 100%; object-fit: contain; object-position: center;
