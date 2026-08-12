@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { FiX, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
-import { cldResize } from "../utils/cloudinary";
+import { getFeedbackImageUrl, FEEDBACK_IMAGE_WIDTHS } from "../utils/cloudinary";
 
 const VISIBLE_LIMIT = 6;
 
@@ -102,8 +102,9 @@ function Lightbox({ images, index, onClose, onNavigate }) {
       )}
       <img
         className="pfg-lightbox-img"
-        src={cldResize(img.image_url, 1400)}
+        src={getFeedbackImageUrl(img.image_url, FEEDBACK_IMAGE_WIDTHS.lightbox)}
         alt=""
+        decoding="async"
         onClick={(e) => e.stopPropagation()}
       />
       {images.length > 1 && <div className="pfg-lightbox-counter">{index + 1} / {images.length}</div>}
@@ -111,16 +112,25 @@ function Lightbox({ images, index, onClose, onNavigate }) {
   );
 }
 
-/** Renders nothing if there are no images -- never an empty section. */
-export default function PackFeedbackGallery({ images }) {
+/** Renders nothing if there are no images -- never an empty section.
+ *  Memoized: `images` is `pack.feedback_images`, a referentially-stable
+ *  array on the PackDetails page (set once when the pack loads), so this
+ *  skips re-rendering entirely when unrelated PackDetails state changes
+ *  (customize toggle, perfume replacement, wishlist, etc). */
+function PackFeedbackGallery({ images }) {
   injectCSS();
   const { t } = useLanguage();
   const [showAll, setShowAll] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
 
-  if (!Array.isArray(images) || images.length === 0) return null;
+  const hasImages = Array.isArray(images) && images.length > 0;
+  const visible = useMemo(
+    () => (hasImages ? (showAll ? images : images.slice(0, VISIBLE_LIMIT)) : []),
+    [hasImages, images, showAll]
+  );
 
-  const visible = showAll ? images : images.slice(0, VISIBLE_LIMIT);
+  if (!hasImages) return null;
+
   const hasMore = !showAll && images.length > VISIBLE_LIMIT;
 
   const navigate = (delta) => {
@@ -139,9 +149,10 @@ export default function PackFeedbackGallery({ images }) {
         {images.length === 1 ? (
           <div className="pfg-single">
             <img
-              src={cldResize(images[0].image_url, 700)}
+              src={getFeedbackImageUrl(images[0].image_url, FEEDBACK_IMAGE_WIDTHS.desktop)}
               alt=""
               loading="lazy"
+              decoding="async"
               onClick={() => setLightboxIndex(0)}
             />
           </div>
@@ -149,7 +160,14 @@ export default function PackFeedbackGallery({ images }) {
           <div className="pfg-grid">
             {visible.map((img, i) => (
               <div className="pfg-item" key={img.id} onClick={() => setLightboxIndex(i)}>
-                <img src={cldResize(img.image_url, 500)} alt="" loading="lazy" />
+                <img
+                  src={getFeedbackImageUrl(img.image_url, FEEDBACK_IMAGE_WIDTHS.desktop)}
+                  srcSet={`${getFeedbackImageUrl(img.image_url, FEEDBACK_IMAGE_WIDTHS.mobile)} ${FEEDBACK_IMAGE_WIDTHS.mobile}w, ${getFeedbackImageUrl(img.image_url, FEEDBACK_IMAGE_WIDTHS.desktop)} ${FEEDBACK_IMAGE_WIDTHS.desktop}w`}
+                  sizes="(max-width: 560px) 45vw, 210px"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
             ))}
           </div>
@@ -173,3 +191,5 @@ export default function PackFeedbackGallery({ images }) {
     </section>
   );
 }
+
+export default memo(PackFeedbackGallery);
