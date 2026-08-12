@@ -30,6 +30,16 @@ function loadEnv() {
     );
   }
 
+  const missingVapid = ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT']
+    .filter((key) => !process.env[key] || !process.env[key].trim());
+  if (missingVapid.length > 0) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[env] Web Push is not fully configured — missing: ${missingVapid.join(', ')}. ` +
+      'Admin order push notifications will be skipped (orders still succeed normally) until these are set.'
+    );
+  }
+
   return {
     nodeEnv: process.env.NODE_ENV || 'development',
     port: Number(process.env.PORT) || 5000,
@@ -68,6 +78,11 @@ function loadEnv() {
     recaptcha: {
       secretKey: process.env.RECAPTCHA_SECRET_KEY || '',
       minScore: Number(process.env.RECAPTCHA_MIN_SCORE) || 0.5,
+    },
+    vapid: {
+      publicKey: process.env.VAPID_PUBLIC_KEY || '',
+      privateKey: process.env.VAPID_PRIVATE_KEY || '',
+      subject: process.env.VAPID_SUBJECT || '',
     },
   };
 }

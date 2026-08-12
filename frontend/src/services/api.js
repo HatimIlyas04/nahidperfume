@@ -443,6 +443,13 @@ export const adminSettingsApi = {
   update: (settings) => api.put("/api/admin/settings", { settings }).then(unwrap),
 };
 
+export const adminPushApi = {
+  vapidPublicKey: () => api.get("/api/admin/push/vapid-public-key").then(unwrap),
+  subscribe: (subscription) => api.post("/api/admin/push/subscribe", subscription).then(unwrap),
+  unsubscribe: (endpoint) => api.post("/api/admin/push/unsubscribe", { endpoint }).then(unwrap),
+  test: () => api.post("/api/admin/push/test").then(unwrap),
+};
+
 export const adminActivityLogsApi = {
   list: (params) => api.get("/api/admin/activity-logs", { params }).then(unwrap),
 };

@@ -11,6 +11,7 @@ const couponService = require('./couponService');
 const notificationService = require('./notificationService');
 const whatsappService = require('./whatsappService');
 const emailService = require('./emailService');
+const webPushService = require('./webPushService');
 const AppError = require('../utils/AppError');
 const { requireString, requireMoroccanPhone, toInt } = require('../utils/validators');
 
@@ -250,6 +251,7 @@ async function notifyOrderCreated(order) {
     whatsappService.sendAdminOrderAlert(orderWithItems),
     emailService.sendAdminOrderNotification(orderWithItems),
     emailService.sendOrderConfirmation(orderWithItems),
+    webPushService.sendAdminOrderPush(orderWithItems),
   ]);
 }
 

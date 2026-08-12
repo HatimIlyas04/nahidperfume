@@ -34,6 +34,7 @@ const uploadRouter = require('./routes/upload');
 const siteContentRoutes = require('./routes/siteContent.routes');
 const trustBadgesRoutes = require('./routes/trustBadges.routes');
 const announcementsRoutes = require('./routes/announcements.routes');
+const pushSubscriptionsRoutes = require('./routes/pushSubscriptions.routes');
 
 const app = express();
 
@@ -130,6 +131,7 @@ app.use('/api/admin/customers', customersRoutes.adminRouter);
 app.use('/api/admin/site-content', siteContentRoutes.adminRouter);
 app.use('/api/admin/trust-badges', trustBadgesRoutes.adminRouter);
 app.use('/api/admin/announcements', announcementsRoutes.adminRouter);
+app.use('/api/admin/push', pushSubscriptionsRoutes.adminRouter);
 // Admin auth (login/verify/change-password) + admins CRUD, all under /api/admin
 app.use('/api/admin', adminsRoutes.adminRouter);
 

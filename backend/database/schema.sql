@@ -312,6 +312,21 @@ CREATE TABLE IF NOT EXISTS notifications (
   INDEX idx_notifications_unread (is_read, created_at)
 );
 
+-- ── push_subscriptions (Web Push devices for admin order alerts) ──
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id          INT AUTO_INCREMENT PRIMARY KEY,
+  admin_id    INT NOT NULL,
+  endpoint    VARCHAR(500) NOT NULL,
+  p256dh      VARCHAR(255) NOT NULL,
+  auth        VARCHAR(255) NOT NULL,
+  user_agent  VARCHAR(255) NULL,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_push_subscriptions_endpoint (endpoint(191)),
+  INDEX idx_push_subscriptions_admin (admin_id),
+  CONSTRAINT fk_push_subscriptions_admin FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
+);
+
 -- ── settings (business config only, never secrets) ────────────────
 CREATE TABLE IF NOT EXISTS settings (
   id             INT AUTO_INCREMENT PRIMARY KEY,

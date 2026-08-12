@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#EF776A" />
 
+    <!-- PWA: installable app shell, mainly so the admin can add Nahid
+         Perfumes to their phone's home screen and enable order push
+         notifications (see src/utils/pushNotifications.js). -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Nahid" />
+
     <!-- Opens the connection (DNS + TLS) to the backend and image CDN
          before any JS runs, instead of waiting for the first fetch() to
          start that handshake — shaves the connection-setup time off the
