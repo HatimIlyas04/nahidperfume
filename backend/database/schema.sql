@@ -109,11 +109,13 @@ CREATE TABLE IF NOT EXISTS customers (
 CREATE TABLE IF NOT EXISTS packs (
   id                 INT AUTO_INCREMENT PRIMARY KEY,
   title              VARCHAR(255) NOT NULL,
+  gender             ENUM('Femme','Homme','Unisexe') NOT NULL DEFAULT 'Unisexe',
   slug               VARCHAR(255) NULL UNIQUE,
   description        TEXT NULL,
   cover_image        VARCHAR(500) NULL,
   gallery_images     TEXT NULL,
   price              DECIMAL(10,2) NOT NULL,
+  stock_quantity     INT NOT NULL DEFAULT 0,
   compare_at_price   DECIMAL(10,2) NULL,
   is_active          TINYINT(1) NOT NULL DEFAULT 1,
   is_featured        TINYINT(1) NOT NULL DEFAULT 0,
@@ -124,7 +126,8 @@ CREATE TABLE IF NOT EXISTS packs (
   updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_packs_active (is_active),
   INDEX idx_packs_upsell (is_upsell_offer),
-  INDEX idx_packs_display_order (display_order)
+  INDEX idx_packs_display_order (display_order),
+  INDEX idx_packs_gender (gender)
 );
 
 -- ── pack_perfumes (exactly 4 rows per pack, enforced in app code) ─

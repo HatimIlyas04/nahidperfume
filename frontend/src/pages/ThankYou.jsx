@@ -78,7 +78,12 @@ export default function ThankYou() {
       navigate("/", { replace: true });
       return;
     }
-    packsApi.getUpsellOffers().then(setOffers).catch(() => setOffers([]));
+    // Filter out-of-stock offers proactively -- the backend re-checks and
+    // rejects atomically regardless, but there's no reason to show a
+    // customer an "Add" button for something we already know is depleted.
+    packsApi.getUpsellOffers()
+      .then((offers) => setOffers(offers.filter((o) => Number(o.stock_quantity) > 0)))
+      .catch(() => setOffers([]));
   }, [order, navigate]);
 
   if (!order) return null;
@@ -95,7 +100,14 @@ export default function ThankYou() {
       setAcceptedIds((prev) => new Set(prev).add(offer.id));
       Swal.fire({ icon: "success", title: t("thankYou.upsellSuccessTitle"), timer: 1800, showConfirmButton: false });
     } catch (err) {
-      Swal.fire({ icon: "error", title: t("thankYou.upsellErrorTitle"), text: err.response?.data?.error || t("thankYou.upsellErrorText") });
+      // Same pattern as HomeOrderForm's OUT_OF_STOCK handling -- the raw
+      // backend string is English and not meant for display, so a known
+      // error code gets swapped for the proper bilingual message instead.
+      const code = err.response?.data?.details?.code;
+      const text = code === "UPSELL_OUT_OF_STOCK"
+        ? t("packStock.upsellOutOfStockError")
+        : err.response?.data?.error || t("thankYou.upsellErrorText");
+      Swal.fire({ icon: "error", title: t("thankYou.upsellErrorTitle"), text });
     } finally {
       setApplyingId(null);
     }

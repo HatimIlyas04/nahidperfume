@@ -42,9 +42,9 @@ async function attachPerfumes(packs, { lean = false } = {}, conn = pool) {
 // perfume's full record (ingredients/notes/concentration/etc.) for every
 // pack on the page. The single-pack detail view below needs the full
 // record (perfume modal, replace-a-perfume), so it stays non-lean.
-async function listPacks({ isActive } = {}) {
-  return cache.getOrSet(`${LIST_CACHE_PREFIX}${isActive}`, LIST_CACHE_TTL_MS, async () => {
-    const packs = await packsRepo.findAll({ isActive });
+async function listPacks({ isActive, gender } = {}) {
+  return cache.getOrSet(`${LIST_CACHE_PREFIX}${isActive}:${gender || ''}`, LIST_CACHE_TTL_MS, async () => {
+    const packs = await packsRepo.findAll({ isActive, gender });
     return attachPerfumes(packs, { lean: true });
   });
 }
@@ -177,4 +177,5 @@ module.exports = {
   validatePerfumeIds,
   resolveCustomizedSelection,
   getUpsellOffers,
+  invalidateListCache: () => cache.delPrefix(LIST_CACHE_PREFIX),
 };

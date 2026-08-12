@@ -11,6 +11,7 @@ import { isValidMoroccanPhone } from "../utils/validation";
 import { getRecaptchaToken } from "../utils/recaptcha";
 import { SHIPPING_FEE } from "../utils/pricing";
 import { buildPackContentDetail } from "../utils/packContent";
+import { getStockLevel } from "../utils/packStock";
 
 // Major Moroccan delivery cities, common e-commerce list — "Autre" reveals
 // a free-text field so any city is still accepted.
@@ -56,6 +57,10 @@ const CSS = `
 .hof-totals-row { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-light); }
 .hof-totals-total { font-weight: 700; color: var(--text); font-size: 0.86rem; padding-top: 4px; border-top: 1px solid var(--border-light); }
 .hof-submit { width: 100%; margin-top: 8px; padding: 16px; font-size: 0.95rem; }
+.hof-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+.hof-stock-note { font-size: 0.78rem; font-weight: 600; text-align: center; margin-top: 4px; }
+.hof-stock-low { color: var(--primary-dark); }
+.hof-stock-out { color: var(--error, #C62828); }
 .hof-cod-note { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; font-size: 0.76rem; color: var(--text-light); }
 `;
 
@@ -81,6 +86,8 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
 
   const quantity = Math.max(1, Math.min(10, Number(form.quantity) || 1));
   const packContentDetail = pack ? buildPackContentDetail(pack.perfumes, lang) : null;
+  const stockLevel = pack ? getStockLevel(pack.stock_quantity) : "in";
+  const outOfStock = stockLevel === "out";
   const subtotal = pack ? Number(pack.price) * quantity : 0;
   const shipping = pack ? SHIPPING_FEE : 0;
   const total = subtotal + shipping;
@@ -98,7 +105,7 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!pack || !validate()) return;
+    if (!pack || outOfStock || !validate()) return;
     setSubmitting(true);
     try {
       const buyNowItem = {
@@ -129,11 +136,16 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
       });
       navigate("/thank-you", { state: { order } });
     } catch (err) {
-      Swal.fire({
-        icon: "error",
-        title: t("checkout.errorTitle"),
-        text: err.response?.data?.error || t("checkout.errorRetry"),
-      });
+      // The backend re-checks stock atomically at order-creation time
+      // regardless of what this form's own display shows -- a code of
+      // OUT_OF_STOCK means the pack sold out between page load and
+      // submit, so the raw backend string (English, not translated) is
+      // replaced with the proper bilingual message instead of shown as-is.
+      const code = err.response?.data?.details?.code;
+      const text = code === "OUT_OF_STOCK"
+        ? t("packStock.outOfStockError")
+        : err.response?.data?.error || t("checkout.errorRetry");
+      Swal.fire({ icon: "error", title: t("checkout.errorTitle"), text });
     } finally {
       setSubmitting(false);
     }
@@ -245,9 +257,15 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
                 </div>
               )}
             </div>
-            <button type="submit" className="btn-primary hof-submit" disabled={!pack || submitting}>
+            {stockLevel === "low" && (
+              <p className="hof-stock-note hof-stock-low">
+                {t("packStock.lowStockPrefix")} {pack.stock_quantity} {t("packStock.lowStockSuffix")}
+              </p>
+            )}
+            {outOfStock && <p className="hof-stock-note hof-stock-out">{t("packStock.outOfStockError")}</p>}
+            <button type="submit" className="btn-primary hof-submit" disabled={!pack || outOfStock || submitting}>
               <FiShoppingBag size={16} style={{ marginInlineEnd: "8px" }} />
-              {submitting ? t("checkout.submitting") : t("directOrder.confirmBtn")}
+              {outOfStock ? t("packStock.outOfStock") : submitting ? t("checkout.submitting") : t("directOrder.confirmBtn")}
             </button>
             <p className="hof-cod-note"><FiTruck size={13} /> {t("checkout.codTitle")}</p>
           </form>

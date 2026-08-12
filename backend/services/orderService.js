@@ -159,6 +159,24 @@ async function createOrder(payload) {
 
     await ordersRepo.setOrderNumber(orderId, `NHD-${String(orderId).padStart(6, '0')}`, conn);
 
+    // Atomic, row-locked stock check -- inside the same transaction as the
+    // order itself, so if any line is out of stock the whole order rolls
+    // back (nothing partially created). Only ready_pack/ready_pack_customized
+    // lines are tied to a real pack's inventory; custom_pack (build-your-own,
+    // no source_pack_id) draws from individual perfumes, not pack stock.
+    for (const item of resolvedItems) {
+      if (!item.source_pack_id) continue;
+      // eslint-disable-next-line no-await-in-loop
+      const ok = await packsRepo.decrementStock(item.source_pack_id, item.quantity, conn);
+      if (!ok) {
+        throw new AppError(`"${item.item_name_snapshot}" is out of stock.`, 409, {
+          code: 'OUT_OF_STOCK',
+          pack_id: item.source_pack_id,
+          pack_title: item.item_name_snapshot,
+        });
+      }
+    }
+
     for (const item of resolvedItems) {
       // eslint-disable-next-line no-await-in-loop
       const orderItemId = await orderItemsRepo.create(
@@ -185,6 +203,10 @@ async function createOrder(payload) {
 
     return ordersRepo.findById(orderId, conn);
   }).then((order) => {
+    // Stock actually changed (if any pack lines were in this order) --
+    // the public packs cache would otherwise keep showing pre-order
+    // stock_quantity for up to its 60s TTL.
+    packService.invalidateListCache();
     // Fire-and-forget: the order is already committed at this point, and
     // none of notifyAdmins/WhatsApp/email affects what the customer needs
     // back. Previously these were awaited in sequence before responding,
@@ -280,6 +302,19 @@ async function applyUpsell(orderId, token, packId) {
   const upsellPrice = offerPack.upsell_price !== null ? Number(offerPack.upsell_price) : DEFAULT_UPSELL_PRICE;
 
   const { updatedOrder, upsellItem } = await withTransaction(async (conn) => {
+    // Same atomic, row-locked check as the main order flow -- an upsell
+    // must never create an order line for a pack that's actually out of
+    // stock, and checking-then-writing separately would reopen exactly
+    // the race this pattern exists to close.
+    const inStock = await packsRepo.decrementStock(offerPack.id, 1, conn);
+    if (!inStock) {
+      throw new AppError('This offer is currently unavailable.', 409, {
+        code: 'UPSELL_OUT_OF_STOCK',
+        pack_id: offerPack.id,
+        pack_title: offerPack.title,
+      });
+    }
+
     const orderItemId = await orderItemsRepo.create(
       {
         order_id: orderId,
@@ -314,6 +349,7 @@ async function applyUpsell(orderId, token, packId) {
     };
   });
 
+  packService.invalidateListCache();
   notifyUpsellApplied(updatedOrder, upsellItem).catch(() => {});
   return updatedOrder;
 }

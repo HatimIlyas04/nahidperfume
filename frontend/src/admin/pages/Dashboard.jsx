@@ -1,11 +1,19 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Line, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
   ArcElement, Tooltip, Legend, Filler,
 } from "chart.js";
-import { FiShoppingBag, FiDollarSign, FiClock, FiTrendingUp } from "react-icons/fi";
-import { adminOrdersApi } from "../../services/api";
+import { FiShoppingBag, FiDollarSign, FiClock, FiTrendingUp, FiAlertTriangle } from "react-icons/fi";
+import { adminOrdersApi, adminPacksApi } from "../../services/api";
+
+function stockLevel(qty) {
+  const n = Number(qty);
+  if (!Number.isFinite(n) || n <= 0) return "out";
+  if (n <= 5) return "low";
+  return "in";
+}
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler);
 
@@ -16,9 +24,11 @@ const STATUS_COLORS = {
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
+  const [packs, setPacks] = useState(null);
 
   useEffect(() => {
     adminOrdersApi.stats().then(setStats).catch(() => {});
+    adminPacksApi.list().then(setPacks).catch(() => setPacks([]));
   }, []);
 
   if (!stats) {
@@ -101,6 +111,59 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {packs && packs.length > 0 && (() => {
+        const withLevel = packs.map((p) => ({ ...p, level: stockLevel(p.stock_quantity) }));
+        const inStockCount = withLevel.filter((p) => p.level === "in").length;
+        const lowStock = withLevel.filter((p) => p.level === "low");
+        const outOfStock = withLevel.filter((p) => p.level === "out");
+        return (
+          <div className="adm-card">
+            <h3 className="adm-dash-card-title">Stock Overview</h3>
+            <div className="adm-stat-grid" style={{ marginBottom: lowStock.length || outOfStock.length ? "18px" : 0 }}>
+              <div className="adm-stat-card">
+                <div className="adm-stat-label">Total packs</div>
+                <div className="adm-stat-value">{packs.length}</div>
+              </div>
+              <div className="adm-stat-card">
+                <div className="adm-stat-icon" style={{ background: "#2E7D3220", color: "#2E7D32" }}><FiShoppingBag size={18} /></div>
+                <div className="adm-stat-label">En stock</div>
+                <div className="adm-stat-value">{inStockCount}</div>
+              </div>
+              <div className="adm-stat-card">
+                <div className="adm-stat-icon" style={{ background: "#B8860B20", color: "#B8860B" }}><FiAlertTriangle size={18} /></div>
+                <div className="adm-stat-label">Stock faible</div>
+                <div className="adm-stat-value">{lowStock.length}</div>
+              </div>
+              <div className="adm-stat-card">
+                <div className="adm-stat-icon" style={{ background: "#C6282820", color: "#C62828" }}><FiAlertTriangle size={18} /></div>
+                <div className="adm-stat-label">Rupture</div>
+                <div className="adm-stat-value">{outOfStock.length}</div>
+              </div>
+            </div>
+            {lowStock.length > 0 && (
+              <div style={{ marginBottom: "14px" }}>
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#B8860B", marginBottom: "6px" }}>⚠️ Stock faible</div>
+                {lowStock.map((p) => (
+                  <Link key={p.id} to="/admin/packs" style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: "0.85rem", color: "var(--adm-text)", borderBottom: "1px solid var(--adm-border)" }}>
+                    <span>{p.title}</span><span style={{ fontWeight: 700 }}>{p.stock_quantity}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+            {outOfStock.length > 0 && (
+              <div>
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#C62828", marginBottom: "6px" }}>Rupture</div>
+                {outOfStock.map((p) => (
+                  <Link key={p.id} to="/admin/packs" style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: "0.85rem", color: "var(--adm-text)", borderBottom: "1px solid var(--adm-border)" }}>
+                    <span>{p.title}</span><span style={{ fontWeight: 700 }}>0</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="adm-card">
         <h3 className="adm-dash-card-title">Parfums les plus inclus dans les packs commandés</h3>

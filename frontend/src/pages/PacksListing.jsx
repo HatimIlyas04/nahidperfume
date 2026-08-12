@@ -17,6 +17,15 @@ const CSS = `
 .pl-search { display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--border); border-radius: var(--radius-full); padding: 10px 18px; flex: 1; min-width: 220px; }
 .pl-search input { border: none; outline: none; flex: 1; font-size: 0.88rem; }
 .pl-sort { border: 1.5px solid var(--border); border-radius: var(--radius-full); padding: 10px 18px; font-size: 0.82rem; background: white; }
+.pl-gender-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 18px 32px 0; max-width: var(--container-max); margin: 0 auto; }
+@media (max-width: 640px) { .pl-gender-row { padding: 14px 16px 0; } }
+.pl-gender-chip {
+  padding: 8px 18px; border-radius: var(--radius-full); border: 1.5px solid var(--border);
+  background: white; font-size: 0.8rem; font-weight: 600; color: var(--secondary);
+  cursor: pointer; transition: var(--transition); white-space: nowrap;
+}
+.pl-gender-chip:hover { border-color: var(--primary); }
+.pl-gender-chip.active { background: var(--secondary); border-color: var(--secondary); color: white; }
 /* Premium catalog grid: a controlled 3/2/1 column layout (not auto-fill),
    so cards keep a consistent, comfortable size instead of stretching to
    fill whatever width happens to be available. */
@@ -51,6 +60,7 @@ export default function PacksListing() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState(searchParams.get("search") || "");
   const [sort, setSort] = useState("default");
+  const [genderFilter, setGenderFilter] = useState("");
   const [wishedIds, setWishedIds] = useState(() => new Set());
 
   useEffect(() => {
@@ -63,6 +73,7 @@ export default function PacksListing() {
 
   const visible = useMemo(() => {
     let list = [...packs];
+    if (genderFilter) list = list.filter((p) => p.gender === genderFilter);
     const q = query.trim().toLowerCase();
     if (q) {
       list = list.filter(
@@ -72,7 +83,7 @@ export default function PacksListing() {
     if (sort === "price_asc") list.sort((a, b) => a.price - b.price);
     if (sort === "price_desc") list.sort((a, b) => b.price - a.price);
     return list;
-  }, [packs, query, sort]);
+  }, [packs, query, sort, genderFilter]);
 
   const handleToggleWishlist = useCallback(async (pack) => {
     const wished = wishedIds.has(pack.id);
@@ -114,6 +125,23 @@ export default function PacksListing() {
       <div className="pl-hero">
         <h1>{t("packsPage.title")}</h1>
         <p>{t("packsPage.subtitle")}</p>
+      </div>
+
+      <div className="pl-gender-row">
+        {[
+          { value: "", label: t("packStock.all") },
+          { value: "Femme", label: t("packStock.femme") },
+          { value: "Homme", label: t("packStock.homme") },
+          { value: "Unisexe", label: t("packStock.unisexe") },
+        ].map((opt) => (
+          <button
+            key={opt.value || "all"}
+            className={`pl-gender-chip${genderFilter === opt.value ? " active" : ""}`}
+            onClick={() => setGenderFilter(opt.value)}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       <div className="pl-toolbar">

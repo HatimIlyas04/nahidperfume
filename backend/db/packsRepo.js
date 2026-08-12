@@ -1,17 +1,21 @@
 const { pool } = require('../config/db');
 
 const FIELDS = `
-  id, title, slug, description, cover_image, gallery_images, price,
+  id, title, gender, slug, description, cover_image, gallery_images, price, stock_quantity,
   compare_at_price, is_active, is_featured, badge, is_upsell_offer, upsell_price,
   display_order, created_at, updated_at
 `;
 
-async function findAll({ isActive } = {}, conn = pool) {
+async function findAll({ isActive, gender } = {}, conn = pool) {
   const where = [];
   const params = [];
   if (isActive !== undefined) {
     where.push('is_active = ?');
     params.push(isActive ? 1 : 0);
+  }
+  if (gender) {
+    where.push('gender = ?');
+    params.push(gender);
   }
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const [rows] = await conn.query(
@@ -52,6 +56,21 @@ async function remove(id, conn = pool) {
   await conn.query('DELETE FROM packs WHERE id = ?', [id]);
 }
 
+/** Atomically decrements stock by `quantity`, but only if enough is
+ *  available -- the WHERE clause reads the CURRENT row value at the
+ *  moment the UPDATE executes, so under InnoDB (row-locked for the
+ *  duration of the enclosing transaction) two concurrent orders for the
+ *  last unit can never both succeed: whichever commits first wins,
+ *  the second sees the already-decremented value and this returns false.
+ *  Must be called with the transaction connection (`conn`), never the pool. */
+async function decrementStock(id, quantity, conn) {
+  const [result] = await conn.query(
+    'UPDATE packs SET stock_quantity = stock_quantity - ? WHERE id = ? AND stock_quantity >= ?',
+    [quantity, id, quantity]
+  );
+  return result.affectedRows > 0;
+}
+
 // Any number of packs can be flagged as an upsell offer -- the Thank You
 // page shows every currently active one, not just a single "the" offer.
 async function findUpsellOffers(conn = pool) {
@@ -63,5 +82,5 @@ async function findUpsellOffers(conn = pool) {
 
 module.exports = {
   findAll, findById, create, update, setActive, reorder, remove,
-  findUpsellOffers,
+  findUpsellOffers, decrementStock,
 };

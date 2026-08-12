@@ -8,6 +8,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import { buildPackContentDetail } from "../utils/packContent";
+import { getStockLevel } from "../utils/packStock";
 import PerfumeModal from "../components/PerfumeModal";
 import ReplacePerfumeModal from "../components/ReplacePerfumeModal";
 import HomeOrderForm from "../components/HomeOrderForm";
@@ -45,6 +46,7 @@ const CSS = `
 .pd-media img { width: 100%; height: 100%; object-fit: contain; object-position: center; display: block; }
 
 .pd-info { display: flex; flex-direction: column; }
+.pd-gender-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); margin-bottom: 6px; }
 .pd-title { font-family: var(--font-display); font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 500; margin-bottom: 8px; }
 .pd-desc { color: var(--text-light); line-height: 1.65; margin-bottom: 18px; font-size: 0.92rem; max-width: 46ch; }
 
@@ -57,6 +59,9 @@ const CSS = `
   font-size: 0.72rem; font-weight: 700; color: var(--primary-dark); background: var(--primary-light);
   padding: 4px 12px; border-radius: var(--radius-full); width: fit-content;
 }
+.pd-stock-row { font-size: 0.8rem; font-weight: 600; margin-top: 8px; }
+.pd-stock-low { color: var(--primary-dark); }
+.pd-stock-out { color: var(--text-light); }
 
 /* Compact "what's inside" summary — answers "what am I buying?" before
    the customer scrolls, without duplicating the full grid below. */
@@ -84,6 +89,8 @@ const CSS = `
   cursor: pointer; transition: var(--transition); box-shadow: 0 8px 20px -6px rgba(239,119,106,0.6);
 }
 .pd-btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(239,119,106,0.65); }
+.pd-btn-primary:disabled { background: var(--gray-300); box-shadow: none; cursor: not-allowed; }
+.pd-btn-primary:disabled:hover { background: var(--gray-300); transform: none; box-shadow: none; }
 .pd-actions-row2 { display: flex; gap: 8px; }
 .pd-btn-secondary, .pd-btn-tertiary {
   flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -305,6 +312,8 @@ export default function PackDetails() {
   const hasDiscount = pack.compare_at_price && Number(pack.compare_at_price) > Number(pack.price);
   const savePercent = hasDiscount ? Math.round((1 - Number(pack.price) / Number(pack.compare_at_price)) * 100) : 0;
   const saveAmount = hasDiscount ? Math.round(Number(pack.compare_at_price) - Number(pack.price)) : 0;
+  const stockLevel = getStockLevel(pack.stock_quantity);
+  const GENDER_LABEL_KEYS = { Femme: "packStock.packFemme", Homme: "packStock.packHomme", Unisexe: "packStock.packUnisexe" };
 
   const scrollToCustomize = () => {
     setCustomizing(true);
@@ -341,6 +350,9 @@ export default function PackDetails() {
             <img src={cldResize(pack.cover_image, 700) || NO_IMAGE_PLACEHOLDER} alt={pack.title} fetchPriority="high" />
           </div>
           <div className="pd-info">
+            {pack.gender && GENDER_LABEL_KEYS[pack.gender] && (
+              <div className="pd-gender-eyebrow">✦ {t(GENDER_LABEL_KEYS[pack.gender])}</div>
+            )}
             <h1 className="pd-title">{pack.title}</h1>
             {pack.description && <p className="pd-desc">{pack.description}</p>}
             <div className="pd-price-row">
@@ -351,6 +363,12 @@ export default function PackDetails() {
               )}
             </div>
             <div className="pd-delivery-badge"><FiTruck size={12} /> {t("thankYou.upsellFreeDelivery")}</div>
+            {stockLevel === "low" && (
+              <div className="pd-stock-row pd-stock-low">
+                {t("packStock.lowStockPrefix")} {pack.stock_quantity} {t("packStock.lowStockSuffix")}
+              </div>
+            )}
+            {stockLevel === "out" && <div className="pd-stock-row pd-stock-out">{t("packStock.outOfStock")}</div>}
 
             <div className="pd-contains">
               <div className="pd-contains-label"><span className="pd-contains-star">✦</span> {t("packDetails.containsFour")}</div>
@@ -369,8 +387,8 @@ export default function PackDetails() {
 
             <div className="pd-actions">
               <div className="pd-actions-row1">
-                <button className="pd-btn-primary" onClick={scrollToOrderForm}>
-                  <FiCreditCard size={15} /> {t("packCard.order")}
+                <button className="pd-btn-primary" onClick={scrollToOrderForm} disabled={stockLevel === "out"}>
+                  <FiCreditCard size={15} /> {stockLevel === "out" ? t("packStock.outOfStock") : t("packCard.order")}
                 </button>
                 <button className={`pd-icon-btn${isWished ? " active" : ""}`} onClick={toggleWishlist} aria-label={t("packDetails.wishlist")}>
                   <FiHeart size={17} fill={isWished ? "currentColor" : "none"} />

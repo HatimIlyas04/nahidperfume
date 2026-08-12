@@ -5,6 +5,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import { buildPackContentDetail } from "../utils/packContent";
+import { getStockLevel } from "../utils/packStock";
 
 const CSS = `
 .pc-card {
@@ -76,6 +77,25 @@ const CSS = `
   color: var(--secondary); line-height: 1.25; letter-spacing: -0.01em;
   display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
 }
+.pc-gender-badge {
+  display: inline-block; width: fit-content; font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: var(--radius-full); padding: 2px 9px;
+}
+.pc-stock-row { font-size: 0.72rem; font-weight: 600; margin-top: -2px; }
+.pc-stock-in { color: var(--text-muted); font-weight: 500; }
+.pc-stock-low { color: var(--primary-dark); }
+.pc-stock-out { color: var(--text-light); }
+.pc-out-overlay {
+  position: absolute; inset: 0; background: rgba(255,255,255,0.55); backdrop-filter: blur(1px);
+  display: flex; align-items: center; justify-content: center; pointer-events: none;
+}
+.pc-out-overlay span {
+  background: var(--secondary); color: white; font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; padding: 7px 16px; border-radius: var(--radius-full);
+}
+.pc-btn-buy:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.pc-btn-buy:disabled:hover { background: var(--primary); }
 .pc-desc {
   font-size: 0.78rem; color: var(--text-light); line-height: 1.5;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -191,7 +211,12 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
   const hasDiscount = pack.compare_at_price && Number(pack.compare_at_price) > Number(pack.price);
   const saveAmount = hasDiscount ? Math.round(Number(pack.compare_at_price) - Number(pack.price)) : 0;
 
+  const stockLevel = getStockLevel(pack.stock_quantity);
+  const outOfStock = stockLevel === "out";
+  const GENDER_KEYS = { Femme: "packStock.femme", Homme: "packStock.homme", Unisexe: "packStock.unisexe" };
+
   const handleBuyNow = () => {
+    if (outOfStock) return;
     // On the homepage, onOrderNow selects the pack into the inline direct
     // order form instead of navigating away (see Home.jsx) -- everywhere
     // else (PacksListing, PackDetails, Wishlist), this prop isn't passed,
@@ -229,6 +254,7 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
         />
         {badgeLabel && <span className="pc-badge">{badgeLabel}</span>}
         {!badgeLabel && hasDiscount && <span className="pc-save">-{Math.round((1 - Number(pack.price) / Number(pack.compare_at_price)) * 100)}%</span>}
+        {outOfStock && <div className="pc-out-overlay"><span>{t("packStock.outOfStock")}</span></div>}
       </Link>
       {onToggleWishlist && (
         <button
@@ -244,6 +270,9 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
         <Link to={`/packs/${pack.id}`}>
           <h3 className="pc-title">{pack.title}</h3>
         </Link>
+        {pack.gender && GENDER_KEYS[pack.gender] && (
+          <span className="pc-gender-badge">{t(GENDER_KEYS[pack.gender])}</span>
+        )}
         <p className="pc-desc">{pack.description || " "}</p>
 
         {perfumes.length > 0 && (
@@ -273,8 +302,15 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
           {hasDiscount && saveAmount > 0 && (
             <span className="pc-save-pill">{t("packDetails.youSave")} {saveAmount} MAD</span>
           )}
+          {stockLevel === "low" && (
+            <div className="pc-stock-row pc-stock-low">
+              {t("packStock.lowStockPrefix")} {pack.stock_quantity} {t("packStock.lowStockSuffix")}
+            </div>
+          )}
+          {stockLevel === "in" && <div className="pc-stock-row pc-stock-in">{t("packStock.inStock")}</div>}
+          {outOfStock && <div className="pc-stock-row pc-stock-out">{t("packStock.outOfStock")}</div>}
           <div className="pc-actions">
-            <button className="pc-btn-buy" onClick={handleBuyNow}>
+            <button className="pc-btn-buy" onClick={handleBuyNow} disabled={outOfStock}>
               <FiCreditCard size={14} /> {t("packCard.order")}
             </button>
             <div className="pc-actions-row2">

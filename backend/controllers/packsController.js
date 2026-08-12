@@ -1,14 +1,16 @@
 const packService = require('../services/packService');
 const activityLogService = require('../services/activityLogService');
+const AppError = require('../utils/AppError');
 const { success, created } = require('../utils/responseShape');
 const { requireString, toInt, toBool, toPrice } = require('../utils/validators');
 
 const ALLOWED_FIELDS = [
-  'title', 'slug', 'description', 'cover_image', 'gallery_images', 'price',
+  'title', 'gender', 'slug', 'description', 'cover_image', 'gallery_images', 'price', 'stock_quantity',
   'compare_at_price', 'is_active', 'is_featured', 'badge', 'is_upsell_offer', 'upsell_price', 'display_order',
 ];
 
 const ALLOWED_BADGES = ['best_seller', 'new', 'limited'];
+const ALLOWED_GENDERS = ['Femme', 'Homme', 'Unisexe'];
 
 function pickPayload(body) {
   const data = {};
@@ -16,7 +18,11 @@ function pickPayload(body) {
     if (body[field] !== undefined) data[field] = body[field];
   }
   if (data.title) data.title = requireString(data.title, 'title', { maxLength: 255 });
+  if (data.gender !== undefined && !ALLOWED_GENDERS.includes(data.gender)) {
+    throw new AppError(`Invalid gender. Must be one of: ${ALLOWED_GENDERS.join(', ')}`, 400);
+  }
   if (data.price !== undefined) data.price = toPrice(data.price, 'price');
+  if (data.stock_quantity !== undefined) data.stock_quantity = toInt(data.stock_quantity, 'stock_quantity', { min: 0 });
   if (data.compare_at_price !== undefined && data.compare_at_price !== null) {
     data.compare_at_price = toPrice(data.compare_at_price, 'compare_at_price');
   }
@@ -34,7 +40,8 @@ function pickPayload(body) {
 }
 
 async function list(req, res) {
-  const packs = await packService.listPacks({ isActive: true });
+  const gender = ALLOWED_GENDERS.includes(req.query.gender) ? req.query.gender : undefined;
+  const packs = await packService.listPacks({ isActive: true, gender });
   return success(res, packs);
 }
 
