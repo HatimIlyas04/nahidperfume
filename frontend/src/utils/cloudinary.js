@@ -10,6 +10,21 @@ export function cldResize(url, width) {
   return url.replace("/upload/", `/upload/w_${width},c_limit,q_auto,f_auto/`);
 }
 
+/**
+ * Builds a srcset string offering several Cloudinary-rendered widths of
+ * the same image, so the browser picks the smallest one that satisfies
+ * the element's actual rendered size and device pixel ratio -- a 3-column
+ * desktop grid and a 2-column mobile grid stop requesting the same fixed
+ * width. Returns undefined (not a string) for non-Cloudinary/missing URLs,
+ * so spreading it onto an <img> simply omits the srcset/sizes attributes
+ * and the plain `src` (from cldResize) takes over exactly as before --
+ * zero behavior change for placeholder/external images.
+ */
+export function cldSrcSet(url, widths) {
+  if (!url || !url.includes("res.cloudinary.com") || !url.includes("/upload/")) return undefined;
+  return widths.map((w) => `${cldResize(url, w)} ${w}w`).join(", ");
+}
+
 // Feedback screenshots (WhatsApp chats, Instagram DMs) are customer
 // uploads of unknown, often large, original size -- these are the exact
 // widths PackFeedbackGallery actually needs, so the grid never requests

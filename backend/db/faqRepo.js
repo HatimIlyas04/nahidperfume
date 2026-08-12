@@ -7,7 +7,7 @@ const ACTIVE_CACHE_TTL_MS = 300 * 1000; // matches cachePublic(300) on /api/faq
 async function findActive(category, conn = pool) {
   return cache.getOrSet(`${ACTIVE_CACHE_PREFIX}${category || ''}`, ACTIVE_CACHE_TTL_MS, async () => {
     const params = [];
-    let sql = 'SELECT * FROM faq WHERE is_active = 1';
+    let sql = 'SELECT id, question, answer, category, display_order FROM faq WHERE is_active = 1';
     if (category) {
       sql += ' AND category = ?';
       params.push(category);

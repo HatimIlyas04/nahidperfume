@@ -7,7 +7,9 @@ const ACTIVE_CACHE_TTL_MS = 120 * 1000; // matches cachePublic(120) on /api/bann
 async function findActive(placement, conn = pool) {
   return cache.getOrSet(`${ACTIVE_CACHE_PREFIX}${placement || ''}`, ACTIVE_CACHE_TTL_MS, async () => {
     const params = [];
-    let sql = `SELECT * FROM banners WHERE is_active = 1
+    let sql = `SELECT id, title, caption, customer_name, subtitle, image_url, mobile_image_url,
+                      link_url, cta_label, placement, display_order
+               FROM banners WHERE is_active = 1
                AND (starts_at IS NULL OR starts_at <= NOW())
                AND (ends_at IS NULL OR ends_at >= NOW())`;
     if (placement) {

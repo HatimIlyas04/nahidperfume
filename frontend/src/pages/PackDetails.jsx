@@ -5,7 +5,7 @@ import { FiHeart, FiShare2, FiSliders, FiShoppingBag, FiRefreshCw, FiArrowLeft, 
 import { packsApi, perfumesApi, wishlistApi } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
-import { cldResize } from "../utils/cloudinary";
+import { cldResize, cldSrcSet } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import { buildPackContentDetail } from "../utils/packContent";
 import { getStockLevel } from "../utils/packStock";
@@ -347,7 +347,13 @@ export default function PackDetails() {
 
         <div className="pd-hero">
           <div className="pd-media">
-            <img src={cldResize(pack.cover_image, 700) || NO_IMAGE_PLACEHOLDER} alt={pack.title} fetchPriority="high" />
+            <img
+              src={cldResize(pack.cover_image, 700) || NO_IMAGE_PLACEHOLDER}
+              srcSet={cldSrcSet(pack.cover_image, [380, 500, 700, 900])}
+              sizes="380px"
+              alt={pack.title}
+              fetchPriority="high"
+            />
           </div>
           <div className="pd-info">
             {pack.gender && GENDER_LABEL_KEYS[pack.gender] && (

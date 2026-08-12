@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FiHeart, FiShoppingBag, FiCreditCard } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
-import { cldResize } from "../utils/cloudinary";
+import { cldResize, cldSrcSet } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import { buildPackContentDetail } from "../utils/packContent";
 import { getStockLevel } from "../utils/packStock";
@@ -246,6 +246,8 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
       <Link to={`/packs/${pack.id}`} className="pc-media">
         <img
           src={cldResize(pack.cover_image, 500) || NO_IMAGE_PLACEHOLDER}
+          srcSet={cldSrcSet(pack.cover_image, [300, 500, 700, 900])}
+          sizes="(max-width: 1024px) 46vw, 385px"
           alt={pack.title}
           loading={priority ? "eager" : "lazy"}
           fetchpriority={priority ? "high" : "auto"}

@@ -7,7 +7,9 @@ const ACTIVE_CACHE_TTL_MS = 120 * 1000; // matches cachePublic(120) on /api/home
 async function findActive(conn = pool) {
   return cache.getOrSet(ACTIVE_CACHE_KEY, ACTIVE_CACHE_TTL_MS, async () => {
     const [rows] = await conn.query(
-      'SELECT * FROM homepage_sections WHERE is_active = 1 ORDER BY display_order ASC'
+      `SELECT id, section_key, title, title_fr, title_ar, subtitle, subtitle_fr, subtitle_ar,
+              content_json, display_order
+       FROM homepage_sections WHERE is_active = 1 ORDER BY display_order ASC`
     );
     return rows;
   });

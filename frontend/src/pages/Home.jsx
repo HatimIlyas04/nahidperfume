@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import {
@@ -11,10 +11,14 @@ import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import PackCard from "../components/PackCard";
 import HomeOrderForm from "../components/HomeOrderForm";
-import ReviewsSection from "../components/ReviewsSection";
-import TrustBadges from "../components/TrustBadges";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
+
+// Both render well below the fold (after the pack grid + order form) --
+// code-split out of Home's own chunk so the above-the-fold path (pack
+// grid, order form) doesn't wait on parsing/evaluating their JS too.
+const ReviewsSection = lazy(() => import("../components/ReviewsSection"));
+const TrustBadges = lazy(() => import("../components/TrustBadges"));
 
 const CSS = `
 .home-top-eyebrow {
@@ -278,7 +282,9 @@ export default function Home() {
         </section>
       )}
 
-      <TrustBadges />
+      <Suspense fallback={<div className="home-section-skel" style={{ height: "80px", maxWidth: "var(--container-max)", margin: "24px auto" }} />}>
+        <TrustBadges />
+      </Suspense>
 
       {/* CREATE YOUR OWN PACK CTA */}
       {isSectionVisible("custom_pack_builder") && (
@@ -314,7 +320,9 @@ export default function Home() {
 
       {/* REVIEWS */}
       {isSectionVisible("testimonials") && (
-        <ReviewsSection titleOverride={sectionByKey("testimonials")?.title} />
+        <Suspense fallback={<div className="home-section-skel" style={{ height: "320px", maxWidth: "var(--container-max)", margin: "0 auto" }} />}>
+          <ReviewsSection titleOverride={sectionByKey("testimonials")?.title} />
+        </Suspense>
       )}
 
       {/* UGC / DELIVERY PHOTOS */}
