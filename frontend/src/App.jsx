@@ -7,6 +7,7 @@ import { LanguageProvider } from "./context/LanguageContext";
 import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar";
 import WhatsAppButton from "./components/WhatsAppButton";
+import InstallPrompt from "./components/InstallPrompt";
 import PageLoader from "./components/PageLoader";
 import { API_BASE_URL } from "./services/api";
 
@@ -41,6 +42,7 @@ function StorefrontChrome({ children }) {
   if (isAdmin) return children;
   return (
     <>
+      <InstallPrompt />
       <Navbar />
       <WhatsAppButton />
       {children}

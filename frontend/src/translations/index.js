@@ -357,6 +357,11 @@ export const translations = {
     whatsapp: {
       tooltip: "Contactez-nous sur WhatsApp",
     },
+    pwaInstall: {
+      bannerText: "Installez Nahid Perfumes sur votre téléphone",
+      cta: "Installer l'application",
+      dismiss: "Fermer",
+    },
   },
 
   /* ════════════════════════════════════════════════
@@ -717,6 +722,11 @@ export const translations = {
     whatsapp: {
       tooltip: "Contact us on WhatsApp",
     },
+    pwaInstall: {
+      bannerText: "Install Nahid Perfumes on your phone",
+      cta: "Install App",
+      dismiss: "Close",
+    },
   },
 
   /* ════════════════════════════════════════════════
@@ -1076,6 +1086,11 @@ export const translations = {
     },
     whatsapp: {
       tooltip: "تواصل معنا عبر واتساب",
+    },
+    pwaInstall: {
+      bannerText: "ثبّت تطبيق Nahid Perfumes على هاتفك",
+      cta: "تثبيت التطبيق",
+      dismiss: "إغلاق",
     },
   },
 };
