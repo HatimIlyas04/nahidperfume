@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { settingsApi } from "../services/api";
 import { whatsAppLink } from "../utils/whatsapp";
 
@@ -676,6 +677,7 @@ const NahidFooter = () => {
               ))}
             </div>
             <span className="nf-payment-tag">Paiement sécurisé</span>
+            <Link to="/admin" className="nf-legal-link">Admin</Link>
           </div>
         </div>
       </div>
