@@ -6,21 +6,31 @@ import { cldResize } from "../utils/cloudinary";
 const VISIBLE_LIMIT = 6;
 
 const CSS = `
-.pfg-wrap { padding: 8px 0; }
-.pfg-head { text-align: center; margin-bottom: 28px; }
+.pfg-wrap { padding: 8px 0; border-top: 1px solid var(--border-light); }
+.pfg-head { text-align: center; margin-bottom: 24px; }
 .pfg-eyebrow { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--primary); margin-bottom: 10px; }
-.pfg-title { font-family: var(--font-display); font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 500; color: var(--secondary); margin-bottom: 10px; }
-.pfg-trust { font-size: 0.88rem; color: var(--text-light); max-width: 480px; margin: 0 auto; }
+.pfg-title { font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 500; color: var(--secondary); margin-bottom: 8px; }
+.pfg-trust { font-size: 0.85rem; color: var(--text-light); max-width: 480px; margin: 0 auto; }
 
-.pfg-single { max-width: 420px; margin: 0 auto; }
-.pfg-single img { width: 100%; height: auto; display: block; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); cursor: pointer; }
+/* Small premium THUMBNAILS -- these are screenshots (WhatsApp chats,
+   Instagram DMs), not product photos, so the goal is a light, scannable
+   preview strip rather than a full-bleed gallery. A fixed height (not
+   aspect-ratio, which would fight a max-height cap on wide grid cells --
+   see the .pd-media comment in PackDetails.jsx for that exact bug)
+   keeps every thumbnail visually consistent regardless of the source
+   screenshot's real dimensions. object-fit: cover crops the PREVIEW
+   only -- the lightbox below always shows the complete, uncropped
+   screenshot on click, which is where "don't crop a screenshot"
+   actually matters. */
+.pfg-single { max-width: 320px; max-height: 380px; margin: 0 auto; }
+.pfg-single img { width: 100%; height: 100%; object-fit: contain; display: block; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); cursor: pointer; }
 
-.pfg-grid { column-count: 3; column-gap: 16px; }
-@media (max-width: 900px) { .pfg-grid { column-count: 2; } }
-@media (max-width: 560px) { .pfg-grid { column-count: 1; } }
-.pfg-item { break-inside: avoid; margin-bottom: 16px; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.25s ease, box-shadow 0.25s ease; }
-.pfg-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-.pfg-item img { width: 100%; height: auto; display: block; object-fit: contain; }
+.pfg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .pfg-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
+.pfg-item { height: 200px; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+@media (max-width: 560px) { .pfg-item { height: 160px; } }
+.pfg-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.pfg-item img { width: 100%; height: 100%; display: block; object-fit: cover; }
 
 .pfg-more-row { text-align: center; margin-top: 22px; }
 .pfg-more-btn { background: none; border: 1.5px solid var(--border); color: var(--secondary); padding: 11px 28px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: var(--transition); }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate, Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { FiHeart, FiShare2, FiSliders, FiShoppingBag, FiRefreshCw, FiArrowLeft, FiCreditCard } from "react-icons/fi";
+import { FiHeart, FiShare2, FiSliders, FiShoppingBag, FiRefreshCw, FiArrowLeft, FiCreditCard, FiTruck } from "react-icons/fi";
 import { packsApi, perfumesApi, wishlistApi } from "../services/api";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -36,7 +36,7 @@ const CSS = `
 .pd-media {
   position: relative;
   border-radius: var(--radius-lg); overflow: hidden;
-  aspect-ratio: 970 / 1600; max-width: min(100%, 420px); margin: 0 auto;
+  aspect-ratio: 970 / 1600; max-width: min(100%, 380px); margin: 0 auto;
   background: var(--background);
   border: 1px solid var(--border-light);
   box-shadow: 0 1px 2px rgba(20,16,14,0.04), 0 20px 40px -20px rgba(20,16,14,0.18);
@@ -46,18 +46,24 @@ const CSS = `
 
 .pd-info { display: flex; flex-direction: column; }
 .pd-title { font-family: var(--font-display); font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight: 500; margin-bottom: 8px; }
-.pd-desc { color: var(--text-light); line-height: 1.65; margin-bottom: 16px; font-size: 0.92rem; }
+.pd-desc { color: var(--text-light); line-height: 1.65; margin-bottom: 18px; font-size: 0.92rem; max-width: 46ch; }
 
 .pd-price-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .pd-price { font-family: var(--font-display); font-size: 1.9rem; font-weight: 600; }
 .pd-compare { font-size: 0.95rem; color: var(--text-muted); text-decoration: line-through; }
 .pd-save { font-size: 0.72rem; font-weight: 700; color: var(--primary-dark); background: var(--primary-light); padding: 3px 10px; border-radius: var(--radius-full); }
+.pd-delivery-badge {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; margin-bottom: 4px;
+  font-size: 0.72rem; font-weight: 700; color: var(--primary-dark); background: var(--primary-light);
+  padding: 4px 12px; border-radius: var(--radius-full); width: fit-content;
+}
 
 /* Compact "what's inside" summary — answers "what am I buying?" before
    the customer scrolls, without duplicating the full grid below. */
-.pd-contains { margin: 18px 0; padding: 14px 16px; background: var(--background); border-radius: var(--radius-md); }
-.pd-contains-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-light); margin-bottom: 4px; }
-.pd-contains-detail { font-size: 0.78rem; color: var(--text); margin-bottom: 10px; }
+.pd-contains { margin: 18px 0; padding: 16px 18px; background: var(--background); border-radius: var(--radius-md); border: 1px solid var(--border-light); }
+.pd-contains-label { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; color: var(--secondary); margin-bottom: 4px; }
+.pd-contains-star { color: var(--primary); font-size: 0.7rem; }
+.pd-contains-detail { font-size: 0.78rem; color: var(--text-light); margin-bottom: 12px; line-height: 1.5; }
 .pd-contains-list { display: flex; flex-wrap: wrap; gap: 10px; }
 .pd-contains-item { display: flex; align-items: center; gap: 7px; }
 .pd-contains-thumb { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; background: var(--white); border: 1.5px solid var(--border-light); flex-shrink: 0; }
@@ -72,10 +78,10 @@ const CSS = `
 .pd-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; margin-bottom: 8px; }
 .pd-actions-row1 { display: flex; gap: 8px; }
 .pd-btn-primary {
-  flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 12px 18px; border-radius: var(--radius-full); border: none;
-  background: var(--primary); color: white; font-size: 0.86rem; font-weight: 600;
-  cursor: pointer; transition: var(--transition); box-shadow: 0 6px 16px -6px rgba(239,119,106,0.55);
+  flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 15px 20px; border-radius: var(--radius-full); border: none;
+  background: var(--primary); color: white; font-size: 0.92rem; font-weight: 700;
+  cursor: pointer; transition: var(--transition); box-shadow: 0 8px 20px -6px rgba(239,119,106,0.6);
 }
 .pd-btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(239,119,106,0.65); }
 .pd-actions-row2 { display: flex; gap: 8px; }
@@ -119,7 +125,8 @@ const CSS = `
 .pd-perfume-img-btn:hover img { transform: scale(1.06); }
 .pd-perfume-body { padding: 12px 14px; }
 .pd-perfume-name { font-size: 0.92rem; font-weight: 700; color: var(--secondary); }
-.pd-perfume-inspired { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; margin-bottom: 10px; line-height: 1.4; }
+.pd-perfume-inspired { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+.pd-perfume-size { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; margin-bottom: 10px; }
 .pd-replace-btn {
   width: 100%; padding: 8px; border-radius: var(--radius-full); border: 1.5px solid var(--border);
   background: none; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
@@ -331,7 +338,7 @@ export default function PackDetails() {
 
         <div className="pd-hero">
           <div className="pd-media">
-            <img src={cldResize(pack.cover_image, 700) || NO_IMAGE_PLACEHOLDER} alt={pack.title} />
+            <img src={cldResize(pack.cover_image, 700) || NO_IMAGE_PLACEHOLDER} alt={pack.title} fetchPriority="high" />
           </div>
           <div className="pd-info">
             <h1 className="pd-title">{pack.title}</h1>
@@ -343,9 +350,10 @@ export default function PackDetails() {
                 <span className="pd-save">{t("packDetails.youSave")} {saveAmount} MAD (-{savePercent}%)</span>
               )}
             </div>
+            <div className="pd-delivery-badge"><FiTruck size={12} /> {t("thankYou.upsellFreeDelivery")}</div>
 
             <div className="pd-contains">
-              <div className="pd-contains-label">{t("packDetails.containsFour")}</div>
+              <div className="pd-contains-label"><span className="pd-contains-star">✦</span> {t("packDetails.containsFour")}</div>
               {packContentDetail && <div className="pd-contains-detail">{packContentDetail}</div>}
               <div className="pd-contains-list">
                 {currentSlots.map((slot) => (
@@ -406,6 +414,7 @@ export default function PackDetails() {
                     {slot.inspired_by && (
                       <div className="pd-perfume-inspired">{t("perfumeCard.inspiredBy")} {slot.inspired_by}</div>
                     )}
+                    {slot.size && <div className="pd-perfume-size">{slot.size}ml</div>}
                     {customizing && (
                       <button className="pd-replace-btn" onClick={() => setReplaceTarget(slot.position)}>
                         <FiRefreshCw size={11} /> {t("packDetails.replace")}
