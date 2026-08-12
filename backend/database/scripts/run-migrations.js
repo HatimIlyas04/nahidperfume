@@ -9,7 +9,12 @@
  * this is NOT enabled on the main application pool (config/db.js),
  * keeping the normal request path free of stacked-query risk.
  *
- * Usage: node database/scripts/run-migrations.js
+ * Exports the underlying pieces so server.js can run pending migrations
+ * automatically at startup (see server.js) without duplicating this
+ * logic — this file is the single source of truth for "how migrations
+ * are applied" whether invoked via the CLI below or from server startup.
+ *
+ * CLI usage: node database/scripts/run-migrations.js
  */
 require('dotenv').config();
 const fs = require('fs');
@@ -64,8 +69,8 @@ function stripDelimiterDirectives(sql) {
     .replace(/\$\$/g, ';');
 }
 
-async function main() {
-  const conn = await mysql.createConnection({
+function createConnection() {
+  return mysql.createConnection({
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT) || 3306,
     user: process.env.DB_USER,
@@ -73,15 +78,27 @@ async function main() {
     database: process.env.DB_NAME,
     ssl: { rejectUnauthorized: false },
     multipleStatements: true,
+    // mysql2 has no default connect timeout -- against an unreachable
+    // host (wrong DB_HOST, network/firewall issue) createConnection()
+    // would otherwise hang indefinitely instead of failing fast, which
+    // is exactly wrong for a startup gate that must not block forever.
+    connectTimeout: 10000,
   });
+}
 
+/** Runs every migration in ORDER against `conn`, skipping ones already
+ *  recorded in schema_migrations (each file guards itself on that check,
+ *  so this is safe to call against a partially- or fully-migrated DB).
+ *  Never calls process.exit() — callers decide what to do with the
+ *  returned results (the CLI wrapper below, or server.js at startup). */
+async function runMigrations(conn, { onProgress } = {}) {
   const results = [];
 
   for (const filename of ORDER) {
     const filePath = path.join(MIGRATIONS_DIR, filename);
     if (!fs.existsSync(filePath)) {
       results.push({ filename, status: 'MISSING_FILE' });
-      console.error(`[migrate] ${filename}: FILE NOT FOUND, stopping.`);
+      onProgress?.(filename, 'MISSING_FILE');
       break;
     }
 
@@ -98,29 +115,72 @@ async function main() {
       );
       if (ledgerRow) {
         results.push({ filename, status: 'OK' });
-        console.log(`[migrate] ${filename}: OK`);
+        onProgress?.(filename, 'OK');
       } else {
         results.push({ filename, status: 'RAN_BUT_NOT_LEDGERED' });
-        console.warn(`[migrate] ${filename}: ran without error but no ledger row found — investigate.`);
+        onProgress?.(filename, 'RAN_BUT_NOT_LEDGERED');
       }
     } catch (err) {
+      // A duplicate-key error on the ledger's UNIQUE filename column
+      // means another process already applied this exact migration
+      // between our own check and our own attempt (e.g. an overlapping
+      // Render restart) — a benign race, not a real failure.
+      if (err.code === 'ER_DUP_ENTRY' && /schema_migrations/.test(err.sqlMessage || '')) {
+        results.push({ filename, status: 'ALREADY_APPLIED_CONCURRENTLY' });
+        onProgress?.(filename, 'ALREADY_APPLIED_CONCURRENTLY');
+        continue;
+      }
       results.push({ filename, status: 'FAILED', error: err.message });
-      console.error(`[migrate] ${filename}: FAILED — ${err.message}`);
-      console.error('[migrate] Stopping here. Fix the issue and re-run this script — already-applied migrations will be skipped automatically.');
+      onProgress?.(filename, 'FAILED', err);
       break;
     }
   }
 
-  await conn.end();
-
-  const failed = results.find((r) => r.status !== 'OK');
-  console.log('\n[migrate] Summary:');
-  results.forEach((r) => console.log(`  ${r.filename}: ${r.status}${r.error ? ' — ' + r.error : ''}`));
-
-  process.exit(failed ? 1 : 0);
+  return results;
 }
 
-main().catch((err) => {
-  console.error('[migrate] Unexpected failure:', err);
-  process.exit(1);
-});
+/** Confirms each table in `tables` is actually queryable. Returns the
+ *  subset that's still missing (empty array = all present). Used as a
+ *  post-migration sanity check, not just trusting the ledger. */
+async function verifyTables(conn, tables) {
+  const missing = [];
+  for (const table of tables) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await conn.query(`SELECT 1 FROM \`${table}\` LIMIT 1`);
+    } catch (err) {
+      if (err.code === 'ER_NO_SUCH_TABLE') missing.push(table);
+      else throw err;
+    }
+  }
+  return missing;
+}
+
+module.exports = { runMigrations, verifyTables, createConnection, ORDER };
+
+if (require.main === module) {
+  (async () => {
+    const conn = await createConnection();
+    const results = await runMigrations(conn, {
+      onProgress: (filename, status, err) => {
+        if (status === 'FAILED') {
+          console.error(`[migrate] ${filename}: FAILED — ${err.message}`);
+          console.error('[migrate] Stopping here. Fix the issue and re-run this script — already-applied migrations will be skipped automatically.');
+        } else if (status === 'MISSING_FILE') {
+          console.error(`[migrate] ${filename}: FILE NOT FOUND, stopping.`);
+        } else {
+          console.log(`[migrate] ${filename}: ${status}`);
+        }
+      },
+    });
+    await conn.end();
+
+    const failed = results.find((r) => r.status !== 'OK' && r.status !== 'ALREADY_APPLIED_CONCURRENTLY');
+    console.log('\n[migrate] Summary:');
+    results.forEach((r) => console.log(`  ${r.filename}: ${r.status}${r.error ? ' — ' + r.error : ''}`));
+    process.exit(failed ? 1 : 0);
+  })().catch((err) => {
+    console.error('[migrate] Unexpected failure:', err);
+    process.exit(1);
+  });
+}
