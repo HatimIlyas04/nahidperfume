@@ -37,6 +37,27 @@ function AdminPageLoader() {
   );
 }
 
+const DEFAULT_MANIFEST_HREF = "/manifest.webmanifest";
+const ADMIN_MANIFEST_HREF = "/admin-manifest.webmanifest";
+
+// iOS Safari's "Add to Home Screen" always launches the installed icon at
+// the manifest's start_url, not the page you were viewing when you tapped
+// Add -- there is no address bar in a standalone PWA to type /admin into
+// afterward. Since the public navbar deliberately has no admin link (by
+// design -- the site owner doesn't want it discoverable), the only way to
+// get an installed icon that opens straight into /admin is to swap in a
+// manifest whose start_url IS /admin while this admin-only entry point is
+// mounted, and swap the customer-facing manifest back on unmount so
+// installing from the public site is unaffected.
+function useAdminManifest() {
+  useEffect(() => {
+    const link = document.querySelector('link[rel="manifest"]');
+    if (!link) return undefined;
+    link.setAttribute("href", ADMIN_MANIFEST_HREF);
+    return () => link.setAttribute("href", DEFAULT_MANIFEST_HREF);
+  }, []);
+}
+
 function readCachedAdmin() {
   try {
     const raw = localStorage.getItem("cachedAdmin");
@@ -47,6 +68,8 @@ function readCachedAdmin() {
 }
 
 export default function AdminApp() {
+  useAdminManifest();
+
   // Optimistic auth: if a previous session already cached who's logged
   // in, render the dashboard shell immediately with that — never a blank
   // screen while the token is (re-)verified in the background. Only a

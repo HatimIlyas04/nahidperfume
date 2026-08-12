@@ -7,6 +7,7 @@ import {
 } from "chart.js";
 import { FiShoppingBag, FiDollarSign, FiClock, FiTrendingUp, FiAlertTriangle } from "react-icons/fi";
 import { adminOrdersApi, adminPacksApi } from "../../services/api";
+import NotificationSettingsCard from "../components/NotificationSettingsCard";
 
 function stockLevel(qty) {
   const n = Number(qty);
@@ -92,6 +93,8 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      <NotificationSettingsCard />
 
       <div className="adm-dash-grid">
         <div className="adm-card">
