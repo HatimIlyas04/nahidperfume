@@ -7,7 +7,7 @@ import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize, cldSrcSet } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
-import { buildPackContentDetail } from "../utils/packContent";
+import { buildPackContentDetail, getOrderCta, getGenderedCta } from "../utils/packContent";
 import { getStockLevel } from "../utils/packStock";
 import PerfumeModal from "../components/PerfumeModal";
 import ReplacePerfumeModal from "../components/ReplacePerfumeModal";
@@ -133,7 +133,7 @@ const CSS = `
 .pd-perfume-body { padding: 12px 14px; }
 .pd-perfume-name { font-size: 0.92rem; font-weight: 700; color: var(--secondary); }
 .pd-perfume-inspired { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
-.pd-perfume-size { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; margin-bottom: 10px; }
+.pd-perfume-meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; margin-bottom: 10px; line-height: 1.5; }
 .pd-replace-btn {
   width: 100%; padding: 8px; border-radius: var(--radius-full); border: 1.5px solid var(--border);
   background: none; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
@@ -377,8 +377,9 @@ export default function PackDetails() {
             {stockLevel === "out" && <div className="pd-stock-row pd-stock-out">{t("packStock.outOfStock")}</div>}
 
             <div className="pd-contains">
-              <div className="pd-contains-label"><span className="pd-contains-star">✦</span> {t("packDetails.containsFour")}</div>
-              {packContentDetail && <div className="pd-contains-detail">{packContentDetail}</div>}
+              {packContentDetail && (
+                <div className="pd-contains-label"><span className="pd-contains-star">✦</span> {packContentDetail}</div>
+              )}
               <div className="pd-contains-list">
                 {currentSlots.map((slot) => (
                   <div className="pd-contains-item" key={slot.position}>
@@ -394,7 +395,7 @@ export default function PackDetails() {
             <div className="pd-actions">
               <div className="pd-actions-row1">
                 <button className="pd-btn-primary" onClick={scrollToOrderForm} disabled={stockLevel === "out"}>
-                  <FiCreditCard size={15} /> {stockLevel === "out" ? t("packStock.outOfStock") : t("packCard.order")}
+                  <FiCreditCard size={15} /> {stockLevel === "out" ? t("packStock.outOfStock") : getOrderCta(pack.gender, t)}
                 </button>
                 <button className={`pd-icon-btn${isWished ? " active" : ""}`} onClick={toggleWishlist} aria-label={t("packDetails.wishlist")}>
                   <FiHeart size={17} fill={isWished ? "currentColor" : "none"} />
@@ -403,10 +404,10 @@ export default function PackDetails() {
               </div>
               <div className="pd-actions-row2">
                 <button className={`pd-btn-secondary${customizing ? " active" : ""}`} onClick={scrollToCustomize}>
-                  <FiSliders size={13} /> {t("packDetails.customizeToggle")}
+                  <FiSliders size={13} /> {getGenderedCta(pack.gender, t, "packDetails.customizeToggle")}
                 </button>
                 <button className="pd-btn-tertiary" onClick={handleAddToCart}>
-                  <FiShoppingBag size={13} /> {t("packDetails.addToCart")}
+                  <FiShoppingBag size={13} /> {getGenderedCta(pack.gender, t, "packDetails.addToCart")}
                 </button>
               </div>
             </div>
@@ -420,7 +421,7 @@ export default function PackDetails() {
               className={`pd-customize-toggle${customizing ? " active" : ""}`}
               onClick={() => setCustomizing((v) => !v)}
             >
-              <FiSliders size={14} /> {customizing ? t("packDetails.finishCustomize") : t("packDetails.customizeToggle")}
+              <FiSliders size={14} /> {customizing ? t("packDetails.finishCustomize") : getGenderedCta(pack.gender, t, "packDetails.customizeToggle")}
             </button>
           </div>
 
@@ -438,7 +439,11 @@ export default function PackDetails() {
                     {slot.inspired_by && (
                       <div className="pd-perfume-inspired">{t("perfumeCard.inspiredBy")} {slot.inspired_by}</div>
                     )}
-                    {slot.size && <div className="pd-perfume-size">{slot.size}ml</div>}
+                    {[slot.size && `${slot.size}ml`, slot.concentration, slot.longevity].some(Boolean) && (
+                      <div className="pd-perfume-meta">
+                        {[slot.size && `${slot.size}ml`, slot.concentration, slot.longevity].filter(Boolean).join(" · ")}
+                      </div>
+                    )}
                     {customizing && (
                       <button className="pd-replace-btn" onClick={() => setReplaceTarget(slot.position)}>
                         <FiRefreshCw size={11} /> {t("packDetails.replace")}

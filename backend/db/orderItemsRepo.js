@@ -55,10 +55,15 @@ async function addPerfumeSnapshots(orderItemId, perfumes, conn = pool) {
     index + 1,
     p.perfume_name_snapshot,
     p.perfume_image_snapshot || null,
+    p.perfume_inspired_by_snapshot || null,
+    p.perfume_concentration_snapshot || null,
+    p.perfume_size_snapshot || null,
+    p.perfume_gender_snapshot || null,
   ]);
   await conn.query(
     `INSERT INTO order_item_perfumes
-       (order_item_id, perfume_id, position, perfume_name_snapshot, perfume_image_snapshot)
+       (order_item_id, perfume_id, position, perfume_name_snapshot, perfume_image_snapshot,
+        perfume_inspired_by_snapshot, perfume_concentration_snapshot, perfume_size_snapshot, perfume_gender_snapshot)
      VALUES ?`,
     [rows]
   );

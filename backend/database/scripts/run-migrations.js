@@ -60,6 +60,7 @@ const ORDER = [
   '032_recommended_title.sql',
   '033_pack_gender_stock.sql',
   '034_push_subscriptions.sql',
+  '035_order_item_perfume_snapshot_details.sql',
 ];
 
 /** Strips the mysql-CLI-only DELIMITER directive so the file can be sent

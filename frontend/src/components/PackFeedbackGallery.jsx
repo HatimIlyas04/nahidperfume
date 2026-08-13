@@ -25,7 +25,12 @@ const CSS = `
 .pfg-single { max-width: 320px; max-height: 380px; margin: 0 auto; }
 .pfg-single img { width: 100%; height: 100%; object-fit: contain; display: block; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); cursor: pointer; }
 
-.pfg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+/* Explicit 4/3/2 tiers (desktop/tablet/mobile) instead of an unbounded
+   auto-fill -- a wide desktop container could otherwise fit 5-6 columns
+   of 210px thumbnails, making each review feel too small/cramped rather
+   than "several reviews at once" in a controlled, readable size. */
+.pfg-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 900px) { .pfg-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; } }
 @media (max-width: 560px) { .pfg-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
 .pfg-item { height: 200px; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 @media (max-width: 560px) { .pfg-item { height: 160px; } }

@@ -204,16 +204,46 @@ export default function OrdersPage() {
               <div className="adm-order-section-label">Articles</div>
               <div className="adm-order-items">
                 {selected.items.map((item) => (
-                  <div className="adm-order-item" key={item.id}>
-                    <img className="adm-order-item-img" src={item.item_image_snapshot || "/nahid1.png"} alt="" />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="adm-order-item-name">{item.item_name_snapshot}</div>
-                      {item.perfumes?.length > 0 && (
-                        <div className="adm-order-item-sub">{item.perfumes.map((p) => p.perfume_name_snapshot).join(", ")}</div>
-                      )}
+                  <div className="adm-order-item-block" key={item.id}>
+                    <div className="adm-order-item">
+                      <img className="adm-order-item-img" src={item.item_image_snapshot || "/nahid1.png"} alt="" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="adm-order-item-name">{item.item_name_snapshot}</div>
+                        {item.perfumes?.length > 0 && (
+                          <div className="adm-order-item-sub">{item.perfumes.length} parfums</div>
+                        )}
+                      </div>
+                      <div className="adm-order-item-qty">× {item.quantity}</div>
+                      <div className="adm-order-item-price">{Math.round(item.unit_price * item.quantity)} MAD</div>
                     </div>
-                    <div className="adm-order-item-qty">× {item.quantity}</div>
-                    <div className="adm-order-item-price">{Math.round(item.unit_price * item.quantity)} MAD</div>
+
+                    {/* Perfume-level breakdown, always visible (never
+                        collapsed) -- the admin must be able to identify
+                        every perfume in the pack without guessing. Uses
+                        the order's own historical snapshot (name/image/
+                        inspiration/size/concentration/gender as they were
+                        at order time), not the live perfumes table, which
+                        may have since been edited or the perfume deleted. */}
+                    {item.perfumes?.length > 0 && (
+                      <div className="adm-order-perfumes">
+                        <div className="adm-order-perfumes-label">Contenu du pack</div>
+                        {item.perfumes.map((p, i) => (
+                          <div className="adm-order-perfume-row" key={p.id}>
+                            <span className="adm-order-perfume-num">{i + 1}</span>
+                            <img className="adm-order-perfume-img" src={p.perfume_image_snapshot || "/nahid1.png"} alt="" />
+                            <div className="adm-order-perfume-info">
+                              <div className="adm-order-perfume-name">{p.perfume_name_snapshot}</div>
+                              <div className="adm-order-perfume-meta">
+                                {p.perfume_inspired_by_snapshot && <span>Inspiration : {p.perfume_inspired_by_snapshot}</span>}
+                                {p.perfume_size_snapshot && <span>{p.perfume_size_snapshot} ml</span>}
+                                {p.perfume_concentration_snapshot && <span>{p.perfume_concentration_snapshot}</span>}
+                                {p.perfume_gender_snapshot && <span>{p.perfume_gender_snapshot}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

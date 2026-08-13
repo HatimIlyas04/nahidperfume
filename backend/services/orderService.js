@@ -46,6 +46,10 @@ async function resolveLine(line) {
         perfume_id: p.perfume_id,
         perfume_name_snapshot: p.name,
         perfume_image_snapshot: p.image_url,
+        perfume_inspired_by_snapshot: p.inspired_by,
+        perfume_concentration_snapshot: p.concentration,
+        perfume_size_snapshot: p.size,
+        perfume_gender_snapshot: p.gender,
       })),
     };
   }
@@ -70,6 +74,10 @@ async function resolveLine(line) {
         perfume_id: p.id,
         perfume_name_snapshot: p.name,
         perfume_image_snapshot: p.image_url,
+        perfume_inspired_by_snapshot: p.inspired_by,
+        perfume_concentration_snapshot: p.concentration,
+        perfume_size_snapshot: p.size,
+        perfume_gender_snapshot: p.gender,
       })),
     };
   }
@@ -89,6 +97,10 @@ async function resolveLine(line) {
         perfume_id: p.id,
         perfume_name_snapshot: p.name,
         perfume_image_snapshot: p.image_url,
+        perfume_inspired_by_snapshot: p.inspired_by,
+        perfume_concentration_snapshot: p.concentration,
+        perfume_size_snapshot: p.size,
+        perfume_gender_snapshot: p.gender,
       })),
     };
   }
@@ -335,6 +347,14 @@ async function applyUpsell(orderId, token, packId) {
         perfume_id: p.perfume_id,
         perfume_name_snapshot: p.name,
         perfume_image_snapshot: p.image_url,
+        // getUpsellOffers() fetches perfumes in "lean" mode (gender/size/
+        // concentration only, no inspired_by) -- same as the main pack
+        // list view. Leaving perfume_inspired_by_snapshot unset here
+        // stores NULL honestly rather than guessing at a value this code
+        // path never actually fetched.
+        perfume_concentration_snapshot: p.concentration,
+        perfume_size_snapshot: p.size,
+        perfume_gender_snapshot: p.gender,
       })),
       conn
     );

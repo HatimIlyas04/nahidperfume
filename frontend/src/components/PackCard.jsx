@@ -4,7 +4,7 @@ import { FiHeart, FiShoppingBag, FiCreditCard } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize, cldSrcSet } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
-import { buildPackContentDetail } from "../utils/packContent";
+import { buildPackContentDetail, getOrderCta } from "../utils/packContent";
 import { getStockLevel } from "../utils/packStock";
 
 const CSS = `
@@ -279,11 +279,12 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
 
         {perfumes.length > 0 && (
           <>
-            <div className="pc-included">
-              <span className="pc-included-star">&#10022;</span>
-              {t("packDetails.containsFour")}
-            </div>
-            {contentDetail && <div className="pc-content-detail">{contentDetail}</div>}
+            {contentDetail && (
+              <div className="pc-included">
+                <span className="pc-included-star">&#10022;</span>
+                {contentDetail}
+              </div>
+            )}
             <ul className="pc-perfume-list">
               {perfumes.slice(0, 4).map((p) => (
                 <li key={p.perfume_id || p.id}>
@@ -313,7 +314,7 @@ function PackCard({ pack, badge, priority = false, isWished = false, onToggleWis
           {outOfStock && <div className="pc-stock-row pc-stock-out">{t("packStock.outOfStock")}</div>}
           <div className="pc-actions">
             <button className="pc-btn-buy" onClick={handleBuyNow} disabled={outOfStock}>
-              <FiCreditCard size={14} /> {t("packCard.order")}
+              <FiCreditCard size={14} /> {getOrderCta(pack.gender, t)}
             </button>
             <div className="pc-actions-row2">
               <button

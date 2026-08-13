@@ -198,6 +198,22 @@
 .adm-order-item-qty { font-size: 0.78rem; color: var(--adm-text-light); flex-shrink: 0; }
 .adm-order-item-price { font-size: 0.85rem; font-weight: 700; color: var(--adm-text); flex-shrink: 0; min-width: 70px; text-align: right; }
 
+/* Per-perfume breakdown inside a pack order item -- the admin must never
+   have to guess which perfumes are in a pack, so this is always visible,
+   not hidden behind a click. Kept compact (small thumb + one meta line
+   per perfume) so a 4-perfume pack doesn't dominate the order modal. */
+.adm-order-item-block { border: 1px solid var(--adm-border); border-radius: var(--radius-md); overflow: hidden; }
+.adm-order-item-block .adm-order-item { border: none; border-radius: 0; }
+.adm-order-perfumes { border-top: 1px solid var(--adm-border); background: var(--adm-bg); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.adm-order-perfumes-label { font-size: 0.64rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--adm-text-light); margin-bottom: 2px; }
+.adm-order-perfume-row { display: flex; align-items: center; gap: 10px; }
+.adm-order-perfume-num { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(239,119,106,0.14); color: #EF776A; font-size: 0.68rem; font-weight: 700; flex-shrink: 0; }
+.adm-order-perfume-img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: white; border: 1px solid var(--adm-border); flex-shrink: 0; }
+.adm-order-perfume-info { flex: 1; min-width: 0; }
+.adm-order-perfume-name { font-size: 0.8rem; font-weight: 600; color: var(--adm-text); }
+.adm-order-perfume-meta { font-size: 0.68rem; color: var(--adm-text-light); margin-top: 1px; display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.adm-order-perfume-meta span:not(:last-child)::after { content: "•"; margin-inline-start: 8px; color: var(--adm-border); }
+
 .adm-order-totals { border-top: 1px solid var(--adm-border); padding-top: 14px; display: flex; flex-direction: column; gap: 6px; }
 .adm-order-totals-row { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--adm-text-light); }
 .adm-order-totals-row.total { font-size: 1rem; font-weight: 700; color: var(--adm-text); padding-top: 6px; border-top: 1px solid var(--adm-border); margin-top: 4px; }

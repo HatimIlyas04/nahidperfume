@@ -181,8 +181,7 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
                 <h3 className="hof-pack-title">{pack.title}</h3>
                 {(pack.perfumes || []).length > 0 && (
                   <>
-                    <div className="hof-contains-label">{t("packDetails.containsFour")}</div>
-                    {packContentDetail && <div className="hof-contains-detail">{packContentDetail}</div>}
+                    {packContentDetail && <div className="hof-contains-label">{packContentDetail}</div>}
                     <ul className="hof-perfume-list">
                       {pack.perfumes.slice(0, 4).map((p) => (
                         <li key={p.perfume_id || p.id}>

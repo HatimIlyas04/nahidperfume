@@ -57,6 +57,7 @@ const CSS = `
 .byop-card-info { padding: 10px 12px; }
 .byop-card-name { font-size: 0.86rem; font-weight: 700; color: var(--secondary); line-height: 1.25; }
 .byop-card-inspired { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; line-height: 1.35; }
+.byop-card-meta { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; line-height: 1.35; }
 .byop-card-view { position: absolute; bottom: 8px; inset-inline-start: 8px; font-size: 0.6rem; background: rgba(255,255,255,0.9); padding: 3px 8px; border-radius: var(--radius-full); color: var(--secondary); font-weight: 700; }
 
 .byop-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
@@ -243,6 +244,11 @@ export default function BuildYourOwnPack() {
                       <div className="byop-card-name">{p.name}</div>
                       {p.inspired_by && (
                         <div className="byop-card-inspired">{t("perfumeCard.inspiredBy")} {p.inspired_by}</div>
+                      )}
+                      {[p.size && `${p.size}ml`, p.concentration, p.longevity].some(Boolean) && (
+                        <div className="byop-card-meta">
+                          {[p.size && `${p.size}ml`, p.concentration, p.longevity].filter(Boolean).join(" · ")}
+                        </div>
                       )}
                     </div>
                   </div>
