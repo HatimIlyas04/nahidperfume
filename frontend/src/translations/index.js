@@ -955,7 +955,7 @@ export const translations = {
       inspiredBy: "مستوحى من",
     },
     buildPack: {
-      title: "أنشئ باقتك الخاصة",
+      title: "أنشئوا باقتكم الخاصة",
       subtitle: "اختاروا بالضبط 4 عطور من مجموعتنا وكوّنوا باقة فريدة على طريقتكم.",
       unavailableTitle: "إنشاء الباقات غير متاح مؤقتاً",
       unavailableText: "عودوا قريباً لإنشاء باقتكم المخصصة.",

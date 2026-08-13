@@ -87,7 +87,14 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
 
   const quantity = Math.max(1, Math.min(10, Number(form.quantity) || 1));
   const packContentDetail = pack ? buildPackContentDetail(pack.perfumes, lang) : null;
-  const stockLevel = pack ? getStockLevel(pack.stock_quantity) : "in";
+  // Custom packs (from BuildYourOwnPack) aren't stock-tracked at the pack
+  // level at all -- they're assembled from individually-active perfumes,
+  // and the backend's custom_pack order path already re-validates each
+  // perfume is still active at creation time. pack.stock_quantity simply
+  // doesn't exist on a custom pack, and getStockLevel(undefined) would
+  // otherwise read that as "out of stock" by design (a safety default
+  // that's correct for real packs, wrong here).
+  const stockLevel = pack ? (pack.isCustom ? "in" : getStockLevel(pack.stock_quantity)) : "in";
   const outOfStock = stockLevel === "out";
   const subtotal = pack ? Number(pack.price) * quantity : 0;
   const shipping = pack ? SHIPPING_FEE : 0;
@@ -122,12 +129,25 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
     if (!pack || outOfStock || !validate()) return;
     setSubmitting(true);
     try {
-      const buyNowItem = {
-        cartItemId: `ready_${pack.id}_buynow_${Date.now()}`,
-        item_type: "ready_pack",
-        pack_id: pack.id,
-        quantity,
-      };
+      // cartToOrderItems() already knows how to turn either shape into the
+      // right order-creation payload (perfume_ids for a custom pack,
+      // pack_id for a ready one) -- reused as-is, same as the cart/
+      // checkout flow already does, so there's exactly one place that
+      // knows this mapping.
+      const buyNowItem = pack.isCustom
+        ? {
+            cartItemId: `custom_${pack.perfumes.map((p) => p.perfume_id).join("-")}_${Date.now()}`,
+            item_type: "custom_pack",
+            pack_id: null,
+            quantity,
+            perfumes: pack.perfumes,
+          }
+        : {
+            cartItemId: `ready_${pack.id}_buynow_${Date.now()}`,
+            item_type: "ready_pack",
+            pack_id: pack.id,
+            quantity,
+          };
       const recaptchaToken = await getRecaptchaToken("checkout");
       const effectiveCity = form.city === "__other__" ? form.cityOther : form.city;
       const order = await ordersApi.create({

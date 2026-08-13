@@ -53,7 +53,6 @@ export default function Checkout() {
   const [form, setForm] = useState({ name: "", phone: "", city: "", address: "", notes: "" });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const couponCode = location.state?.couponCode;
 
   // "Commander" on a pack card skips the cart page entirely and lands here
   // with a single item in router state -- an isolated one-item order that
@@ -95,7 +94,6 @@ export default function Checkout() {
           deviceToken: getDeviceToken(),
         },
         items: cartToOrderItems(effectiveCart),
-        coupon_code: couponCode || undefined,
         recaptcha_token: recaptchaToken || undefined,
       });
       if (!buyNowItem) clearCart();

@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import { FiSearch, FiCheck, FiPlus, FiX } from "react-icons/fi";
 import { perfumesApi, customPackSettingsApi } from "../services/api";
-import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
 import PerfumeModal from "../components/PerfumeModal";
+import HomeOrderForm from "../components/HomeOrderForm";
 import NahidFooter from "../components/NahidFooter";
 import SEO from "../components/SEO";
 
@@ -107,9 +106,8 @@ function injectCSS() {
 
 export default function BuildYourOwnPack() {
   injectCSS();
-  const navigate = useNavigate();
-  const { addToCart } = useCart();
   const { t } = useLanguage();
+  const orderFormRef = useRef(null);
 
   const [perfumes, setPerfumes] = useState([]);
   const [settings, setSettings] = useState(null);
@@ -154,30 +152,26 @@ export default function BuildYourOwnPack() {
   const isComplete = selected.length === 4;
   const price = settings ? Number(settings.flat_price) : 0;
 
-  const handleAddToCart = () => {
-    if (!isComplete) return;
-    addToCart({
-      cartItemId: `custom_${selected.map((p) => p.id).join("-")}_${Date.now()}`,
-      item_type: "custom_pack",
-      pack_id: null,
-      title: settings?.title || t("buildPack.defaultTitle"),
-      image: selected[0]?.image_url,
-      price,
-      quantity: 1,
-      perfumes: selected.map((p) => ({ perfume_id: p.id, name: p.name, image_url: p.image_url })),
-    });
-    Swal.fire({
-      icon: "success",
-      title: t("buildPack.addedTitle"),
-      text: t("buildPack.addedText"),
-      confirmButtonColor: "#EF776A",
-      showCancelButton: true,
-      cancelButtonText: t("buildPack.continueBtn"),
-      confirmButtonText: t("buildPack.viewCartBtn"),
-    }).then((r) => {
-      if (r.isConfirmed) navigate("/cart");
-      else setSelected([]);
-    });
+  // Shaped for HomeOrderForm's `pack` prop -- isCustom tells it to skip
+  // the ready-pack stock check (custom packs aren't stock-tracked at the
+  // pack level) and build a custom_pack order payload (perfume_ids)
+  // instead of a ready_pack one (pack_id). No cart involved: this is the
+  // same direct-order component PackDetails already uses, just fed a
+  // pack assembled client-side instead of one fetched by id.
+  const customPack = isComplete ? {
+    id: null,
+    isCustom: true,
+    title: settings?.title || t("buildPack.defaultTitle"),
+    cover_image: selected[0]?.image_url,
+    price,
+    perfumes: selected.map((p) => ({
+      perfume_id: p.id, name: p.name, image_url: p.image_url,
+      gender: p.gender, size: p.size, concentration: p.concentration,
+    })),
+  } : null;
+
+  const scrollToOrderForm = () => {
+    orderFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   if (settings && !settings.is_active) {
@@ -283,18 +277,24 @@ export default function BuildYourOwnPack() {
             <span>{t("buildPack.priceLabel")}</span>
             <span className="byop-preview-price-val">{price} MAD</span>
           </div>
-          <button className="byop-preview-cta" disabled={!isComplete} onClick={handleAddToCart}>
-            {isComplete ? t("buildPack.addToCart") : `${t("buildPack.remaining")} ${4 - selected.length} ${t("buildPack.remainingSuffix")}`}
+          <button className="byop-preview-cta" disabled={!isComplete} onClick={scrollToOrderForm}>
+            {isComplete ? t("packCard.order") : `${t("buildPack.remaining")} ${4 - selected.length} ${t("buildPack.remainingSuffix")}`}
           </button>
         </aside>
       </div>
 
       <div className="byop-mobile-bar">
         <span style={{ fontWeight: 700 }}>{selected.length}/4 · {price} MAD</span>
-        <button className="byop-preview-cta" style={{ width: "auto", padding: "10px 24px" }} disabled={!isComplete} onClick={handleAddToCart}>
-          <FiPlus size={14} /> {t("buildPack.addToCart")}
+        <button className="byop-preview-cta" style={{ width: "auto", padding: "10px 24px" }} disabled={!isComplete} onClick={scrollToOrderForm}>
+          <FiPlus size={14} /> {t("packCard.order")}
         </button>
       </div>
+
+      {isComplete && (
+        <section id="order-form" style={{ padding: "var(--section-gap) 0 0" }}>
+          <HomeOrderForm pack={customPack} ref={orderFormRef} />
+        </section>
+      )}
 
       {previewPerfume && <PerfumeModal perfume={previewPerfume} onClose={() => setPreviewPerfume(null)} />}
 

@@ -1,12 +1,9 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
-import { FiTrash2, FiShoppingBag, FiArrowRight, FiTag } from "react-icons/fi";
+import { FiTrash2, FiShoppingBag, FiArrowRight } from "react-icons/fi";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
 import { NO_IMAGE_PLACEHOLDER } from "../utils/placeholderImage";
-import { couponsApi } from "../services/api";
 import { SHIPPING_FEE } from "../utils/pricing";
 import NahidFooter from "../components/NahidFooter";
 
@@ -40,8 +37,6 @@ const CSS = `
 .ct-summary h3 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 500; margin-bottom: 18px; }
 .ct-summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.88rem; color: var(--text-light); }
 .ct-summary-row strong { color: var(--secondary); }
-.ct-coupon { display: flex; gap: 8px; margin: 18px 0; }
-.ct-coupon input { flex: 1; }
 .ct-total-row { display: flex; justify-content: space-between; align-items: baseline; padding-top: 14px; border-top: 1px solid var(--border); margin-top: 6px; }
 .ct-total-label { font-weight: 700; }
 .ct-total-val { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; }
@@ -69,30 +64,10 @@ export default function Cart() {
     ready_pack_customized: t("cart.typeCustomized"),
     custom_pack: t("cart.typeCustom"),
   };
-  const [couponCode, setCouponCode] = useState("");
-  const [coupon, setCoupon] = useState(null);
-  const [couponLoading, setCouponLoading] = useState(false);
-
   // Pack prices are all-inclusive -- delivery is free, not a fee added at
   // checkout. Matches backend orderService's hardcoded shipping constant.
   const shipping = cart.length === 0 ? 0 : SHIPPING_FEE;
-  const discount = coupon ? coupon.discount : 0;
-  const total = Math.max(0, subtotal + shipping - discount);
-
-  const applyCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setCouponLoading(true);
-    try {
-      const result = await couponsApi.validate(couponCode.trim(), subtotal);
-      setCoupon(result);
-      Swal.fire({ icon: "success", title: t("cart.couponSuccessTitle"), timer: 1400, showConfirmButton: false });
-    } catch (err) {
-      setCoupon(null);
-      Swal.fire({ icon: "error", title: t("cart.couponErrorTitle"), text: err.response?.data?.error || t("cart.couponErrorText") });
-    } finally {
-      setCouponLoading(false);
-    }
-  };
+  const total = subtotal + shipping;
 
   if (cart.length === 0) {
     return (
@@ -147,27 +122,13 @@ export default function Cart() {
             <h3>{t("cart.summaryTitle")}</h3>
             <div className="ct-summary-row"><span>{t("cart.subtotal")}</span><strong>{Math.round(subtotal)} MAD</strong></div>
             <div className="ct-summary-row"><span>{t("cart.shipping")}</span><strong>{shipping === 0 ? t("cart.free") : `${shipping} MAD`}</strong></div>
-            {coupon && (
-              <div className="ct-summary-row" style={{ color: "var(--success)" }}>
-                <span>{t("cart.discount")} ({coupon.code})</span><strong>−{Math.round(discount)} MAD</strong>
-              </div>
-            )}
-            <div className="ct-coupon">
-              <input
-                className="form-input" placeholder={t("cart.couponPlaceholder")}
-                value={couponCode} onChange={(e) => setCouponCode(e.target.value)}
-              />
-              <button className="btn-outline" onClick={applyCoupon} disabled={couponLoading}>
-                <FiTag size={14} />
-              </button>
-            </div>
             <div className="ct-total-row">
               <span className="ct-total-label">{t("cart.total")}</span>
               <span className="ct-total-val">{Math.round(total)} MAD</span>
             </div>
             <button
               className="btn-primary" style={{ width: "100%", marginTop: "20px" }}
-              onClick={() => navigate("/checkout", { state: { couponCode: coupon?.code } })}
+              onClick={() => navigate("/checkout")}
             >
               <FiShoppingBag size={15} /> {t("cart.checkoutBtn")} <FiArrowRight size={14} className="ct-checkout-arrow" />
             </button>
