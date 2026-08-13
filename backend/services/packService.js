@@ -8,6 +8,17 @@ const cache = require('../utils/memoryCache');
 
 const LIST_CACHE_PREFIX = 'packs:list:';
 const LIST_CACHE_TTL_MS = 60 * 1000; // matches cachePublic(60) on /api/packs
+const DETAIL_CACHE_PREFIX = 'packs:detail:';
+const DETAIL_CACHE_TTL_MS = 60 * 1000; // matches cachePublic(60) on /api/packs/:id
+
+// Packs are admin-edited, not high-frequency writes -- clearing every
+// cached detail view on any single pack's write (rather than tracking
+// which exact id changed) is simpler and cheap at this scale, same
+// tradeoff the existing list-cache invalidation already makes.
+function invalidatePackCaches() {
+  cache.delPrefix(LIST_CACHE_PREFIX);
+  cache.delPrefix(DETAIL_CACHE_PREFIX);
+}
 
 async function validatePerfumeIds(perfumeIds) {
   if (!Array.isArray(perfumeIds) || perfumeIds.length !== 4) {
@@ -49,7 +60,24 @@ async function listPacks({ isActive, gender } = {}) {
   });
 }
 
+// GET /api/packs/:id (single-pack detail -- everything PackDetails.jsx
+// needs) previously ran 3 sequential, uncached queries (pack row, perfume
+// join, feedback images) on EVERY request -- unlike listPacks() below,
+// which was already cached. Measured at ~725ms per visit on a cache miss
+// (roughly 3x the ~240ms Aiven round-trip cost measured elsewhere in this
+// project), paid by every single customer opening a pack page, every time,
+// with zero mitigation. Only cached when called with the default pool
+// (conn === pool): createPack/updatePack/duplicatePack call this with an
+// explicit transaction connection right after writing, and must always
+// read fresh, uncached data in that case -- caching a transactional read
+// could return stale pre-write data if the cache happened to already be
+// warm, which would be a real correctness bug, not just a staleness one.
 async function getPack(id, conn = pool) {
+  if (conn !== pool) return fetchPackUncached(id, conn);
+  return cache.getOrSet(`${DETAIL_CACHE_PREFIX}${id}`, DETAIL_CACHE_TTL_MS, () => fetchPackUncached(id, conn));
+}
+
+async function fetchPackUncached(id, conn) {
   const pack = await packsRepo.findById(id, conn);
   if (!pack) throw new AppError('Pack not found', 404);
   const [withPerfumes] = await attachPerfumes([pack], { lean: false }, conn);
@@ -67,7 +95,7 @@ async function createPack({ perfumeIds, ...packData }) {
     await packPerfumesRepo.replaceForPack(pack.id, perfumeIds, conn);
     return getPack(pack.id, conn);
   });
-  cache.delPrefix(LIST_CACHE_PREFIX);
+  invalidatePackCaches();
   return result;
 }
 
@@ -85,7 +113,7 @@ async function updatePack(id, { perfumeIds, ...packData }) {
     }
     return getPack(id, conn);
   });
-  cache.delPrefix(LIST_CACHE_PREFIX);
+  invalidatePackCaches();
   return result;
 }
 
@@ -101,13 +129,13 @@ async function getUpsellOffers() {
 async function setActive(id, isActive) {
   const pack = await packsRepo.setActive(id, isActive);
   if (!pack) throw new AppError('Pack not found', 404);
-  cache.delPrefix(LIST_CACHE_PREFIX);
+  invalidatePackCaches();
   return getPack(id);
 }
 
 async function reorder(items) {
   await packsRepo.reorder(items);
-  cache.delPrefix(LIST_CACHE_PREFIX);
+  invalidatePackCaches();
 }
 
 async function duplicatePack(id) {
@@ -135,7 +163,7 @@ async function duplicatePack(id) {
     );
     return getPack(copy.id, conn);
   });
-  cache.delPrefix(LIST_CACHE_PREFIX);
+  invalidatePackCaches();
   return result;
 }
 
@@ -143,7 +171,7 @@ async function deletePack(id) {
   const existing = await packsRepo.findById(id);
   if (!existing) throw new AppError('Pack not found', 404);
   await packsRepo.remove(id);
-  cache.delPrefix(LIST_CACHE_PREFIX);
+  invalidatePackCaches();
 }
 
 /**
@@ -177,5 +205,5 @@ module.exports = {
   validatePerfumeIds,
   resolveCustomizedSelection,
   getUpsellOffers,
-  invalidateListCache: () => cache.delPrefix(LIST_CACHE_PREFIX),
+  invalidateListCache: invalidatePackCaches,
 };
