@@ -100,6 +100,24 @@ input, textarea, select {
   font-family: var(--font-body);
 }
 
+/* Sitewide keyboard-focus indicator -- several components (search inputs,
+   the review-avatar picker, ...) set outline:none on individual elements
+   with no replacement, which is invisible to a mouse user but leaves
+   keyboard navigation with no visible focus indicator at all. One rule
+   here covers every interactive element site-wide instead of patching
+   each component individually. :focus-visible only triggers for keyboard/
+   assistive-tech focus, not mouse clicks, so this changes nothing about
+   how the site looks or behaves for a mouse/touch user. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 /* ============ LAYOUT UTILITIES ============ */
 .container {
   width: 100%;

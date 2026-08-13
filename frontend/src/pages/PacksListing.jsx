@@ -13,19 +13,21 @@ const CSS = `
 .pl-hero { text-align: center; padding: 60px 32px 30px; background: var(--background); }
 .pl-hero h1 { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3rem); font-weight: 500; }
 .pl-hero p { color: var(--text-light); max-width: 520px; margin: 12px auto 0; }
-.pl-toolbar { max-width: var(--container-max); margin: 0 auto; padding: 28px 32px 0; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.pl-toolbar { max-width: var(--container-max); margin: 0 auto; padding: 20px 32px 0; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .pl-search { display: flex; align-items: center; gap: 8px; border: 1.5px solid var(--border); border-radius: var(--radius-full); padding: 10px 18px; flex: 1; min-width: 220px; }
 .pl-search input { border: none; outline: none; flex: 1; font-size: 0.88rem; }
 .pl-sort { border: 1.5px solid var(--border); border-radius: var(--radius-full); padding: 10px 18px; font-size: 0.82rem; background: white; }
-.pl-gender-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 18px 32px 0; max-width: var(--container-max); margin: 0 auto; }
-@media (max-width: 640px) { .pl-gender-row { padding: 14px 16px 0; } }
+.pl-gender-row { display: flex; gap: 10px; flex-wrap: wrap; padding: 24px 32px 0; max-width: var(--container-max); margin: 0 auto; }
+@media (max-width: 640px) { .pl-gender-row { padding: 18px 16px 0; gap: 8px; } }
 .pl-gender-chip {
-  padding: 8px 18px; border-radius: var(--radius-full); border: 1.5px solid var(--border);
+  padding: 9px 20px; border-radius: var(--radius-full); border: 1.5px solid var(--border);
   background: white; font-size: 0.8rem; font-weight: 600; color: var(--secondary);
-  cursor: pointer; transition: var(--transition); white-space: nowrap;
+  cursor: pointer; transition: var(--transition); white-space: nowrap; box-shadow: var(--shadow-sm);
 }
-.pl-gender-chip:hover { border-color: var(--primary); }
-.pl-gender-chip.active { background: var(--secondary); border-color: var(--secondary); color: white; }
+.pl-gender-chip:hover { border-color: var(--primary); color: var(--primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.pl-gender-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pl-gender-chip.active { background: var(--secondary); border-color: var(--secondary); color: white; box-shadow: var(--shadow-md); }
+.pl-gender-chip.active:hover { color: white; transform: none; }
 /* Premium catalog grid: a controlled 3/2/1 column layout (not auto-fill),
    so cards keep a consistent, comfortable size instead of stretching to
    fill whatever width happens to be available. */

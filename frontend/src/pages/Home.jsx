@@ -40,23 +40,29 @@ const CSS = `
 .home-section-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); }
 .home-section-title { font-family: var(--font-display); font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 500; margin-top: 8px; }
 .home-section-sub { color: var(--text-light); margin-top: 8px; max-width: 480px; }
-/* Same chip row as the packs listing page (.pl-gender-row/.pl-gender-chip)
-   -- duplicated here rather than shared, since Home and PacksListing are
-   separate lazy-loaded routes with their own independently-injected CSS
-   blocks, only one of which is ever mounted at a time. flex+gap, no
-   left/right positioning, so RTL/LTR both work without an override. A
-   horizontal scroll (not wrap) on narrow screens keeps 4 chips on one row
-   without ever overflowing the page. */
-.home-gender-row { display: flex; gap: 8px; padding: 18px 32px 0; max-width: var(--container-max); margin: 0 auto; overflow-x: auto; scrollbar-width: none; }
+/* Its own section, not a row bolted onto the grid: real breathing room
+   above (from the subtitle) and below (before the pack grid) instead of
+   the previous 0/0 padding that let the chips visually touch the first
+   card. flex+gap, no left/right positioning, so RTL/LTR both work
+   without an override; overflow-x (not wrap) keeps all 4 chips on one
+   row on narrow screens without ever overflowing the page. Centered to
+   match the eyebrow/title/subtitle above it, which all read as one
+   continuous centered block instead of centered text suddenly giving
+   way to a left-aligned control row. */
+.home-filter-section { padding: 8px 32px 44px; }
+@media (max-width: 640px) { .home-filter-section { padding: 4px 16px 32px; } }
+.home-gender-row { display: flex; gap: 10px; justify-content: center; max-width: var(--container-max); margin: 0 auto; overflow-x: auto; scrollbar-width: none; }
 .home-gender-row::-webkit-scrollbar { display: none; }
-@media (max-width: 640px) { .home-gender-row { padding: 14px 16px 0; } }
 .home-gender-chip {
-  padding: 8px 18px; border-radius: var(--radius-full); border: 1.5px solid var(--border);
+  padding: 9px 20px; border-radius: var(--radius-full); border: 1.5px solid var(--border);
   background: white; font-size: 0.8rem; font-weight: 600; color: var(--secondary);
   cursor: pointer; transition: var(--transition); white-space: nowrap; flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
 }
-.home-gender-chip:hover { border-color: var(--primary); }
-.home-gender-chip.active { background: var(--secondary); border-color: var(--secondary); color: white; }
+.home-gender-chip:hover { border-color: var(--primary); color: var(--primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.home-gender-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.home-gender-chip.active { background: var(--secondary); border-color: var(--secondary); color: white; box-shadow: var(--shadow-md); }
+.home-gender-chip.active:hover { color: white; transform: none; }
 /* Same controlled 3/2/1 grid as the packs listing page — a fixed column
    count keeps cards a consistent, premium size instead of stretching. */
 .home-packs-grid { max-width: var(--container-max); margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
@@ -267,21 +273,23 @@ export default function Home() {
       <p className="home-top-sub">{sectionText("bestsellers", "subtitle", "home.subtitle")}</p>
 
       {!packsLoading && packs.length > 0 && (
-        <div className="home-gender-row">
-          {[
-            { value: "", label: t("packStock.all") },
-            { value: "Femme", label: t("packStock.femme") },
-            { value: "Homme", label: t("packStock.homme") },
-            { value: "Unisexe", label: t("packStock.unisexe") },
-          ].map((opt) => (
-            <button
-              key={opt.value || "all"}
-              className={`home-gender-chip${genderFilter === opt.value ? " active" : ""}`}
-              onClick={() => setGenderFilter(opt.value)}
-            >
-              {opt.label}
-            </button>
-          ))}
+        <div className="home-filter-section">
+          <div className="home-gender-row">
+            {[
+              { value: "", label: t("packStock.all") },
+              { value: "Femme", label: t("packStock.femme") },
+              { value: "Homme", label: t("packStock.homme") },
+              { value: "Unisexe", label: t("packStock.unisexe") },
+            ].map((opt) => (
+              <button
+                key={opt.value || "all"}
+                className={`home-gender-chip${genderFilter === opt.value ? " active" : ""}`}
+                onClick={() => setGenderFilter(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
