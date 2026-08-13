@@ -19,7 +19,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM schema_migrations WHERE filename = '032_recommended_title.sql') THEN
 
     INSERT INTO site_content (content_key, category, value_fr, value_ar) VALUES
-      ('packDetails.recommendedTitle', 'packDetails', 'Vous pourriez aussi aimer', 'اكتشفي أيضاً عروضنا')
+      ('packDetails.recommendedTitle', 'packDetails', 'Vous pourriez aussi aimer', 'قد يعجبكم أيضاً')
     ON DUPLICATE KEY UPDATE content_key = content_key;
 
     UPDATE site_content
