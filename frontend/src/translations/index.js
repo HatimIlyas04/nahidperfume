@@ -871,8 +871,8 @@ export const translations = {
     },
     packStock: {
       all: "الكل",
-      femme: "نسائية",
-      homme: "رجالية",
+      femme: "نساء",
+      homme: "رجال",
       unisexe: "للجنسين",
       packFemme: "باقة نسائية",
       packHomme: "باقة رجالية",

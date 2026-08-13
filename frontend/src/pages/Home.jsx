@@ -40,6 +40,23 @@ const CSS = `
 .home-section-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--primary); }
 .home-section-title { font-family: var(--font-display); font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 500; margin-top: 8px; }
 .home-section-sub { color: var(--text-light); margin-top: 8px; max-width: 480px; }
+/* Same chip row as the packs listing page (.pl-gender-row/.pl-gender-chip)
+   -- duplicated here rather than shared, since Home and PacksListing are
+   separate lazy-loaded routes with their own independently-injected CSS
+   blocks, only one of which is ever mounted at a time. flex+gap, no
+   left/right positioning, so RTL/LTR both work without an override. A
+   horizontal scroll (not wrap) on narrow screens keeps 4 chips on one row
+   without ever overflowing the page. */
+.home-gender-row { display: flex; gap: 8px; padding: 18px 32px 0; max-width: var(--container-max); margin: 0 auto; overflow-x: auto; scrollbar-width: none; }
+.home-gender-row::-webkit-scrollbar { display: none; }
+@media (max-width: 640px) { .home-gender-row { padding: 14px 16px 0; } }
+.home-gender-chip {
+  padding: 8px 18px; border-radius: var(--radius-full); border: 1.5px solid var(--border);
+  background: white; font-size: 0.8rem; font-weight: 600; color: var(--secondary);
+  cursor: pointer; transition: var(--transition); white-space: nowrap; flex-shrink: 0;
+}
+.home-gender-chip:hover { border-color: var(--primary); }
+.home-gender-chip.active { background: var(--secondary); border-color: var(--secondary); color: white; }
 /* Same controlled 3/2/1 grid as the packs listing page — a fixed column
    count keeps cards a consistent, premium size instead of stretching. */
 .home-packs-grid { max-width: var(--container-max); margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
@@ -140,6 +157,7 @@ export default function Home() {
   const [wishedIds, setWishedIds] = useState(() => new Set());
   const [selectedPack, setSelectedPack] = useState(null);
   const [sections, setSections] = useState([]);
+  const [genderFilter, setGenderFilter] = useState("");
   const orderFormRef = useRef(null);
 
   useEffect(() => {
@@ -172,7 +190,14 @@ export default function Home() {
 
   // Featured packs surface first -- matches the admin's "Featured" flag on
   // the Packs page instead of pure display_order, without hiding any pack.
-  const bestsellers = [...packs].sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0)).slice(0, 8);
+  // Gender filter runs BEFORE the top-8 slice (not after), so filtering to
+  // "Homme" shows the top men's packs, not whichever men's packs happened
+  // to survive an unfiltered top-8 cut -- otherwise a real Homme pack could
+  // look "missing" from its own filter just because it wasn't in the
+  // overall top 8. Purely client-side: `packs` is already the full fetched
+  // list, so switching filters never triggers a new request.
+  const filteredPacks = genderFilter ? packs.filter((p) => p.gender === genderFilter) : packs;
+  const bestsellers = [...filteredPacks].sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0)).slice(0, 8);
   const whyItems = t("home.whyItems");
 
   // Derived at render time rather than synced via an effect: defaults to
@@ -241,6 +266,25 @@ export default function Home() {
       <h1 className="home-top-title">{sectionText("bestsellers", "title", "home.title")}</h1>
       <p className="home-top-sub">{sectionText("bestsellers", "subtitle", "home.subtitle")}</p>
 
+      {!packsLoading && packs.length > 0 && (
+        <div className="home-gender-row">
+          {[
+            { value: "", label: t("packStock.all") },
+            { value: "Femme", label: t("packStock.femme") },
+            { value: "Homme", label: t("packStock.homme") },
+            { value: "Unisexe", label: t("packStock.unisexe") },
+          ].map((opt) => (
+            <button
+              key={opt.value || "all"}
+              className={`home-gender-chip${genderFilter === opt.value ? " active" : ""}`}
+              onClick={() => setGenderFilter(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {packsLoading ? (
         <section style={{ paddingBottom: "var(--section-gap)" }}>
           <div className="home-packs-grid">
@@ -262,7 +306,7 @@ export default function Home() {
               />
             ))}
           </div>
-          {packs.length > 8 && (
+          {filteredPacks.length > 8 && (
             <div style={{ textAlign: "center", marginTop: "32px" }}>
               <Link to="/packs" className="btn-outline">{t("home.viewAll")}</Link>
             </div>
