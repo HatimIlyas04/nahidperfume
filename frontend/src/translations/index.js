@@ -365,6 +365,13 @@ export const translations = {
       cta: "Installer l'application",
       dismiss: "Fermer",
     },
+    abandonedOrder: {
+      title: "Vous avez une commande en attente",
+      subtitle: "Vous aviez commencé une commande pour cette offre.",
+      resume: "Reprendre",
+      dismiss: "Fermer",
+      close: "Fermer",
+    },
   },
 
   /* ════════════════════════════════════════════════
@@ -733,6 +740,13 @@ export const translations = {
       cta: "Install App",
       dismiss: "Close",
     },
+    abandonedOrder: {
+      title: "You have a pending order",
+      subtitle: "You had started an order for this offer.",
+      resume: "Resume",
+      dismiss: "Close",
+      close: "Close",
+    },
   },
 
   /* ════════════════════════════════════════════════
@@ -1100,6 +1114,13 @@ export const translations = {
       bannerText: "ثبّتوا تطبيق Nahid Perfumes على هاتفكم",
       cta: "تثبيت التطبيق",
       dismiss: "إغلاق",
+    },
+    abandonedOrder: {
+      title: "لديكم طلب لم يتم إكماله",
+      subtitle: "لقد بدأتم طلب هذا العرض ولم يتم تأكيده بعد.",
+      resume: "متابعة طلبي",
+      dismiss: "إغلاق",
+      close: "إغلاق",
     },
   },
 };

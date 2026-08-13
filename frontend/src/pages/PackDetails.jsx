@@ -459,8 +459,12 @@ export default function PackDetails() {
 
       {/* Direct order: "Commander" above scrolls here instead of forcing
           Add to cart -> Cart -> Checkout. Cart flow remains fully intact
-          for customers who prefer it (or want the customized version). */}
-      <section style={{ padding: "var(--section-gap) 0" }}>
+          for customers who prefer it (or want the customized version).
+          id="order-form" doubles as the target for the abandoned-order
+          reminder's "Reprendre" link (/packs/:id#order-form) -- reuses the
+          existing hash-scroll handling in components/ScrollToTop.jsx
+          instead of building a second scroll mechanism. */}
+      <section id="order-form" style={{ padding: "var(--section-gap) 0" }}>
         <HomeOrderForm pack={pack} ref={orderFormRef} />
       </section>
 

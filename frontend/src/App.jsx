@@ -8,6 +8,7 @@ import { CartProvider } from "./context/CartContext";
 import Navbar from "./components/Navbar";
 import WhatsAppButton from "./components/WhatsAppButton";
 import InstallPrompt from "./components/InstallPrompt";
+import AbandonedOrderReminder from "./components/AbandonedOrderReminder";
 import ScrollToTop from "./components/ScrollToTop";
 import PageLoader from "./components/PageLoader";
 import { API_BASE_URL } from "./services/api";
@@ -46,6 +47,7 @@ function StorefrontChrome({ children }) {
       <InstallPrompt />
       <Navbar />
       <WhatsAppButton />
+      <AbandonedOrderReminder />
       {children}
     </>
   );

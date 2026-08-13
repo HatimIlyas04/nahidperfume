@@ -1,4 +1,4 @@
-import { forwardRef, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fireAlert } from "../utils/swal";
 import { FiCheck, FiShoppingBag, FiTruck } from "react-icons/fi";
@@ -12,6 +12,7 @@ import { getRecaptchaToken } from "../utils/recaptcha";
 import { SHIPPING_FEE } from "../utils/pricing";
 import { buildPackContentDetail } from "../utils/packContent";
 import { getStockLevel } from "../utils/packStock";
+import { saveDraft, clearDraft } from "../utils/abandonedOrder";
 
 // Major Moroccan delivery cities, common e-commerce list — "Autre" reveals
 // a free-text field so any city is still accepted.
@@ -92,6 +93,19 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
   const shipping = pack ? SHIPPING_FEE : 0;
   const total = subtotal + shipping;
 
+  // Only pack identity + quantity is persisted, never the name/phone/
+  // address fields themselves -- see utils/abandonedOrder.js for why.
+  // Debounced (not saved on every keystroke) and only once the customer
+  // has actually typed something -- landing on a pack's page and briefly
+  // seeing the form isn't "starting an order," typing a name or phone is.
+  useEffect(() => {
+    if (!pack) return undefined;
+    const engaged = form.name.trim() || form.phone.trim() || form.address.trim();
+    if (!engaged) return undefined;
+    const timer = setTimeout(() => saveDraft(pack, quantity), 800);
+    return () => clearTimeout(timer);
+  }, [pack, form.name, form.phone, form.address, quantity]);
+
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = t("checkout.fullNameError");
@@ -127,6 +141,7 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
         items: cartToOrderItems([buyNowItem]),
         recaptcha_token: recaptchaToken || undefined,
       });
+      clearDraft();
       fireAlert({
         icon: "success",
         title: t("directOrder.successTitle"),
