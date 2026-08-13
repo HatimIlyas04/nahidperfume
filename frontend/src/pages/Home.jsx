@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import Swal from "sweetalert2";
+import { fireAlert } from "../utils/swal";
 import {
   FiArrowRight, FiPackage, FiSliders, FiTruck, FiShield, FiHeart,
   FiMail, FiCheckCircle, FiPlay,
@@ -233,7 +233,7 @@ export default function Home() {
         wished ? next.add(pack.id) : next.delete(pack.id);
         return next;
       });
-      Swal.fire({ icon: "error", title: t("packDetails.errorTitle"), text: t("packDetails.wishlistError") });
+      fireAlert({ icon: "error", title: t("packDetails.errorTitle"), text: t("packDetails.wishlistError") });
     }
   }, [wishedIds, t]);
 
@@ -248,13 +248,13 @@ export default function Home() {
       quantity: 1,
       perfumes: (pack.perfumes || []).map((p) => ({ perfume_id: p.perfume_id, name: p.name, image_url: p.image_url })),
     });
-    Swal.fire({ icon: "success", title: t("home.addedToCart"), timer: 1400, showConfirmButton: false });
+    fireAlert({ icon: "success", title: t("home.addedToCart"), timer: 1400, showConfirmButton: false });
   }, [addToCart, t]);
 
   const handleNewsletter = (e) => {
     e.preventDefault();
     if (!email.trim()) return;
-    Swal.fire({ icon: "success", title: t("home.newsletterSuccessTitle"), text: t("home.newsletterSuccessText"), confirmButtonColor: "#EF776A" });
+    fireAlert({ icon: "success", title: t("home.newsletterSuccessTitle"), text: t("home.newsletterSuccessText"), confirmButtonColor: "#EF776A" });
     setEmail("");
   };
 

@@ -1,6 +1,6 @@
 import { forwardRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+import { fireAlert } from "../utils/swal";
 import { FiCheck, FiShoppingBag, FiTruck } from "react-icons/fi";
 import { useLanguage } from "../context/LanguageContext";
 import { cldResize } from "../utils/cloudinary";
@@ -127,7 +127,7 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
         items: cartToOrderItems([buyNowItem]),
         recaptcha_token: recaptchaToken || undefined,
       });
-      Swal.fire({
+      fireAlert({
         icon: "success",
         title: t("directOrder.successTitle"),
         text: t("directOrder.successText"),
@@ -145,7 +145,7 @@ const HomeOrderForm = forwardRef(function HomeOrderForm({ pack, packs = [], onSe
       const text = code === "OUT_OF_STOCK"
         ? t("packStock.outOfStockError")
         : err.response?.data?.error || t("checkout.errorRetry");
-      Swal.fire({ icon: "error", title: t("checkout.errorTitle"), text });
+      fireAlert({ icon: "error", title: t("checkout.errorTitle"), text });
     } finally {
       setSubmitting(false);
     }
